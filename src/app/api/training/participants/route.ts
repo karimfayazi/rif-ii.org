@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 export async function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url);
+		const sn = searchParams.get('sn');
 		const district = searchParams.get('district');
 		const tehsil = searchParams.get('tehsil');
 		const gender = searchParams.get('gender');
@@ -35,6 +36,19 @@ export async function GET(request: NextRequest) {
 		`;
 
 		const request_obj = pool.request();
+
+		// If ID is provided, fetch single record
+		if (sn) {
+			query += ` AND [sn] = @sn`;
+			request_obj.input('sn', parseInt(sn));
+			const result = await request_obj.query(query);
+			const participant = result.recordset?.[0] || null;
+			
+			return NextResponse.json({
+				success: true,
+				participant: participant
+			});
+		}
 
 		// Add filters if provided
 		if (district) {

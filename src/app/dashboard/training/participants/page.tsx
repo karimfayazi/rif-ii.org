@@ -10,8 +10,15 @@ import {
 	BarChart3,
 	Download,
 	User,
-	UserCheck
+	UserCheck,
+	Edit,
+	Trash2,
+	FileDown,
+	Eye,
+	X
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useAccess } from "@/hooks/useAccess";
 
 type WorkshopParticipant = {
 	sn?: number;
@@ -38,6 +45,10 @@ const GENDER_OPTIONS = ["Male", "Female"];
 
 export default function TrainingParticipantsPage() {
 	const router = useRouter();
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || getUserId();
+	const { isAdmin } = useAccess(userId);
+	
 	const [participants, setParticipants] = useState<WorkshopParticipant[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -49,6 +60,7 @@ export default function TrainingParticipantsPage() {
 	const [tehsils, setTehsils] = useState<string[]>([]);
 	const [organizationDepartments, setOrganizationDepartments] = useState<string[]>([]);
 	const [workshopTrainingNames, setWorkshopTrainingNames] = useState<string[]>([]);
+	const [viewingParticipant, setViewingParticipant] = useState<WorkshopParticipant | null>(null);
 
 	const fetchParticipants = useCallback(async () => {
 		try {
@@ -104,6 +116,54 @@ export default function TrainingParticipantsPage() {
 	const formatNumber = (num: number | null | undefined) => {
 		if (!num && num !== 0) return "0";
 		return num.toLocaleString();
+	};
+
+	const handleExport = () => {
+		// Prepare CSV data
+		const headers = [
+			"Participant Name",
+			"SO/DO/WO/HO",
+			"Gender",
+			"Organization/Department",
+			"CNIC Number",
+			"Contact Number",
+			"District",
+			"Tehsil",
+			"Workshop/Training Name",
+			"Workshop/Session/Conference",
+			"Start Date",
+			"End Date"
+		];
+
+		const csvRows = [
+			headers.join(","),
+			...filteredData.map(item => [
+				`"${(item.participant_name || "").replace(/"/g, '""')}"`,
+				`"${(item.so_do_wo_ho || "").replace(/"/g, '""')}"`,
+				`"${(item.gender || "").replace(/"/g, '""')}"`,
+				`"${(item.organization_department || "").replace(/"/g, '""')}"`,
+				`"${(item.cnic_number || "").replace(/"/g, '""')}"`,
+				`"${(item.contact_number || "").replace(/"/g, '""')}"`,
+				`"${(item.district || "").replace(/"/g, '""')}"`,
+				`"${(item.tehsil || "").replace(/"/g, '""')}"`,
+				`"${(item.workshop_training_name || "").replace(/"/g, '""')}"`,
+				`"${(item.workshop_session_conference || "").replace(/"/g, '""')}"`,
+				`"${(item.start_date || "").replace(/"/g, '""')}"`,
+				`"${(item.end_date || "").replace(/"/g, '""')}"`
+			].join(","))
+		];
+
+		const csvContent = csvRows.join("\n");
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+		const link = document.createElement("a");
+		const url = URL.createObjectURL(blob);
+		
+		link.setAttribute("href", url);
+		link.setAttribute("download", `training_participants_${new Date().toISOString().split('T')[0]}.csv`);
+		link.style.visibility = "hidden";
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
 	};
 
 	// Filter data based on selected filters
@@ -167,13 +227,20 @@ export default function TrainingParticipantsPage() {
 					<p className="text-gray-600 mt-2">View workshop training participants</p>
 				</div>
 				<div className="flex items-center space-x-3">
-					<a
-						href="/dashboard/training/participants"
+					<button
+						onClick={handleExport}
+						className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+					>
+						<FileDown className="h-4 w-4 mr-2" />
+						Export
+					</button>
+					<button
+						onClick={() => router.push('/dashboard/training/participants/add')}
 						className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
 					>
 						<Users className="h-4 w-4 mr-2" />
 						Add Records
-					</a>
+					</button>
 					<button
 						onClick={() => router.push('/dashboard/training/dashboard')}
 						className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
@@ -393,12 +460,11 @@ export default function TrainingParticipantsPage() {
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Participant Name</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Gender</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Organization/Department</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Designation</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Profession</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>CNIC Number</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Contact Number</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Location</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Workshop/Training</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Actions</th>
 								</tr>
 							</thead>
 							<tbody className="bg-white divide-y divide-gray-200" style={{ backgroundColor: "#ffffff" }}>
@@ -422,16 +488,6 @@ export default function TrainingParticipantsPage() {
 										<td className="px-6 py-4">
 											<div className="text-sm text-gray-900">
 												{item.organization_department || "N/A"}
-											</div>
-										</td>
-										<td className="px-6 py-4">
-											<div className="text-sm text-gray-900">
-												{item.designation || "N/A"}
-											</div>
-										</td>
-										<td className="px-6 py-4">
-											<div className="text-sm text-gray-900">
-												{item.profession || "N/A"}
 											</div>
 										</td>
 										<td className="px-6 py-4">
@@ -460,6 +516,52 @@ export default function TrainingParticipantsPage() {
 												)}
 											</div>
 										</td>
+										<td className="px-6 py-4">
+											<div className="flex items-center space-x-2">
+												<button
+													onClick={() => setViewingParticipant(item)}
+													className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+													title="View"
+												>
+													<Eye className="h-4 w-4" />
+												</button>
+												{isAdmin && (
+													<>
+														<button
+															onClick={() => router.push(`/dashboard/training/participants/add?sn=${item.sn}`)}
+															className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+															title="Edit"
+														>
+															<Edit className="h-4 w-4" />
+														</button>
+														<button
+															onClick={async () => {
+																if (confirm("Are you sure you want to delete this participant record?")) {
+																	try {
+																		const response = await fetch(`/api/training/participants/delete?sn=${item.sn}`, {
+																			method: 'DELETE'
+																		});
+																		const data = await response.json();
+																		if (data.success) {
+																			fetchParticipants();
+																		} else {
+																			alert(data.message || "Failed to delete record");
+																		}
+																	} catch (err) {
+																		console.error("Error deleting participant:", err);
+																		alert("Error deleting participant record");
+																	}
+																}
+															}}
+															className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+															title="Delete"
+														>
+															<Trash2 className="h-4 w-4" />
+														</button>
+													</>
+												)}
+											</div>
+										</td>
 									</tr>
 								))}
 							</tbody>
@@ -470,6 +572,173 @@ export default function TrainingParticipantsPage() {
 						<p className="text-sm text-gray-600">
 							Showing <span className="font-medium">{filteredData.length}</span> participant{filteredData.length !== 1 ? 's' : ''}
 						</p>
+					</div>
+				</div>
+			)}
+
+			{/* View Participant Modal */}
+			{viewingParticipant && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+						{/* Modal Header */}
+						<div className="sticky top-0 bg-gradient-to-r from-[#0b4d2b] to-[#0a3d24] text-white p-6 rounded-t-xl flex items-center justify-between">
+							<h2 className="text-2xl font-bold">Participant Details</h2>
+							<button
+								onClick={() => setViewingParticipant(null)}
+								className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+							>
+								<X className="h-6 w-6" />
+							</button>
+						</div>
+
+						{/* Modal Content */}
+						<div className="p-6">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								{/* Personal Information */}
+								<div className="space-y-4">
+									<h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Personal Information</h3>
+									
+									<div>
+										<label className="text-sm font-medium text-gray-500">Participant Name</label>
+										<p className="text-base text-gray-900 mt-1">{viewingParticipant.participant_name || "N/A"}</p>
+									</div>
+
+									{viewingParticipant.so_do_wo_ho && (
+										<div>
+											<label className="text-sm font-medium text-gray-500">SO/DO/WO/HO</label>
+											<p className="text-base text-gray-900 mt-1">{viewingParticipant.so_do_wo_ho}</p>
+										</div>
+									)}
+
+									<div>
+										<label className="text-sm font-medium text-gray-500">Gender</label>
+										<p className="text-base text-gray-900 mt-1">{viewingParticipant.gender || "N/A"}</p>
+									</div>
+
+									<div>
+										<label className="text-sm font-medium text-gray-500">CNIC Number</label>
+										<p className="text-base text-gray-900 mt-1">{viewingParticipant.cnic_number || "N/A"}</p>
+									</div>
+
+									<div>
+										<label className="text-sm font-medium text-gray-500">Contact Number</label>
+										<p className="text-base text-gray-900 mt-1">{viewingParticipant.contact_number || "N/A"}</p>
+									</div>
+								</div>
+
+								{/* Professional Information */}
+								<div className="space-y-4">
+									<h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Professional Information</h3>
+									
+									<div>
+										<label className="text-sm font-medium text-gray-500">Organization/Department</label>
+										<p className="text-base text-gray-900 mt-1">{viewingParticipant.organization_department || "N/A"}</p>
+									</div>
+
+									{viewingParticipant.designation && (
+										<div>
+											<label className="text-sm font-medium text-gray-500">Designation</label>
+											<p className="text-base text-gray-900 mt-1">{viewingParticipant.designation}</p>
+										</div>
+									)}
+
+									{viewingParticipant.profession && (
+										<div>
+											<label className="text-sm font-medium text-gray-500">Profession</label>
+											<p className="text-base text-gray-900 mt-1">{viewingParticipant.profession}</p>
+										</div>
+									)}
+								</div>
+
+								{/* Location Information */}
+								<div className="space-y-4">
+									<h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Location Information</h3>
+									
+									<div>
+										<label className="text-sm font-medium text-gray-500">District</label>
+										<p className="text-base text-gray-900 mt-1">{viewingParticipant.district || "N/A"}</p>
+									</div>
+
+									<div>
+										<label className="text-sm font-medium text-gray-500">Tehsil</label>
+										<p className="text-base text-gray-900 mt-1">{viewingParticipant.tehsil || "N/A"}</p>
+									</div>
+								</div>
+
+								{/* Training Information */}
+								<div className="space-y-4">
+									<h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Training Information</h3>
+									
+									<div>
+										<label className="text-sm font-medium text-gray-500">Workshop/Training Name</label>
+										<p className="text-base text-gray-900 mt-1">{viewingParticipant.workshop_training_name || "N/A"}</p>
+									</div>
+
+									{viewingParticipant.workshop_session_conference && (
+										<div>
+											<label className="text-sm font-medium text-gray-500">Workshop/Session/Conference</label>
+											<p className="text-base text-gray-900 mt-1">{viewingParticipant.workshop_session_conference}</p>
+										</div>
+									)}
+
+									{viewingParticipant.start_date && (
+										<div>
+											<label className="text-sm font-medium text-gray-500">Start Date</label>
+											<p className="text-base text-gray-900 mt-1">{viewingParticipant.start_date}</p>
+										</div>
+									)}
+
+									{viewingParticipant.end_date && (
+										<div>
+											<label className="text-sm font-medium text-gray-500">End Date</label>
+											<p className="text-base text-gray-900 mt-1">{viewingParticipant.end_date}</p>
+										</div>
+									)}
+								</div>
+							</div>
+
+							{/* Additional Information */}
+							{(viewingParticipant.date_entered_by || viewingParticipant.entry_timestamp) && (
+								<div className="mt-6 pt-6 border-t border-gray-200">
+									<h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-4">Additional Information</h3>
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+										{viewingParticipant.date_entered_by && (
+											<div>
+												<label className="text-sm font-medium text-gray-500">Entered By</label>
+												<p className="text-base text-gray-900 mt-1">{viewingParticipant.date_entered_by}</p>
+											</div>
+										)}
+										{viewingParticipant.entry_timestamp && (
+											<div>
+												<label className="text-sm font-medium text-gray-500">Entry Timestamp</label>
+												<p className="text-base text-gray-900 mt-1">{viewingParticipant.entry_timestamp}</p>
+											</div>
+										)}
+									</div>
+								</div>
+							)}
+						</div>
+
+						{/* Modal Footer */}
+						<div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
+							<button
+								onClick={() => setViewingParticipant(null)}
+								className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+							>
+								Close
+							</button>
+							{isAdmin && (
+								<button
+									onClick={() => {
+										setViewingParticipant(null);
+										router.push(`/dashboard/training/participants/add?sn=${viewingParticipant.sn}`);
+									}}
+									className="px-6 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
+								>
+									Edit
+								</button>
+							)}
+						</div>
 					</div>
 				</div>
 			)}

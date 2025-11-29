@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Calendar, Folder, Image as ImageIcon, ExternalLink, TrendingUp, MapPin, Building2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Folder, Image as ImageIcon, ExternalLink, TrendingUp, MapPin, Building2, Newspaper, Clock } from "lucide-react";
 import Link from "next/link";
 
 type PictureData = {
@@ -510,24 +510,106 @@ type OutputWeightage = {
 	TotalWeightage: number;
 };
 
+type ActivityProgress = {
+	ActivityID: string | number;
+	MainActivityName: string;
+	OutputID: string | number;
+	Weightage_of_Main_Activity: number;
+	TotalActivityWeightageProgress: number;
+	OutputWeightage: number;
+};
+
+type OverallStats = {
+	totalTrainings: number;
+	totalDays: number;
+	totalMale: number;
+	totalFemale: number;
+	totalParticipants: number;
+};
+
+type BreakdownRow = {
+	eventType?: string;
+	district?: string;
+	totalTrainings: number;
+	totalDays: number;
+	totalMale: number;
+	totalFemale: number;
+	totalParticipants: number;
+};
+
+type DashboardResponse = 
+	| {
+			success: true;
+			overall: OverallStats;
+			byEventType: BreakdownRow[];
+			byDistrict: BreakdownRow[];
+		}
+	| {
+			success: false;
+			message?: string;
+		};
+
+type DashboardData = {
+	success: true;
+	overall: OverallStats;
+	byEventType: BreakdownRow[];
+	byDistrict: BreakdownRow[];
+};
+
 export default function DashboardPage() {
 	const router = useRouter();
 	const [pictures, setPictures] = useState<PictureData[]>([]);
 	const [outputProgress, setOutputProgress] = useState<OutputProgress[]>([]);
 	const [districtProgress, setDistrictProgress] = useState<DistrictProgress[]>([]);
 	const [outputWeightage, setOutputWeightage] = useState<OutputWeightage[]>([]);
+	const [activityProgress, setActivityProgress] = useState<ActivityProgress[]>([]);
+	const [trainingDashboardData, setTrainingDashboardData] = useState<DashboardData | null>(null);
+	const [selectedEventType, setSelectedEventType] = useState<BreakdownRow | null>(null);
+	const [selectedDistrict, setSelectedDistrict] = useState<BreakdownRow | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 	const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+	const [newsIndex, setNewsIndex] = useState(0);
+	const [isNewsAutoPlaying, setIsNewsAutoPlaying] = useState(true);
 
 	useEffect(() => {
 		fetchDashboardPictures();
 		fetchOutputProgress();
 		fetchDistrictProgress();
 		fetchOutputWeightage();
+		fetchActivityProgress();
+		fetchTrainingDashboard();
 	}, []);
+
+	const fetchTrainingDashboard = async () => {
+		try {
+			const res = await fetch("/api/training/dashboard");
+			if (!res.ok) {
+				throw new Error("Failed to load dashboard data");
+			}
+			const json = await res.json() as DashboardResponse;
+			if (!json.success) {
+				throw new Error(json.message ?? "Failed to load dashboard data");
+			}
+			setTrainingDashboardData(json);
+		} catch (err) {
+			console.error("Error fetching training dashboard:", err);
+		}
+	};
+
+	function getMaxValue(rows: BreakdownRow[], field: keyof BreakdownRow): number {
+		return rows.reduce((max, row) => {
+			const value = (row[field] as number) || 0;
+			return value > max ? value : max;
+		}, 0);
+	}
+
+	function getPercentage(part: number, total: number): string {
+		if (!total || total <= 0) return "0%";
+		return `${Math.round((part / total) * 100)}%`;
+	}
 
 	useEffect(() => {
 		if (isAutoPlaying && pictures.length > 0) {
@@ -542,6 +624,62 @@ export default function DashboardPage() {
 			return () => clearInterval(interval);
 		}
 	}, [isAutoPlaying, pictures.length]);
+
+	// Dummy news data
+	const newsItems = [
+		{
+			id: 1,
+			title: "RIF-II Project Launches New Infrastructure Initiative",
+			description: "The Regional Infrastructure Fund announces a major new initiative to improve urban infrastructure across Khyber Pakhtunkhwa, focusing on sustainable development and community engagement.",
+			image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=400&fit=crop",
+			date: "January 15, 2025",
+			category: "Infrastructure"
+		},
+		{
+			id: 2,
+			title: "Capacity Building Workshop Successfully Completed",
+			description: "Over 200 participants from various districts attended the comprehensive training workshop on resource management and sustainable practices, marking a significant milestone in the project.",
+			image: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=400&fit=crop",
+			date: "January 12, 2025",
+			category: "Training"
+		},
+		{
+			id: 3,
+			title: "Community Engagement Program Reaches 10,000 Beneficiaries",
+			description: "The community engagement program has successfully reached over 10,000 beneficiaries across multiple districts, with positive feedback and high participation rates.",
+			image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&h=400&fit=crop",
+			date: "January 10, 2025",
+			category: "Community"
+		},
+		{
+			id: 4,
+			title: "New Water Management System Implemented in DIK District",
+			description: "A state-of-the-art water management system has been successfully implemented in DIK district, improving water supply and quality for thousands of residents.",
+			image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&h=400&fit=crop",
+			date: "January 8, 2025",
+			category: "Water Management"
+		},
+		{
+			id: 5,
+			title: "Partnership Agreement Signed with Local NGOs",
+			description: "RIF-II has signed strategic partnership agreements with five local NGOs to enhance project implementation and ensure better community outreach and support.",
+			image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=400&fit=crop",
+			date: "January 5, 2025",
+			category: "Partnerships"
+		}
+	];
+
+	useEffect(() => {
+		if (isNewsAutoPlaying && newsItems.length > 0) {
+			const interval = setInterval(() => {
+				setNewsIndex((prevIndex) => {
+					return prevIndex >= newsItems.length - 1 ? 0 : prevIndex + 1;
+				});
+			}, 5000); // Change news every 5 seconds
+
+			return () => clearInterval(interval);
+		}
+	}, [isNewsAutoPlaying, newsItems.length]);
 
 	const getImageUrl = (filePath: string | null) => {
 		if (!filePath) {
@@ -643,6 +781,21 @@ export default function DashboardPage() {
 		}
 	};
 
+	const fetchActivityProgress = async () => {
+		try {
+			const response = await fetch('/api/tracking-sheet/activity-progress-summary');
+			const data = await response.json();
+
+			if (data.success) {
+				setActivityProgress(data.activityProgress || []);
+			} else {
+				console.error("Failed to fetch activity progress:", data.message);
+			}
+		} catch (err) {
+			console.error("Error fetching activity progress:", err);
+		}
+	};
+
 	const handlePictureClick = (picture: PictureData) => {
 		const params = new URLSearchParams();
 		if (picture.GroupName) params.append('groupName', picture.GroupName);
@@ -728,314 +881,204 @@ export default function DashboardPage() {
 				<p className="text-gray-600 mt-2">Welcome to the RIF-II MIS Dashboard</p>
 			</div>
 
-			{/* Analytics Graphs Section */}
-			<div className="space-y-8">
+			{/* Progress % Section */}
+			<div className="space-y-6">
 				<div>
-					<h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics Dashboard</h2>
-					<p className="text-gray-600">Key performance indicators and progress tracking</p>
+					<h2 className="text-3xl font-bold text-gray-900 tracking-tight">Project Tracking Progress (%)</h2>
+					<p className="text-sm text-gray-500 mt-1">Monitor and track project completion across all outputs</p>
 				</div>
-
-				{/* Progress Section */}
-				<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-					<div className="p-6 border-b border-gray-200">
-						<div className="flex items-center">
-							<div className="p-2 bg-blue-100 rounded-lg">
-								<TrendingUp className="h-6 w-6 text-blue-600" />
-							</div>
-							<div className="ml-4">
-								<h3 className="text-lg font-semibold text-gray-900">Overall Progress</h3>
-								<p className="text-sm text-gray-600">Project completion status across all sectors</p>
-							</div>
-						</div>
-					</div>
-					<div className="p-6">
+				<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 						{(() => {
-							// Map output progress data to display format
-							const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-orange-500", "bg-pink-500", "bg-indigo-500"];
-							const outputs = outputProgress.map((item, index) => ({
-								name: `Output ${item.OutputID}`,
-								progress: Math.round(item.Output_Progress || 0),
-								color: colors[index % colors.length]
-							}));
+						// Group activities by OutputID
+						const outputAGroup = activityProgress.filter(item => {
+							const id = item.OutputID?.toString().toUpperCase().trim();
+							return id === 'A' || id === '1' || id === 'OUTPUT A' || id === 'OUTPUTA';
+						});
+						const outputBGroup = activityProgress.filter(item => {
+							const id = item.OutputID?.toString().toUpperCase().trim();
+							return id === 'B' || id === '2' || id === 'OUTPUT B' || id === 'OUTPUTB';
+						});
+						const outputCGroup = activityProgress.filter(item => {
+							const id = item.OutputID?.toString().toUpperCase().trim();
+							return id === 'C' || id === '3' || id === 'OUTPUT C' || id === 'OUTPUTC';
+						});
 
-							// Calculate overall average
-							const overall = outputs.length > 0
-								? Math.round(outputs.reduce((sum, o) => sum + o.progress, 0) / outputs.length)
-								: 0;
+						// Calculate Progress % for Output A, B, C (simple sum of OutputWeightage)
+						const outputASum = Math.round(outputAGroup.reduce((sum, item) => sum + (item.OutputWeightage || 0), 0));
+						const outputBSum = Math.round(outputBGroup.reduce((sum, item) => sum + (item.OutputWeightage || 0), 0));
+						const outputCSum = Math.round(outputCGroup.reduce((sum, item) => sum + (item.OutputWeightage || 0), 0));
+						
+						// Get Output Weightage values (from Output Weightage section)
+						let outputAWeightage = 0;
+						let outputBWeightage = 0;
+						let outputCWeightage = 0;
+						
+						const foundA = outputWeightage.find(item => {
+							const id = item.OutputID?.toString().toUpperCase().trim();
+							return id === 'A' || id === '1' || id === 'OUTPUT A' || id === 'OUTPUTA';
+						});
+						const foundB = outputWeightage.find(item => {
+							const id = item.OutputID?.toString().toUpperCase().trim();
+							return id === 'B' || id === '2' || id === 'OUTPUT B' || id === 'OUTPUTB';
+						});
+						const foundC = outputWeightage.find(item => {
+							const id = item.OutputID?.toString().toUpperCase().trim();
+							return id === 'C' || id === '3' || id === 'OUTPUT C' || id === 'OUTPUTC';
+						});
+						
+						if (!foundA && outputWeightage.length > 0) {
+							outputAWeightage = outputWeightage[0]?.TotalWeightage || 0;
+						} else {
+							outputAWeightage = foundA?.TotalWeightage || 0;
+						}
+						
+						if (!foundB && outputWeightage.length > 1) {
+							outputBWeightage = outputWeightage[1]?.TotalWeightage || 0;
+						} else {
+							outputBWeightage = foundB?.TotalWeightage || 0;
+						}
+						
+						if (!foundC && outputWeightage.length > 2) {
+							outputCWeightage = outputWeightage[2]?.TotalWeightage || 0;
+						} else {
+							outputCWeightage = foundC?.TotalWeightage || 0;
+						}
+						
+						// Calculate Total Progress % using Weight Percentage Formula: (Percentage × Weightage) ÷ 100
+						// Formula: (Output A Progress % × Output A Weightage) ÷ 100 + (Output B Progress % × Output B Weightage) ÷ 100 + (Output C Progress % × Output C Weightage) ÷ 100
+						const totalProgressRaw = 
+							((outputASum * outputAWeightage) / 100) +
+							((outputBSum * outputBWeightage) / 100) +
+							((outputCSum * outputCWeightage) / 100);
+						
+						// Show one decimal place (e.g., 28.5%)
+						const totalProgress = Math.round(totalProgressRaw * 10) / 10;
 
-							if (outputs.length === 0) {
-								return (
-									<div className="text-center py-12">
-										<p className="text-gray-600">Loading output progress data...</p>
-									</div>
-								);
-							}
+						const totalWeightage = outputAWeightage + outputBWeightage + outputCWeightage;
 
-							return (
-								<>
-									<div className="mb-6 flex items-center justify-center">
-										<div className="text-center">
-											<p className="text-sm text-gray-600">Overall average</p>
-											<p className="text-3xl font-bold text-gray-900">{overall}%</p>
+						return (
+							<>
+								<div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border-2 border-blue-200 shadow-md hover:shadow-lg transition-all duration-300 p-4">
+									<div className="flex items-center">
+										<div className="p-2 bg-blue-500 rounded-lg shadow-sm">
+											<TrendingUp className="h-5 w-5 text-white" />
+										</div>
+										<div className="flex-1 text-center ml-3">
+											<p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-0.5">Output A</p>
+											<p className="text-2xl font-bold text-blue-900 mb-1">{outputASum}%</p>
+											<p className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full inline-block">Weightage: {outputAWeightage}</p>
 										</div>
 									</div>
-									<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-										{outputs.map((item, index) => (
-											<div key={index} className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center">
-												<div className="relative w-24 h-24 mx-auto mb-4">
-													<svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
-														<circle
-															cx="50"
-															cy="50"
-															r="40"
-															stroke="currentColor"
-															strokeWidth="8"
-															fill="none"
-															className="text-gray-200"
-														/>
-														<circle
-															cx="50"
-															cy="50"
-															r="40"
-															stroke="currentColor"
-															strokeWidth="8"
-															fill="none"
-															strokeDasharray={`${2 * Math.PI * 40}`}
-															strokeDashoffset={`${2 * Math.PI * 40 * (1 - item.progress / 100)}`}
-															className={`${item.color.replace('bg-', 'text-')} transition-all duration-1000 ease-out`}
-															style={{ strokeLinecap: 'round' }}
-														/>
-													</svg>
-													<div className="absolute inset-0 flex items-center justify-center">
-														<span className="text-lg font-bold text-gray-900">{item.progress}%</span>
-													</div>
-												</div>
-												<h4 className="text-sm font-medium text-gray-900">{item.name}</h4>
-											</div>
-										))}
-									</div>
-								</>
-							);
-						})()}
-					</div>
-				</div>
-
-				{/* District-Wise Comparison */}
-				<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-					<div className="p-6 border-b border-gray-200">
-						<div className="flex items-center">
-							<div className="p-2 bg-green-100 rounded-lg">
-								<MapPin className="h-6 w-6 text-green-600" />
-							</div>
-							<div className="ml-4">
-								<h3 className="text-lg font-semibold text-gray-900">District-Wise Comparison</h3>
-								<p className="text-sm text-gray-600">Outputs A, B, C and overall % by district</p>
-							</div>
-						</div>
-					</div>
-					<div className="p-6">
-						{(() => {
-							// Group district progress data by district
-							const districtMap = new Map<string, { outputs: Record<string, number>, color: string }>();
-							const colors = ["#3B82F6", "#10B981", "#8B5CF6", "#F59E0B", "#EF4444", "#06B6D4"];
-							let colorIndex = 0;
-
-							districtProgress.forEach((item) => {
-								if (!districtMap.has(item.District)) {
-									districtMap.set(item.District, {
-										outputs: {},
-										color: colors[colorIndex % colors.length]
-									});
-									colorIndex++;
-								}
-								const districtData = districtMap.get(item.District)!;
-								districtData.outputs[item.OutputID] = Math.round(item.Output_Progress || 0);
-							});
-
-							// Convert map to array for rendering
-							const districts = Array.from(districtMap.entries()).map(([name, data]) => ({
-								name,
-								outputs: data.outputs,
-								color: data.color
-							}));
-
-							if (districts.length === 0) {
-								return (
-									<div className="text-center py-12">
-										<p className="text-gray-600">Loading district progress data...</p>
-									</div>
-								);
-							}
-
-							return (
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-									{districts.map((d, idx) => {
-										const values = Object.values(d.outputs);
-										const overall = values.length > 0
-											? Math.round(values.reduce((s, v) => s + v, 0) / values.length)
-											: 0;
-										return (
-											<div key={idx} className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-												<div className="flex items-center justify-between mb-4">
-													<h4 className="text-base font-semibold text-gray-900">{d.name}</h4>
-													<span className="inline-flex items-center px-2 py-0.5 text-xs rounded-full" style={{ backgroundColor: `${d.color}22`, color: d.color }}>
-														Overall {overall}%
-													</span>
-												</div>
-												<div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
-													{/* Overall donut */}
-													<div className="flex items-center justify-center">
-														<div className="relative w-28 h-28">
-															<svg className="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
-																<circle cx="50" cy="50" r="40" stroke="#E5E7EB" strokeWidth="10" fill="none" />
-																<circle
-																	cx="50"
-																	cy="50"
-																	r="40"
-																	stroke={d.color}
-																	strokeWidth="10"
-																	fill="none"
-																	strokeDasharray={`${2 * Math.PI * 40}`}
-																	strokeDashoffset={`${2 * Math.PI * 40 * (1 - overall / 100)}`}
-																	style={{ strokeLinecap: 'round', transition: 'stroke-dashoffset 1s ease' }}
-																/>
-															</svg>
-															<div className="absolute inset-0 flex items-center justify-center">
-																<div className="text-center">
-																	<div className="text-lg font-bold text-gray-900">{overall}%</div>
-																	<div className="text-[10px] text-gray-500">Overall</div>
-																</div>
-															</div>
-														</div>
-													</div>
-
-													{/* Outputs bars */}
-													<div className="space-y-3">
-														{Object.entries(d.outputs)
-															.sort(([a], [b]) => a.localeCompare(b))
-															.map(([key, val]) => (
-															<div key={key}>
-																<div className="flex items-center justify-between mb-1">
-																	<span className="text-sm font-medium text-gray-700">Output {key}</span>
-																	<span className="text-sm font-semibold text-gray-900">{val}%</span>
-																</div>
-																<div className="w-full bg-gray-200 rounded-full h-2">
-																	<div
-																		className="h-2 rounded-full"
-																		style={{ width: `${val}%`, backgroundColor: d.color }}
-																	></div>
-																</div>
-															</div>
-														))}
-												</div>
-											</div>
-										</div>
-									);
-									})}
 								</div>
-							);
-						})()}
-					</div>
-				</div>
 
-				{/* Training Report */}
-				<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-					<div className="p-6 border-b border-gray-200">
-						<div className="flex items-center">
-							<div className="p-2 bg-purple-100 rounded-lg">
-								<Building2 className="h-6 w-6 text-purple-600" />
-							</div>
-							<div className="ml-4">
-								<h3 className="text-lg font-semibold text-gray-900">Training Report-Sample data</h3>
-								<p className="text-sm text-gray-600">District-wise trainings, male/female participants, and percentages</p>
-							</div>
-						</div>
-					</div>
-					<div className="p-6">
-						{(() => {
-							const data = [
-								{ district: "Bannu", trainings: 24, male: 360, female: 190, color: "#3B82F6" },
-								{ district: "DI Khan", trainings: 19, male: 290, female: 210, color: "#10B981" }
-							];
-							return (
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-									{data.map((d, idx) => {
-										const totalParticipants = d.male + d.female;
-										const malePct = Math.round((d.male / totalParticipants) * 100);
-										const femalePct = 100 - malePct;
-										return (
-											<div key={idx} className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-												<div className="flex items-center justify-between mb-4">
-													<h4 className="text-base font-semibold text-gray-900">{d.district}</h4>
-													<span className="text-sm text-gray-600">No. of Trainings: <span className="font-semibold text-gray-900">{d.trainings}</span></span>
-												</div>
-												<div className="grid grid-cols-1 gap-5">
-													{/* Participants Count Bars */}
-													<div>
-														<p className="text-sm font-medium text-gray-700 mb-2">Participants</p>
-														<div className="space-y-2">
-															<div>
-																<div className="flex items-center justify-between mb-1">
-																	<span className="text-xs font-medium text-gray-600">Male</span>
-																	<span className="text-xs font-semibold text-gray-900">{d.male}</span>
-																</div>
-																<div className="w-full bg-gray-200 rounded-full h-2">
-																	<div className="h-2 rounded-full" style={{ width: `${(d.male / Math.max(1, totalParticipants)) * 100}%`, backgroundColor: d.color }}></div>
-																</div>
-															</div>
-															<div>
-																<div className="flex items-center justify-between mb-1">
-																	<span className="text-xs font-medium text-gray-600">Female</span>
-																	<span className="text-xs font-semibold text-gray-900">{d.female}</span>
-																</div>
-																<div className="w-full bg-gray-200 rounded-full h-2">
-																	<div className="h-2 rounded-full" style={{ width: `${(d.female / Math.max(1, totalParticipants)) * 100}%`, backgroundColor: d.color }}></div>
-																</div>
-															</div>
-														</div>
-													</div>
-
-													{/* Gender Percentage Donut */}
-													<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-														<div className="flex items-center justify-center">
-															<div className="relative w-24 h-24">
-																<svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
-																	<circle cx="50" cy="50" r="40" stroke="#E5E7EB" strokeWidth="10" fill="none" />
-																	<circle cx="50" cy="50" r="40" stroke={d.color} strokeWidth="10" fill="none" strokeDasharray={`${2 * Math.PI * 40}`} strokeDashoffset={`${2 * Math.PI * 40 * (1 - malePct / 100)}`} style={{ strokeLinecap: 'round', transition: 'stroke-dashoffset 1s ease' }} />
-																</svg>
-																<div className="absolute inset-0 flex items-center justify-center">
-																	<div className="text-center">
-																		<div className="text-sm font-bold text-gray-900">{malePct}%</div>
-																		<div className="text-[10px] text-gray-500">Male</div>
-																	</div>
-																</div>
-															</div>
-														</div>
-														<div className="flex items-center justify-center">
-															<div className="relative w-24 h-24">
-																<svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
-																	<circle cx="50" cy="50" r="40" stroke="#E5E7EB" strokeWidth="10" fill="none" />
-																	<circle cx="50" cy="50" r="40" stroke={d.color} strokeWidth="10" fill="none" strokeDasharray={`${2 * Math.PI * 40}`} strokeDashoffset={`${2 * Math.PI * 40 * (1 - femalePct / 100)}`} style={{ strokeLinecap: 'round', transition: 'stroke-dashoffset 1s ease' }} />
-																</svg>
-																<div className="absolute inset-0 flex items-center justify-center">
-																	<div className="text-center">
-																		<div className="text-sm font-bold text-gray-900">{femalePct}%</div>
-																		<div className="text-[10px] text-gray-500">Female</div>
-																	</div>
-																</div>
-															</div>
-														</div>
-													</div>
-												</div>
+								<div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border-2 border-green-200 shadow-md hover:shadow-lg transition-all duration-300 p-4">
+									<div className="flex items-center">
+										<div className="p-2 bg-green-500 rounded-lg shadow-sm">
+											<TrendingUp className="h-5 w-5 text-white" />
 										</div>
-									);
-									})}
+										<div className="flex-1 text-center ml-3">
+											<p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-0.5">Output B</p>
+											<p className="text-2xl font-bold text-green-900 mb-1">{outputBSum}%</p>
+											<p className="text-[10px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full inline-block">Weightage: {outputBWeightage}</p>
+										</div>
+									</div>
 								</div>
-							);
+
+								<div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border-2 border-purple-200 shadow-md hover:shadow-lg transition-all duration-300 p-4">
+									<div className="flex items-center">
+										<div className="p-2 bg-purple-500 rounded-lg shadow-sm">
+											<TrendingUp className="h-5 w-5 text-white" />
+										</div>
+										<div className="flex-1 text-center ml-3">
+											<p className="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-0.5">Output C</p>
+											<p className="text-2xl font-bold text-purple-900 mb-1">{outputCSum}%</p>
+											<p className="text-[10px] font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full inline-block">Weightage: {outputCWeightage}</p>
+										</div>
+									</div>
+								</div>
+
+								<div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border-2 border-orange-200 shadow-md hover:shadow-lg transition-all duration-300 p-4">
+									<div className="flex items-center">
+										<div className="p-2 bg-orange-500 rounded-lg shadow-sm">
+											<TrendingUp className="h-5 w-5 text-white" />
+										</div>
+										<div className="flex-1 text-center ml-3">
+											<p className="text-xs font-semibold text-orange-700 uppercase tracking-wide mb-0.5">Total Progress</p>
+											<p className="text-2xl font-bold text-orange-900 mb-1">{totalProgress.toFixed(1)}%</p>
+											<p className="text-[10px] font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full inline-block">Total Weightage: {totalWeightage}</p>
+										</div>
+									</div>
+								</div>
+							</>
+						);
 						})()}
-					</div>
 				</div>
 			</div>
+
+			{/* Training Dashboard Summary Cards */}
+			{trainingDashboardData && (
+				<div className="space-y-6">
+					<div>
+						<h2 className="text-3xl font-bold text-gray-900 tracking-tight">Training, Capacity Building & Awareness Dashboard</h2>
+						<p className="text-sm text-gray-500 mt-1">Overview of trainings, days and participants (event type wise and district wise).</p>
+					</div>
+
+					{/* Overall cards */}
+					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+						<div className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 text-white shadow-md">
+							<p className="text-xs uppercase tracking-wide opacity-80">
+								Total Trainings
+							</p>
+							<p className="mt-2 text-2xl font-semibold">
+								{trainingDashboardData.overall.totalTrainings.toLocaleString()}
+							</p>
+						</div>
+
+						<div className="rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 p-4 text-white shadow-md">
+							<p className="text-xs uppercase tracking-wide opacity-80">
+								Total Days
+							</p>
+							<p className="mt-2 text-2xl font-semibold">
+								{trainingDashboardData.overall.totalDays.toLocaleString()}
+							</p>
+						</div>
+
+						<div className="rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 text-white shadow-md">
+							<p className="text-xs uppercase tracking-wide opacity-80">
+								Total Male / Female
+							</p>
+							<div className="mt-2 space-y-0.5 text-sm">
+								<p className="font-semibold">
+									<span>{trainingDashboardData.overall.totalMale.toLocaleString()}</span>
+									<span className="mx-1 text-xs font-normal opacity-80">/</span>
+									<span>{trainingDashboardData.overall.totalFemale.toLocaleString()}</span>
+								</p>
+								<p className="text-[11px] text-indigo-100">
+									{getPercentage(
+										trainingDashboardData.overall.totalMale,
+										trainingDashboardData.overall.totalParticipants
+									)}{" "}
+									Male /{" "}
+									{getPercentage(
+										trainingDashboardData.overall.totalFemale,
+										trainingDashboardData.overall.totalParticipants
+									)}{" "}
+									Female
+								</p>
+							</div>
+						</div>
+
+						<div className="rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 p-4 text-white shadow-md">
+							<p className="text-xs uppercase tracking-wide opacity-80">
+								Total Participants
+							</p>
+							<p className="mt-2 text-2xl font-semibold">
+								{trainingDashboardData.overall.totalParticipants.toLocaleString()}
+							</p>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* GIS Report */}
 			<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
@@ -1212,184 +1255,119 @@ export default function DashboardPage() {
 				)}
 			</div>
 
-			{/* Output Weightage Section */}
-			<div className="space-y-6">
-				<div>
-					<h2 className="text-2xl font-bold text-gray-900">Output Weightage</h2>
-					<p className="text-gray-600 mt-2">Total weightage by output</p>
-				</div>
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-				{(() => {
-					// Debug: Log all output weightage data
-					console.log("All Output Weightage:", outputWeightage);
-					
-					// Get weightage for Output A, B, C
-					// Try multiple formats: 'A'/'1', 'B'/'2', 'C'/'3', or first 3 outputs
-					let outputA = 0;
-					let outputB = 0;
-					let outputC = 0;
-					
-					// Try to find by OutputID matching A/1, B/2, C/3
-					const foundA = outputWeightage.find(item => {
-						const id = item.OutputID?.toString().toUpperCase().trim();
-						return id === 'A' || id === '1' || id === 'OUTPUT A' || id === 'OUTPUTA';
-					});
-					const foundB = outputWeightage.find(item => {
-						const id = item.OutputID?.toString().toUpperCase().trim();
-						return id === 'B' || id === '2' || id === 'OUTPUT B' || id === 'OUTPUTB';
-					});
-					const foundC = outputWeightage.find(item => {
-						const id = item.OutputID?.toString().toUpperCase().trim();
-						return id === 'C' || id === '3' || id === 'OUTPUT C' || id === 'OUTPUTC';
-					});
-					
-					// If not found by ID, try to get first 3 outputs in order
-					if (!foundA && outputWeightage.length > 0) {
-						outputA = outputWeightage[0]?.TotalWeightage || 0;
-					} else {
-						outputA = foundA?.TotalWeightage || 0;
-					}
-					
-					if (!foundB && outputWeightage.length > 1) {
-						outputB = outputWeightage[1]?.TotalWeightage || 0;
-					} else {
-						outputB = foundB?.TotalWeightage || 0;
-					}
-					
-					if (!foundC && outputWeightage.length > 2) {
-						outputC = outputWeightage[2]?.TotalWeightage || 0;
-					} else {
-						outputC = foundC?.TotalWeightage || 0;
-					}
-					
-					const total = outputA + outputB + outputC;
-					
-					console.log("Calculated values - A:", outputA, "B:", outputB, "C:", outputC, "Total:", total);
-
-					// If no data found, show message
-					if (outputWeightage.length === 0) {
-						return (
-							<div className="col-span-4 bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-								<p className="text-yellow-800">No output weightage data available</p>
+			{/* News Section */}
+			<div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+				<div className="p-6 border-b border-gray-200 bg-gradient-to-r from-[#0b4d2b] to-[#0a3d24]">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center space-x-3">
+							<div className="p-2 bg-white/20 rounded-lg">
+								<Newspaper className="h-6 w-6 text-white" />
 							</div>
-						);
-					}
+							<div>
+								<h2 className="text-2xl font-bold text-white">Latest News & Updates</h2>
+								<p className="text-sm text-green-100 mt-1">Stay informed about our latest projects and initiatives</p>
+							</div>
+						</div>
+						<button
+							onClick={() => setIsNewsAutoPlaying(!isNewsAutoPlaying)}
+							className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+								isNewsAutoPlaying 
+									? 'bg-green-600 text-white hover:bg-green-700' 
+									: 'bg-white/20 text-white hover:bg-white/30'
+							}`}
+						>
+							{isNewsAutoPlaying ? 'Auto Play ON' : 'Auto Play OFF'}
+						</button>
+					</div>
+				</div>
 
-					return (
+				<div className="relative overflow-hidden">
+					<div 
+						className="flex transition-transform duration-700 ease-in-out"
+						style={{ transform: `translateX(-${newsIndex * 100}%)` }}
+					>
+						{newsItems.map((news) => (
+							<div key={news.id} className="w-full flex-shrink-0">
+								<div className="grid md:grid-cols-2 gap-6 p-6">
+									{/* News Image */}
+									<div className="relative overflow-hidden rounded-lg shadow-md">
+										<div className="aspect-video bg-gradient-to-br from-gray-200 to-gray-300 relative">
+											<img
+												src={news.image}
+												alt={news.title}
+												className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+												onError={(e) => {
+													const target = e.target as HTMLImageElement;
+													target.style.display = 'none';
+												}}
+											/>
+											<div className="absolute top-4 left-4">
+												<span className="px-3 py-1 bg-[#0b4d2b] text-white text-xs font-semibold rounded-full shadow-lg">
+													{news.category}
+												</span>
+											</div>
+										</div>
+									</div>
+
+									{/* News Content */}
+									<div className="flex flex-col justify-center space-y-4">
+										<div className="flex items-center space-x-2 text-sm text-gray-500">
+											<Clock className="h-4 w-4" />
+											<span>{news.date}</span>
+										</div>
+										<h3 className="text-2xl font-bold text-gray-900 leading-tight">
+											{news.title}
+										</h3>
+										<p className="text-gray-600 leading-relaxed">
+											{news.description}
+										</p>
+										<button className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white font-medium rounded-lg hover:bg-[#0a3d24] transition-colors w-fit">
+											Read More
+											<ExternalLink className="ml-2 h-4 w-4" />
+										</button>
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+
+					{/* Navigation Arrows */}
+					{newsItems.length > 1 && (
 						<>
-							<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-								<div className="flex items-center">
-									<div className="p-2 bg-blue-100 rounded-lg">
-										<TrendingUp className="h-6 w-6 text-blue-600" />
-									</div>
-									<div className="ml-4">
-										<p className="text-sm font-medium text-gray-600">Total Output A</p>
-										<p className="text-2xl font-bold text-gray-900">{outputA}</p>
-										{process.env.NODE_ENV === 'development' && (
-											<p className="text-xs text-gray-400 mt-1">ID: {outputWeightage.find(item => {
-												const id = item.OutputID?.toString().toUpperCase().trim();
-												return id === 'A' || id === '1' || id === 'OUTPUT A' || id === 'OUTPUTA';
-											})?.OutputID || outputWeightage[0]?.OutputID || 'N/A'}</p>
-										)}
-									</div>
-								</div>
-							</div>
-
-							<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-								<div className="flex items-center">
-									<div className="p-2 bg-green-100 rounded-lg">
-										<TrendingUp className="h-6 w-6 text-green-600" />
-									</div>
-									<div className="ml-4">
-										<p className="text-sm font-medium text-gray-600">Total Output B</p>
-										<p className="text-2xl font-bold text-gray-900">{outputB}</p>
-										{process.env.NODE_ENV === 'development' && (
-											<p className="text-xs text-gray-400 mt-1">ID: {outputWeightage.find(item => {
-												const id = item.OutputID?.toString().toUpperCase().trim();
-												return id === 'B' || id === '2' || id === 'OUTPUT B' || id === 'OUTPUTB';
-											})?.OutputID || outputWeightage[1]?.OutputID || 'N/A'}</p>
-										)}
-									</div>
-								</div>
-							</div>
-
-							<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-								<div className="flex items-center">
-									<div className="p-2 bg-purple-100 rounded-lg">
-										<TrendingUp className="h-6 w-6 text-purple-600" />
-									</div>
-									<div className="ml-4">
-										<p className="text-sm font-medium text-gray-600">Total Output C</p>
-										<p className="text-2xl font-bold text-gray-900">{outputC}</p>
-										{process.env.NODE_ENV === 'development' && (
-											<p className="text-xs text-gray-400 mt-1">ID: {outputWeightage.find(item => {
-												const id = item.OutputID?.toString().toUpperCase().trim();
-												return id === 'C' || id === '3' || id === 'OUTPUT C' || id === 'OUTPUTC';
-											})?.OutputID || outputWeightage[2]?.OutputID || 'N/A'}</p>
-										)}
-									</div>
-								</div>
-							</div>
-
-							<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-								<div className="flex items-center">
-									<div className="p-2 bg-orange-100 rounded-lg">
-										<TrendingUp className="h-6 w-6 text-orange-600" />
-									</div>
-									<div className="ml-4">
-										<p className="text-sm font-medium text-gray-600">Total</p>
-										<p className="text-2xl font-bold text-gray-900">{total}</p>
-									</div>
-								</div>
-							</div>
+							<button
+								onClick={() => setNewsIndex((prev) => prev <= 0 ? newsItems.length - 1 : prev - 1)}
+								className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-700 hover:text-[#0b4d2b] p-3 rounded-full shadow-lg transition-all duration-200 z-10"
+							>
+								<ChevronLeft className="h-6 w-6" />
+							</button>
+							<button
+								onClick={() => setNewsIndex((prev) => prev >= newsItems.length - 1 ? 0 : prev + 1)}
+								className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-700 hover:text-[#0b4d2b] p-3 rounded-full shadow-lg transition-all duration-200 z-10"
+							>
+								<ChevronRight className="h-6 w-6" />
+							</button>
 						</>
-					);
-				})()}
+					)}
+
+					{/* Dots Indicator */}
+					{newsItems.length > 1 && (
+						<div className="flex justify-center space-x-2 p-4 bg-gray-50">
+							{newsItems.map((_, index) => (
+								<button
+									key={index}
+									onClick={() => setNewsIndex(index)}
+									className={`h-2 rounded-full transition-all duration-300 ${
+										index === newsIndex 
+											? 'bg-[#0b4d2b] w-8' 
+											: 'bg-gray-300 hover:bg-gray-400 w-2'
+									}`}
+								/>
+							))}
+						</div>
+					)}
 				</div>
 			</div>
 
-			{/* Quick Stats */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-					<div className="flex items-center">
-						<div className="p-2 bg-blue-100 rounded-lg">
-							<ImageIcon className="h-6 w-6 text-blue-600" />
-						</div>
-						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Total Pictures</p>
-							<p className="text-2xl font-bold text-gray-900">{pictures.length}</p>
-						</div>
-					</div>
-				</div>
-
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-					<div className="flex items-center">
-						<div className="p-2 bg-green-100 rounded-lg">
-							<Folder className="h-6 w-6 text-green-600" />
-						</div>
-						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Categories</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{new Set(pictures.map(p => p.MainCategory)).size}
-							</p>
-						</div>
-					</div>
-				</div>
-
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-					<div className="flex items-center">
-						<div className="p-2 bg-purple-100 rounded-lg">
-							<Calendar className="h-6 w-6 text-purple-600" />
-						</div>
-						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Recent Activity</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{pictures.filter(p => p.EventDate).length}
-							</p>
-						</div>
-					</div>
-				</div>
-			</div>
 		</div>
 	);
 }
