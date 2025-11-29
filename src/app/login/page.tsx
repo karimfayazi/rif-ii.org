@@ -49,7 +49,7 @@ export default function LoginPage() {
 	}
 
 	return (
-		<div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+		<div className="min-h-screen bg-gray-50 flex flex-col">
 			{/* Compact Header */}
 			<header className="bg-[#0b4d2b] flex-shrink-0 py-3">
 				<div className="mx-auto w-full max-w-none px-4 flex items-center justify-between">
@@ -128,6 +128,30 @@ export default function LoginPage() {
 					</div>
 				</div>
 			</div>
+
+			{/* Footer - Fixed at bottom */}
+			<footer className="bg-[#0b4d2b] flex-shrink-0 mt-auto">
+				<div className="mx-auto w-full max-w-none px-6 py-4 text-center text-white text-sm">
+					<div className="flex justify-between items-center">
+						<span>&copy; 2025 RIF-II, All rights reserved.</span>
+						<div className="flex gap-4">
+							<Link
+								href="/"
+								className="text-white hover:text-gray-300 transition-colors"
+							>
+								Home
+							</Link>
+							<span className="text-gray-400">|</span>
+							<Link
+								href="/contact-us"
+								className="text-white hover:text-gray-300 transition-colors"
+							>
+								Contact Us
+							</Link>
+						</div>
+					</div>
+				</div>
+			</footer>
 		</div>
 	);
 }

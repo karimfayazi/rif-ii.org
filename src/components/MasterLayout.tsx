@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import Sidebar from "@/components/Sidebar";
@@ -14,6 +14,13 @@ export default function MasterLayout({
   const { user, userProfile, loading } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  // Ensure sidebar is always expanded (not collapsed)
+  useEffect(() => {
+    if (sidebarCollapsed) {
+      setSidebarCollapsed(false);
+    }
+  }, [sidebarCollapsed]);
 
   const handleLogout = async () => {
     try {
@@ -114,10 +121,17 @@ export default function MasterLayout({
         <aside
           className={`${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } fixed lg:static inset-y-0 left-0 z-30 w-64 bg-gray-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-gray-200`}
-          style={{ top: "64px" }}
+          } fixed lg:static inset-y-0 left-0 z-30 bg-gray-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-gray-200`}
+          style={{ 
+            top: "64px", 
+            width: sidebarCollapsed ? "64px" : "256px", 
+            minWidth: sidebarCollapsed ? "64px" : "256px", 
+            maxWidth: sidebarCollapsed ? "64px" : "256px",
+            flexShrink: 0,
+            transition: "width 0.3s ease-in-out"
+          }}
         >
-          <div className="p-4 h-full overflow-y-auto">
+          <div className="p-4 h-full overflow-y-auto" style={{ width: "100%" }}>
             <Sidebar
               collapsed={sidebarCollapsed}
               setCollapsed={setSidebarCollapsed}

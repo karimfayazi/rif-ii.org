@@ -505,20 +505,28 @@ type DistrictProgress = {
 	Output_Progress: number;
 };
 
+type OutputWeightage = {
+	OutputID: string;
+	TotalWeightage: number;
+};
+
 export default function DashboardPage() {
 	const router = useRouter();
 	const [pictures, setPictures] = useState<PictureData[]>([]);
 	const [outputProgress, setOutputProgress] = useState<OutputProgress[]>([]);
 	const [districtProgress, setDistrictProgress] = useState<DistrictProgress[]>([]);
+	const [outputWeightage, setOutputWeightage] = useState<OutputWeightage[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+	const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
 	useEffect(() => {
 		fetchDashboardPictures();
 		fetchOutputProgress();
 		fetchDistrictProgress();
+		fetchOutputWeightage();
 	}, []);
 
 	useEffect(() => {
@@ -616,6 +624,22 @@ export default function DashboardPage() {
 			}
 		} catch (err) {
 			console.error("Error fetching district progress:", err);
+		}
+	};
+
+	const fetchOutputWeightage = async () => {
+		try {
+			const response = await fetch('/api/tracking-sheet/output-weightage');
+			const data = await response.json();
+
+			if (data.success) {
+				console.log("Output Weightage Data:", data.outputWeightage);
+				setOutputWeightage(data.outputWeightage || []);
+			} else {
+				console.error("Failed to fetch output weightage:", data.message);
+			}
+		} catch (err) {
+			console.error("Error fetching output weightage:", err);
 		}
 	};
 
@@ -1092,25 +1116,18 @@ export default function DashboardPage() {
 									>
 										{/* Image */}
 										<div className="aspect-video bg-gray-100 relative overflow-hidden">
-											{getImageUrl(picture.FilePath) ? (
+											{getImageUrl(picture.FilePath) && !failedImages.has(picture.FileName || getImageUrl(picture.FilePath)) ? (
 												<img
 													src={getImageUrl(picture.FilePath)}
 													alt={picture.FileName || 'Project activity image'}
 													className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
 													onError={(e) => {
-														console.error('Image load error for:', picture.FileName, 'URL:', getImageUrl(picture.FilePath));
-														const target = e.target as HTMLImageElement;
-														target.style.display = 'none';
-														// Show placeholder
-														const parent = target.parentElement;
-														if (parent) {
-															const placeholder = document.createElement('div');
-															placeholder.className = 'w-full h-full flex items-center justify-center text-gray-400';
-															parent.appendChild(placeholder);
+														// Only log in development mode
+														if (process.env.NODE_ENV === 'development') {
+															console.warn('Image load error for:', picture.FileName, 'URL:', getImageUrl(picture.FilePath));
 														}
-													}}
-													onLoad={() => {
-														console.log('Image loaded successfully:', picture.FileName, 'URL:', getImageUrl(picture.FilePath));
+														// Mark this image as failed
+														setFailedImages(prev => new Set(prev).add(picture.FileName || getImageUrl(picture.FilePath)));
 													}}
 												/>
 											) : (
@@ -1193,6 +1210,142 @@ export default function DashboardPage() {
 						)}
 					</div>
 				)}
+			</div>
+
+			{/* Output Weightage Section */}
+			<div className="space-y-6">
+				<div>
+					<h2 className="text-2xl font-bold text-gray-900">Output Weightage</h2>
+					<p className="text-gray-600 mt-2">Total weightage by output</p>
+				</div>
+				<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+				{(() => {
+					// Debug: Log all output weightage data
+					console.log("All Output Weightage:", outputWeightage);
+					
+					// Get weightage for Output A, B, C
+					// Try multiple formats: 'A'/'1', 'B'/'2', 'C'/'3', or first 3 outputs
+					let outputA = 0;
+					let outputB = 0;
+					let outputC = 0;
+					
+					// Try to find by OutputID matching A/1, B/2, C/3
+					const foundA = outputWeightage.find(item => {
+						const id = item.OutputID?.toString().toUpperCase().trim();
+						return id === 'A' || id === '1' || id === 'OUTPUT A' || id === 'OUTPUTA';
+					});
+					const foundB = outputWeightage.find(item => {
+						const id = item.OutputID?.toString().toUpperCase().trim();
+						return id === 'B' || id === '2' || id === 'OUTPUT B' || id === 'OUTPUTB';
+					});
+					const foundC = outputWeightage.find(item => {
+						const id = item.OutputID?.toString().toUpperCase().trim();
+						return id === 'C' || id === '3' || id === 'OUTPUT C' || id === 'OUTPUTC';
+					});
+					
+					// If not found by ID, try to get first 3 outputs in order
+					if (!foundA && outputWeightage.length > 0) {
+						outputA = outputWeightage[0]?.TotalWeightage || 0;
+					} else {
+						outputA = foundA?.TotalWeightage || 0;
+					}
+					
+					if (!foundB && outputWeightage.length > 1) {
+						outputB = outputWeightage[1]?.TotalWeightage || 0;
+					} else {
+						outputB = foundB?.TotalWeightage || 0;
+					}
+					
+					if (!foundC && outputWeightage.length > 2) {
+						outputC = outputWeightage[2]?.TotalWeightage || 0;
+					} else {
+						outputC = foundC?.TotalWeightage || 0;
+					}
+					
+					const total = outputA + outputB + outputC;
+					
+					console.log("Calculated values - A:", outputA, "B:", outputB, "C:", outputC, "Total:", total);
+
+					// If no data found, show message
+					if (outputWeightage.length === 0) {
+						return (
+							<div className="col-span-4 bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+								<p className="text-yellow-800">No output weightage data available</p>
+							</div>
+						);
+					}
+
+					return (
+						<>
+							<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+								<div className="flex items-center">
+									<div className="p-2 bg-blue-100 rounded-lg">
+										<TrendingUp className="h-6 w-6 text-blue-600" />
+									</div>
+									<div className="ml-4">
+										<p className="text-sm font-medium text-gray-600">Total Output A</p>
+										<p className="text-2xl font-bold text-gray-900">{outputA}</p>
+										{process.env.NODE_ENV === 'development' && (
+											<p className="text-xs text-gray-400 mt-1">ID: {outputWeightage.find(item => {
+												const id = item.OutputID?.toString().toUpperCase().trim();
+												return id === 'A' || id === '1' || id === 'OUTPUT A' || id === 'OUTPUTA';
+											})?.OutputID || outputWeightage[0]?.OutputID || 'N/A'}</p>
+										)}
+									</div>
+								</div>
+							</div>
+
+							<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+								<div className="flex items-center">
+									<div className="p-2 bg-green-100 rounded-lg">
+										<TrendingUp className="h-6 w-6 text-green-600" />
+									</div>
+									<div className="ml-4">
+										<p className="text-sm font-medium text-gray-600">Total Output B</p>
+										<p className="text-2xl font-bold text-gray-900">{outputB}</p>
+										{process.env.NODE_ENV === 'development' && (
+											<p className="text-xs text-gray-400 mt-1">ID: {outputWeightage.find(item => {
+												const id = item.OutputID?.toString().toUpperCase().trim();
+												return id === 'B' || id === '2' || id === 'OUTPUT B' || id === 'OUTPUTB';
+											})?.OutputID || outputWeightage[1]?.OutputID || 'N/A'}</p>
+										)}
+									</div>
+								</div>
+							</div>
+
+							<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+								<div className="flex items-center">
+									<div className="p-2 bg-purple-100 rounded-lg">
+										<TrendingUp className="h-6 w-6 text-purple-600" />
+									</div>
+									<div className="ml-4">
+										<p className="text-sm font-medium text-gray-600">Total Output C</p>
+										<p className="text-2xl font-bold text-gray-900">{outputC}</p>
+										{process.env.NODE_ENV === 'development' && (
+											<p className="text-xs text-gray-400 mt-1">ID: {outputWeightage.find(item => {
+												const id = item.OutputID?.toString().toUpperCase().trim();
+												return id === 'C' || id === '3' || id === 'OUTPUT C' || id === 'OUTPUTC';
+											})?.OutputID || outputWeightage[2]?.OutputID || 'N/A'}</p>
+										)}
+									</div>
+								</div>
+							</div>
+
+							<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+								<div className="flex items-center">
+									<div className="p-2 bg-orange-100 rounded-lg">
+										<TrendingUp className="h-6 w-6 text-orange-600" />
+									</div>
+									<div className="ml-4">
+										<p className="text-sm font-medium text-gray-600">Total</p>
+										<p className="text-2xl font-bold text-gray-900">{total}</p>
+									</div>
+								</div>
+							</div>
+						</>
+					);
+				})()}
+				</div>
 			</div>
 
 			{/* Quick Stats */}

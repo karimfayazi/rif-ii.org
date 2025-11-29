@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
 		const outputID = searchParams.get('outputID');
 		const activityID = searchParams.get('activityID');
 		const subActivityID = searchParams.get('subActivityID');
+		const subSubActivityID = searchParams.get('subSubActivityID');
 		const search = searchParams.get('search');
 
 		const pool = await getDb();
@@ -71,6 +72,10 @@ export async function GET(request: NextRequest) {
 		if (subActivityID) {
 			query += ` AND [SubActivityID] = @subActivityID`;
 			request_obj.input('subActivityID', subActivityID);
+		}
+		if (subSubActivityID) {
+			query += ` AND [Sub_Sub_ActivityID] = @subSubActivityID`;
+			request_obj.input('subSubActivityID', subSubActivityID);
 		}
 		if (search) {
 			query += ` AND ([MainActivityName] LIKE @search OR [SubActivityName] LIKE @search OR [Sub_Sub_ActivityName] LIKE @search OR [Output] LIKE @search)`;

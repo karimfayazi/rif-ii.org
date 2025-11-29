@@ -58,7 +58,7 @@ export default function TrackingSheetPage() {
 	const [trackingData, setTrackingData] = useState<TrackingData[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [searchTerm, setSearchTerm] = useState("");
+	const [selectedSubSubActivityID, setSelectedSubSubActivityID] = useState("");
 	const [selectedSector, setSelectedSector] = useState("");
 	const [selectedDistrict, setSelectedDistrict] = useState("");
 	const [selectedTehsil, setSelectedTehsil] = useState("");
@@ -71,6 +71,9 @@ export default function TrackingSheetPage() {
 	const [outputIDs, setOutputIDs] = useState<string[]>([]);
 	const [activityIDs, setActivityIDs] = useState<string[]>([]);
 	const [subActivityIDs, setSubActivityIDs] = useState<string[]>([]);
+	const [subSubActivityIDs, setSubSubActivityIDs] = useState<Array<{id: number, activityName: string}>>([]);
+	const [subSubActivityIDToActivityName, setSubSubActivityIDToActivityName] = useState<Map<number, string>>(new Map());
+	const [subSubActivityIDToSubSubActivityName, setSubSubActivityIDToSubSubActivityName] = useState<Map<number, string>>(new Map());
 	
 
 	const fetchTrackingData = useCallback(async () => {
@@ -83,7 +86,7 @@ export default function TrackingSheetPage() {
 			if (selectedOutputID) params.append('outputID', selectedOutputID);
 			if (selectedActivityID) params.append('activityID', selectedActivityID);
 			if (selectedSubActivityID) params.append('subActivityID', selectedSubActivityID);
-			if (searchTerm) params.append('search', searchTerm);
+			if (selectedSubSubActivityID) params.append('subSubActivityID', selectedSubSubActivityID);
 
 			const response = await fetch(`/api/tracking-sheet?${params.toString()}`);
 			const data = await response.json();
@@ -99,12 +102,33 @@ export default function TrackingSheetPage() {
 				const uniqueActivityIDs = [...new Set(data.trackingData.map((item: TrackingData) => item.ActivityID).filter(Boolean))].map(String);
 				const uniqueSubActivityIDs = [...new Set(data.trackingData.map((item: TrackingData) => item.SubActivityID).filter(Boolean))].map(String);
 				
+				// Extract unique Sub_Sub_ActivityIDs with their corresponding MainActivityName and Sub_Sub_ActivityName
+				const subSubActivityMap = new Map<number, string>();
+				const subSubActivityNameMap = new Map<number, string>();
+				data.trackingData.forEach((item: TrackingData) => {
+					if (item.Sub_Sub_ActivityID) {
+						if (item.MainActivityName) {
+							subSubActivityMap.set(item.Sub_Sub_ActivityID, item.MainActivityName);
+						}
+						if (item.Sub_Sub_ActivityName) {
+							subSubActivityNameMap.set(item.Sub_Sub_ActivityID, item.Sub_Sub_ActivityName);
+						}
+					}
+				});
+				
+				const uniqueSubSubActivityIDs = Array.from(subSubActivityMap.entries())
+					.map(([id, activityName]) => ({ id, activityName }))
+					.sort((a, b) => a.id - b.id);
+				
 				setSectors(uniqueSectors);
 				setDistricts(uniqueDistricts);
 				setTehsils(uniqueTehsils);
 				setOutputIDs(uniqueOutputIDs);
 				setActivityIDs(uniqueActivityIDs);
 				setSubActivityIDs(uniqueSubActivityIDs);
+				setSubSubActivityIDs(uniqueSubSubActivityIDs);
+				setSubSubActivityIDToActivityName(subSubActivityMap);
+				setSubSubActivityIDToSubSubActivityName(subSubActivityNameMap);
 			} else {
 				setError(data.message || "Failed to fetch tracking data");
 			}
@@ -114,7 +138,7 @@ export default function TrackingSheetPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [selectedSector, selectedDistrict, selectedTehsil, selectedOutputID, selectedActivityID, selectedSubActivityID, searchTerm]);
+	}, [selectedSector, selectedDistrict, selectedTehsil, selectedOutputID, selectedActivityID, selectedSubActivityID, selectedSubSubActivityID]);
 
 	useEffect(() => {
 		fetchTrackingData();
@@ -125,7 +149,7 @@ export default function TrackingSheetPage() {
 	};
 
 	const handleReset = () => {
-		setSearchTerm("");
+		setSelectedSubSubActivityID("");
 		setSelectedSector("");
 		setSelectedDistrict("");
 		setSelectedTehsil("");
@@ -198,11 +222,7 @@ export default function TrackingSheetPage() {
 
 	// Filter data based on search and filters
 	const filteredData = trackingData.filter(item => {
-		const matchesSearch = !searchTerm || 
-			item.MainActivityName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			item.SubActivityName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			item.Sub_Sub_ActivityName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			item.Output?.toLowerCase().includes(searchTerm.toLowerCase());
+		const matchesSubSubActivityID = !selectedSubSubActivityID || item.Sub_Sub_ActivityID.toString() === selectedSubSubActivityID;
 		
 		const matchesSector = !selectedSector || item.Sector_Name === selectedSector;
 		const matchesDistrict = !selectedDistrict || item.District === selectedDistrict;
@@ -211,7 +231,15 @@ export default function TrackingSheetPage() {
 		const matchesActivityID = !selectedActivityID || item.ActivityID.toString() === selectedActivityID;
 		const matchesSubActivityID = !selectedSubActivityID || item.SubActivityID.toString() === selectedSubActivityID;
 		
-		return matchesSearch && matchesSector && matchesDistrict && matchesTehsil && matchesOutputID && matchesActivityID && matchesSubActivityID;
+		return matchesSubSubActivityID && matchesSector && matchesDistrict && matchesTehsil && matchesOutputID && matchesActivityID && matchesSubActivityID;
+	});
+
+	// Deduplicate by Sub_Sub_ActivityID to show only unique Sub-Sub-Activity IDs in gridview
+	const uniqueFilteredData = filteredData.filter((item, index, self) => {
+		// Keep only the first occurrence of each Sub_Sub_ActivityID
+		// Convert to string for comparison to handle both number and string types
+		const currentId = item.Sub_Sub_ActivityID?.toString();
+		return index === self.findIndex((t) => t.Sub_Sub_ActivityID?.toString() === currentId);
 	});
 
 	if (loading) {
@@ -304,17 +332,27 @@ export default function TrackingSheetPage() {
 				</div>
 
 				<div className="grid grid-cols-1 md:grid-cols-8 gap-4">
-					{/* Search Input */}
+					{/* Sub-Sub-Activity ID Dropdown */}
 					<div className="md:col-span-2">
-						<label className="block text-sm font-medium text-gray-700 mb-2">Search Activities</label>
-						<input
-							type="text"
-							placeholder="Search by activity name or output..."
-							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
-							className="w-full px-4 py-3 text-gray-900 placeholder-gray-500 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#0b4d2b]/20 focus:border-[#0b4d2b] focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
-							onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-						/>
+						<label className="block text-sm font-medium text-gray-700 mb-2">Sub-Sub-Activity ID</label>
+						<select
+							value={selectedSubSubActivityID}
+							onChange={(e) => setSelectedSubSubActivityID(e.target.value)}
+							className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+						>
+							<option value="">All Sub-Sub-Activity IDs</option>
+							{subSubActivityIDs.map((item) => (
+								<option key={item.id} value={item.id.toString()}>
+									{item.id}
+								</option>
+							))}
+						</select>
+						{/* Display Sub-Sub-Activity Name as label below the dropdown */}
+						{selectedSubSubActivityID && subSubActivityIDToSubSubActivityName.has(Number(selectedSubSubActivityID)) && (
+							<label className="block text-sm text-gray-600 mt-2">
+								Sub-Sub-Activity Name: <span className="font-medium text-gray-900">{subSubActivityIDToSubSubActivityName.get(Number(selectedSubSubActivityID))}</span>
+							</label>
+						)}
 					</div>
 
 					{/* Output ID Filter */}
@@ -442,7 +480,9 @@ export default function TrackingSheetPage() {
 						</div>
 						<div className="ml-4">
 							<p className="text-sm font-medium text-gray-600">Total Activities</p>
-							<p className="text-2xl font-bold text-gray-900">{filteredData.length}</p>
+							<p className="text-2xl font-bold text-gray-900">
+								{uniqueFilteredData.length}
+							</p>
 						</div>
 					</div>
 				</div>
@@ -455,8 +495,8 @@ export default function TrackingSheetPage() {
 						<div className="ml-4">
 							<p className="text-sm font-medium text-gray-600">Avg Progress</p>
 							<p className="text-2xl font-bold text-gray-900">
-								{filteredData.length > 0 
-									? Math.round(filteredData.reduce((sum, item) => sum + (item.ActivityProgress || 0), 0) / filteredData.length)
+								{uniqueFilteredData.length > 0 
+									? Math.round(uniqueFilteredData.reduce((sum, item) => sum + (item.ActivityProgress || 0), 0) / uniqueFilteredData.length)
 									: 0}%
 							</p>
 						</div>
@@ -471,7 +511,7 @@ export default function TrackingSheetPage() {
 						<div className="ml-4">
 							<p className="text-sm font-medium text-gray-600">Total Beneficiaries</p>
 							<p className="text-2xl font-bold text-gray-900">
-								{formatNumber(filteredData.reduce((sum, item) => sum + (item.Total_Beneficiaries || 0), 0))}
+								{formatNumber(uniqueFilteredData.reduce((sum, item) => sum + (item.Total_Beneficiaries || 0), 0))}
 							</p>
 						</div>
 					</div>
@@ -485,7 +525,7 @@ export default function TrackingSheetPage() {
 						<div className="ml-4">
 							<p className="text-sm font-medium text-gray-600">Districts</p>
 							<p className="text-2xl font-bold text-gray-900">
-								{new Set(filteredData.map(item => item.District).filter(Boolean)).size}
+								{new Set(uniqueFilteredData.map(item => item.District).filter(Boolean)).size}
 							</p>
 						</div>
 					</div>
@@ -493,12 +533,12 @@ export default function TrackingSheetPage() {
 			</div>
 
 			{/* Tracking Data Grid */}
-			{filteredData.length === 0 ? (
+			{uniqueFilteredData.length === 0 ? (
 				<div className="bg-gray-50 rounded-lg border border-gray-200 p-12 text-center">
 					<BarChart3 className="mx-auto h-12 w-12 text-gray-400 mb-4" />
 					<h3 className="text-lg font-medium text-gray-900 mb-2">No activities found</h3>
 					<p className="text-gray-600">
-						{searchTerm || selectedSector || selectedDistrict || selectedTehsil 
+						{selectedSubSubActivityID || selectedSector || selectedDistrict || selectedTehsil 
 							? "Try adjusting your search criteria" 
 							: "No tracking data available"
 						}
@@ -520,7 +560,7 @@ export default function TrackingSheetPage() {
 								</tr>
 							</thead>
 							<tbody className="bg-white divide-y divide-gray-200">
-								{filteredData.map((item, index) => (
+								{uniqueFilteredData.map((item, index) => (
 									<tr key={index} className="hover:bg-gray-50">
 										<td className="px-6 py-4">
 											<div className="space-y-2">
@@ -555,13 +595,13 @@ export default function TrackingSheetPage() {
 												</div>
 												
 												{/* Sub-Sub Activity */}
-												{item.Sub_Sub_ActivityName && (
+												{item.Sub_Sub_ActivityID && (
 													<div className="border-b border-gray-200 pb-2">
 														<div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
 															<span className="font-bold">Sub-Sub Activity</span> | <span className="text-blue-600 font-medium">{item.Sub_Sub_ActivityID}</span>
 														</div>
 														<div className="text-sm text-gray-900">
-															{item.Sub_Sub_ActivityName}
+															{item.Sub_Sub_ActivityName || 'N/A'}
 														</div>
 													</div>
 												)}
@@ -682,10 +722,11 @@ export default function TrackingSheetPage() {
 			)}
 
 			{/* Results Count */}
-			{filteredData.length > 0 && (
+			{uniqueFilteredData.length > 0 && (
 				<div className="text-center text-sm text-gray-500">
-					Showing {filteredData.length} activit{filteredData.length !== 1 ? 'ies' : 'y'}
-					{(searchTerm || selectedSector || selectedDistrict || selectedTehsil) && ' matching your criteria'}
+					Showing {uniqueFilteredData.length} unique Sub-Sub-Activity {uniqueFilteredData.length !== 1 ? 'IDs' : 'ID'} 
+					({filteredData.length} total record{filteredData.length !== 1 ? 's' : ''})
+					{(selectedSubSubActivityID || selectedSector || selectedDistrict || selectedTehsil) && ' matching your criteria'}
 				</div>
 			)}
 
