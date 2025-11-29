@@ -14,13 +14,6 @@ export default function MasterLayout({
   const { user, userProfile, loading } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  
-  // Ensure sidebar is always expanded (not collapsed)
-  useEffect(() => {
-    if (sidebarCollapsed) {
-      setSidebarCollapsed(false);
-    }
-  }, [sidebarCollapsed]);
 
   const handleLogout = async () => {
     try {

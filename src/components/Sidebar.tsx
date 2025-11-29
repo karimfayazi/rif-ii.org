@@ -54,7 +54,7 @@ const GROUPS: NavGroup[] = [
 		divider: true,
 		items: [
 			{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-			{ label: "Dashboard V1", href: "/dashboard/dashboard_v1", icon: LayoutDashboard },
+			{ label: "Tracking-Dashboard", href: "/dashboard/dashboard_v1", icon: LayoutDashboard },
 			{ label: "Add Project", href: "/dashboard/projects/add", icon: FolderPlus },
 			{ 
 				label: "GIS Maps", 
@@ -126,17 +126,14 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
     return (
         <nav className={`rounded-lg border border-gray-200 bg-white p-3 text-[12px] shadow-sm transition-all w-full ${collapsed ? "w-12" : "w-full"}`}>
 			{/* Toggle Button */}
-			<div className="mb-3 flex items-center justify-between border-b border-gray-200 pb-2">
-				{!collapsed && (
-					<span className="text-xs font-semibold text-gray-700">Menu</span>
-				)}
+			<div className="mb-3 flex items-center justify-end border-b border-gray-200 pb-2">
 				<button
 					title={collapsed ? "Expand Menu" : "Collapse Menu"}
 					onClick={(e) => {
 						e.stopPropagation();
 						setCollapsed(!collapsed);
 					}}
-					className={`rounded-md p-2 hover:bg-gray-100 transition-colors z-10 ${collapsed ? "mx-auto" : ""}`}
+					className="rounded-md p-2 hover:bg-gray-100 transition-colors z-10"
 					type="button"
 				>
 					{collapsed ? (

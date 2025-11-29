@@ -230,7 +230,7 @@ export default function TrainingPage() {
 	}
 
 	if (error) {
-		return (
+	return (
 			<div className="space-y-6">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">Training, Capacity Building & Awareness</h1>
@@ -244,10 +244,10 @@ export default function TrainingPage() {
 					>
 						Try Again
 					</button>
-				</div>
 			</div>
-		);
-	}
+		</div>
+	);
+}
 
 	return (
 		<div className="space-y-6">

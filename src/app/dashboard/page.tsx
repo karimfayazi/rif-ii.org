@@ -1019,7 +1019,7 @@ export default function DashboardPage() {
 			{trainingDashboardData && (
 				<div className="space-y-6">
 					<div>
-						<h2 className="text-3xl font-bold text-gray-900 tracking-tight">Training, Capacity Building & Awareness Dashboard</h2>
+						<h2 className="text-3xl font-bold text-gray-900 tracking-tight">Training, Capacity Building & Awareness</h2>
 						<p className="text-sm text-gray-500 mt-1">Overview of trainings, days and participants (event type wise and district wise).</p>
 					</div>
 
@@ -1264,7 +1264,7 @@ export default function DashboardPage() {
 								<Newspaper className="h-6 w-6 text-white" />
 							</div>
 							<div>
-								<h2 className="text-2xl font-bold text-white">Latest News & Updates</h2>
+								<h2 className="text-2xl font-bold text-white">Latest News & Updates [Dummy]</h2>
 								<p className="text-sm text-green-100 mt-1">Stay informed about our latest projects and initiatives</p>
 							</div>
 						</div>
