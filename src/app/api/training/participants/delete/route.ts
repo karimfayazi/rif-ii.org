@@ -20,7 +20,7 @@ export async function DELETE(request: NextRequest) {
 		const request_obj = pool.request();
 
 		const query = `
-			DELETE FROM [_rifiiorg_db].[rifiiorg].[workshop_participants]
+			DELETE FROM [_rifiiorg_db].[dbo].[workshop_participants]
 			WHERE [sn] = @sn
 		`;
 

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
 		const pool = await getDb();
 		const query = `
-			SELECT [access_level], [access_add], [access_edit], [access_delete], [access_reports], [UserLoginLogs], [Tracking_Section], [Training_Section], [Setting]
+			SELECT [access_level], [access_add], [access_edit], [access_delete], [access_reports], [UserLoginLogs], [Tracking_Section], [Training_Section], [Setting], [security]
 			FROM [_rifiiorg_db].[dbo].[tbl_user_access]
 			WHERE [username] = @userId OR [email] = @userId
 		`;
@@ -51,6 +51,9 @@ export async function GET(request: NextRequest) {
 		// Get Setting field (default to false if null/undefined/0)
 		const setting = userAccess.Setting === true || userAccess.Setting === 1;
 		
+		// Get security field (default to false if null/undefined/0)
+		const security = userAccess.security === true || userAccess.security === 1;
+		
 		return NextResponse.json({
 			success: true,
 			accessLevel: accessLevel,
@@ -65,7 +68,8 @@ export async function GET(request: NextRequest) {
 			userLoginLogs: userLoginLogs,
 			trackingSection: trackingSection,
 			trainingSection: trainingSection,
-			setting: setting
+			setting: setting,
+			security: security
 		});
 	} catch (error) {
 		console.error("Error checking user access:", error);

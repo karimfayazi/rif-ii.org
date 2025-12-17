@@ -13,7 +13,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
 
-const DISTRICT_OPTIONS = ["DIK", "Bannu"];
+const DISTRICT_OPTIONS = ["DIK", "Bannu", "Paharpur"];
 const GENDER_OPTIONS = ["Male", "Female"];
 
 type ParticipantFormData = {
@@ -28,11 +28,15 @@ type ParticipantFormData = {
 	contact_number?: string;
 	tehsil?: string;
 	district?: string;
+	NC_VC?: string;
 	workshop_training_name?: string;
 	workshop_session_conference?: string;
 	start_date?: string;
 	end_date?: string;
 	date_entered_by?: string;
+	Training_Unit?: string;
+	Venue?: string;
+	Duration_Days?: number;
 };
 
 export default function AddParticipantPage() {
@@ -91,11 +95,15 @@ export default function AddParticipantPage() {
 					contact_number: participant.contact_number || "",
 					tehsil: participant.tehsil || "",
 					district: participant.district || "",
+					NC_VC: participant.NC_VC || "",
 					workshop_training_name: participant.workshop_training_name || "",
 					workshop_session_conference: participant.workshop_session_conference || "",
 					start_date: participant.start_date || "",
 					end_date: participant.end_date || "",
-					date_entered_by: participant.date_entered_by || ""
+					date_entered_by: participant.date_entered_by || "",
+					Training_Unit: participant.Training_Unit || "",
+					Venue: participant.Venue || "",
+					Duration_Days: participant.Duration_Days || 0
 				});
 			} else {
 				setError("Failed to fetch participant data");
@@ -594,6 +602,63 @@ export default function AddParticipantPage() {
 							value={formData.workshop_session_conference || ""}
 							onChange={(e) => handleInputChange('workshop_session_conference', e.target.value)}
 							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+						/>
+					</div>
+
+					{/* NC/VC */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							NC/VC
+						</label>
+						<input
+							type="text"
+							value={formData.NC_VC || ""}
+							onChange={(e) => handleInputChange('NC_VC', e.target.value)}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							placeholder="Enter NC or VC"
+						/>
+					</div>
+
+					{/* Training Unit */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Training Unit
+						</label>
+						<input
+							type="text"
+							value={formData.Training_Unit || ""}
+							onChange={(e) => handleInputChange('Training_Unit', e.target.value)}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							placeholder="Enter training unit"
+						/>
+					</div>
+
+					{/* Venue */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Venue
+						</label>
+						<input
+							type="text"
+							value={formData.Venue || ""}
+							onChange={(e) => handleInputChange('Venue', e.target.value)}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							placeholder="Enter venue location"
+						/>
+					</div>
+
+					{/* Duration Days */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Duration (Days)
+						</label>
+						<input
+							type="number"
+							min="0"
+							value={formData.Duration_Days || ""}
+							onChange={(e) => handleInputChange('Duration_Days', e.target.value ? parseInt(e.target.value) : undefined)}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							placeholder="Enter duration in days"
 						/>
 					</div>
 

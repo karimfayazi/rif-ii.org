@@ -24,6 +24,7 @@ import {
     Menu,
     X,
     Layers,
+    ShieldAlert,
 } from "lucide-react";
 
 type SidebarProps = {
@@ -102,6 +103,7 @@ const GROUPS: NavGroup[] = [
 			{ label: "Reports", href: "/dashboard/reports", icon: BarChart3 },
 			{ label: "Pictures", href: "/dashboard/pictures", icon: ImagePlus },
 			{ label: "Links", href: "/dashboard/links", icon: Link2 },
+			{ label: "Security Updates", href: "/dashboard/security-updates", icon: ShieldAlert },
 		],
 	},
 	{
@@ -131,9 +133,9 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
     };
     
     return (
-        <nav className={`rounded-lg border border-gray-200 bg-white p-3 text-[12px] shadow-sm transition-all w-full ${collapsed ? "w-12" : "w-full"}`}>
+        <nav className={`rounded-lg border border-gray-200 bg-white text-[12px] shadow-sm transition-all ${collapsed ? "w-16 p-2" : "w-full p-3"}`}>
 			{/* Toggle Button */}
-			<div className="mb-3 flex items-center justify-end border-b border-gray-200 pb-2">
+			<div className={`mb-3 flex items-center border-b border-gray-200 pb-2 ${collapsed ? "justify-center" : "justify-end"}`}>
 				<button
 					title={collapsed ? "Expand Menu" : "Collapse Menu"}
 					onClick={(e) => {
@@ -186,16 +188,16 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 												await fetch("/api/logout", { method: "POST" });
 												window.location.href = "/login";
 											}}
-                                            className={`flex w-full items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 text-left transition-colors hover:bg-red-50 hover:text-red-700`}
+                                            className={`flex w-full items-center rounded-md py-2 text-left transition-colors hover:bg-red-50 hover:text-red-700 ${collapsed ? "justify-center px-0" : "gap-2 px-3"}`}
 											title={collapsed ? item.label : undefined}
 										>
-											<Icon className="h-4 w-4" />
+											<Icon className={`${collapsed ? "h-5 w-5" : "h-4 w-4"}`} />
 											{!collapsed && <span>{item.label}</span>}
 										</button>
 									) : hasSubItems ? (
 										<>
 											<div
-												className={`flex w-full items-center rounded-md px-3 py-2 text-left transition-colors ${
+												className={`flex w-full items-center rounded-md py-2 text-left transition-colors ${collapsed ? "justify-center px-0" : "px-3"} ${
 													isSubItemActive || isActive
 														? "bg-[#0b4d2b] text-white font-medium"
 														: "hover:bg-gray-100"
@@ -208,12 +210,12 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 														// Do not toggle expand when clicking the link; only navigate
 														e.stopPropagation();
 													}}
-													className={`flex items-center ${
+													className={`flex items-center flex-1 ${
 														collapsed ? "justify-center" : "gap-2"
-													} flex-1`}
+													}`}
 													title={collapsed ? item.label : undefined}
 												>
-													<Icon className="h-4 w-4" />
+													<Icon className={`${collapsed ? "h-5 w-5" : "h-4 w-4"}`} />
 													{!collapsed && <span>{item.label}</span>}
 												</Link>
 
@@ -271,10 +273,10 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 														toggleMenu(item.label);
 													}
 												}}
-                                                className={`flex w-full items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 text-left transition-colors hover:bg-gray-100`}
+                                                className={`flex w-full items-center rounded-md py-2 text-left transition-colors hover:bg-gray-100 ${collapsed ? "justify-center px-0" : "gap-2 px-3"}`}
 												title={collapsed ? item.label : undefined}
 											>
-												<Icon className="h-4 w-4" />
+												<Icon className={`${collapsed ? "h-5 w-5" : "h-4 w-4"}`} />
 												{!collapsed && (
 													<>
 														<span className="flex-1">{item.label}</span>
@@ -326,14 +328,14 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 												// Don't expand sidebar when clicking menu items - only toggle button should do that
 												e.stopPropagation();
 											}}
-                                            className={`flex items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 transition-colors ${
+                                            className={`flex items-center rounded-md py-2 transition-colors ${collapsed ? "justify-center px-0" : "gap-2 px-3"} ${
 												isActive
 													? "bg-[#0b4d2b] text-white font-medium"
 													: "hover:bg-gray-100"
 											}`}
 											title={collapsed ? item.label : undefined}
 										>
-											<Icon className="h-4 w-4" />
+											<Icon className={`${collapsed ? "h-5 w-5" : "h-4 w-4"}`} />
 											{!collapsed && <span>{item.label}</span>}
 										</Link>
 									)}
@@ -341,8 +343,8 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 							);
 						})}
 					</ul>
-					{group.divider && groupIdx < GROUPS.length - 1 && !collapsed && (
-						<div className="my-3 border-t border-gray-300"></div>
+					{group.divider && groupIdx < GROUPS.length - 1 && (
+						<div className={`border-t border-gray-300 ${collapsed ? "my-2" : "my-3"}`}></div>
 					)}
 				</div>
 				);

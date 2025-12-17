@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
     const districtTehsils: Record<string, string[]> = {
       'DIK': [
         'Dera Ismail Khan Tehsil',
-        'Paharpur Tehsil',
         'Paroa Tehsil',
         'Kulachi Tehsil',
         'Daraban Tehsil',
@@ -22,6 +21,9 @@ export async function GET(request: NextRequest) {
         'Baka Khel Tehsil',
         'Miryan Tehsil',
         'Wazir Tehsil'
+      ],
+      'Paharpur': [
+        'Paniala'
       ]
     };
 
@@ -34,7 +36,8 @@ export async function GET(request: NextRequest) {
       // Return all tehsils from all districts
       tehsils = [
         ...districtTehsils['DIK'],
-        ...districtTehsils['Bannu']
+        ...districtTehsils['Bannu'],
+        ...districtTehsils['Paharpur']
       ];
     }
 

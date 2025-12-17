@@ -18,11 +18,13 @@ import {
 	RefreshCw,
 	Plus,
 	MoreVertical,
-	AlertCircle
+	AlertCircle,
+	X
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 type UserData = {
+	user_id?: string;
 	username: string;
 	password: string;
 	email: string;
@@ -48,6 +50,8 @@ export default function SettingsPage() {
 	const [showPasswords, setShowPasswords] = useState(false);
 	const [departments, setDepartments] = useState<string[]>([]);
 	const [accessLevels, setAccessLevels] = useState<string[]>([]);
+	const [viewingUser, setViewingUser] = useState<UserData | null>(null);
+	const [deletingUser, setDeletingUser] = useState<UserData | null>(null);
 
 	useEffect(() => {
 		checkAdminAccess();
@@ -109,6 +113,46 @@ export default function SettingsPage() {
 		setSearchTerm("");
 		setSelectedDepartment("");
 		setSelectedAccessLevel("");
+	};
+
+	const handleView = (user: UserData) => {
+		setViewingUser(user);
+	};
+
+	const handleEdit = (user: UserData) => {
+		// Navigate to add page with username as id parameter for edit mode
+		router.push(`/dashboard/settings/add?id=${encodeURIComponent(user.username)}`);
+	};
+
+	const handleDelete = (user: UserData) => {
+		setDeletingUser(user);
+	};
+
+	const confirmDelete = async () => {
+		if (!deletingUser || !deletingUser.username) return;
+
+		try {
+			const response = await fetch(`/api/admin/users/delete`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ username: deletingUser.username }),
+			});
+
+			const data = await response.json();
+
+			if (data.success) {
+				alert('User deleted successfully!');
+				setDeletingUser(null);
+				fetchUsers(); // Refresh the list
+			} else {
+				alert(data.message || 'Failed to delete user');
+			}
+		} catch (err) {
+			console.error('Error deleting user:', err);
+			alert('Error deleting user');
+		}
 	};
 
 	const getAccessLevelColor = (accessLevel: string) => {
@@ -439,19 +483,28 @@ export default function SettingsPage() {
 							{/* Action Buttons */}
 							<div className="px-6 py-4 bg-gray-50 rounded-b-lg flex items-center justify-between">
 								<div className="flex items-center space-x-2">
-									<button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
+									<button 
+										onClick={() => handleView(user)}
+										className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+										title="View Details"
+									>
 										<Eye className="h-4 w-4" />
 									</button>
-									<button className="p-2 text-gray-400 hover:text-green-600 transition-colors">
+									<button 
+										onClick={() => handleEdit(user)}
+										className="p-2 text-gray-400 hover:text-green-600 transition-colors"
+										title="Edit User"
+									>
 										<Edit className="h-4 w-4" />
 									</button>
-									<button className="p-2 text-gray-400 hover:text-red-600 transition-colors">
+									<button 
+										onClick={() => handleDelete(user)}
+										className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+										title="Delete User"
+									>
 										<Trash2 className="h-4 w-4" />
 									</button>
 								</div>
-								<button className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
-									More actions
-								</button>
 							</div>
 						</div>
 					))}
@@ -463,6 +516,123 @@ export default function SettingsPage() {
 				<div className="text-center text-sm text-gray-500">
 					Showing {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}
 					{(searchTerm || selectedDepartment || selectedAccessLevel) && ' matching your criteria'}
+				</div>
+			)}
+
+			{/* View Modal */}
+			{viewingUser && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+						<div className="bg-gradient-to-r from-[#0b4d2b] to-[#0a3d24] text-white p-6">
+							<div className="flex items-center justify-between">
+								<h2 className="text-2xl font-bold">User Details</h2>
+								<button
+									onClick={() => setViewingUser(null)}
+									className="text-white hover:text-gray-200 transition-colors"
+								>
+									<X className="h-6 w-6" />
+								</button>
+							</div>
+						</div>
+						<div className="p-6 space-y-4">
+							<div className="flex items-center space-x-4 mb-6">
+								<div className="w-16 h-16 bg-gradient-to-br from-[#0b4d2b] to-[#0a3d24] rounded-full flex items-center justify-center">
+									<User className="h-8 w-8 text-white" />
+								</div>
+								<div>
+									<h3 className="text-xl font-semibold text-gray-900">{viewingUser.full_name || 'N/A'}</h3>
+									<p className="text-gray-500">@{viewingUser.username}</p>
+								</div>
+							</div>
+							
+							<div className="grid grid-cols-2 gap-4">
+								<div>
+									<label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+									<p className="text-gray-900">{viewingUser.email || 'N/A'}</p>
+								</div>
+								<div>
+									<label className="block text-sm font-medium text-gray-500 mb-1">Contact Number</label>
+									<p className="text-gray-900">{viewingUser.contact_no || 'N/A'}</p>
+								</div>
+								<div>
+									<label className="block text-sm font-medium text-gray-500 mb-1">Department</label>
+									<p className="text-gray-900">{viewingUser.department || 'N/A'}</p>
+								</div>
+								<div>
+									<label className="block text-sm font-medium text-gray-500 mb-1">Region</label>
+									<p className="text-gray-900">{viewingUser.region || 'N/A'}</p>
+								</div>
+								<div>
+									<label className="block text-sm font-medium text-gray-500 mb-1">Access Level</label>
+									<span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getAccessLevelColor(viewingUser.access_level)}`}>
+										<Shield className="h-4 w-4 mr-1" />
+										{viewingUser.access_level || 'N/A'}
+									</span>
+								</div>
+								<div>
+									<label className="block text-sm font-medium text-gray-500 mb-1">Password</label>
+									<p className="text-gray-900 font-mono">{maskPassword(viewingUser.password)}</p>
+								</div>
+							</div>
+						</div>
+						<div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end">
+							<button
+								onClick={() => setViewingUser(null)}
+								className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+							>
+								Close
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Delete Confirmation Modal */}
+			{deletingUser && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+						<div className="bg-red-500 text-white p-6">
+							<div className="flex items-center justify-between">
+								<h2 className="text-2xl font-bold">Confirm Delete</h2>
+								<button
+									onClick={() => setDeletingUser(null)}
+									className="text-white hover:text-gray-200 transition-colors"
+								>
+									<X className="h-6 w-6" />
+								</button>
+							</div>
+						</div>
+						<div className="p-6">
+							<div className="flex items-center justify-center mb-4">
+								<div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+									<Trash2 className="h-8 w-8 text-red-500" />
+								</div>
+							</div>
+							<p className="text-center text-gray-700 mb-2">
+								Are you sure you want to delete this user?
+							</p>
+							<p className="text-center text-gray-900 font-semibold mb-4">
+								{deletingUser.full_name || deletingUser.username}
+							</p>
+							<p className="text-center text-sm text-red-600">
+								This action cannot be undone!
+							</p>
+						</div>
+						<div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end space-x-3">
+							<button
+								onClick={() => setDeletingUser(null)}
+								className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={confirmDelete}
+								className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+							>
+								Delete User
+							</button>
+						</div>
+					</div>
 				</div>
 			)}
 		</div>
