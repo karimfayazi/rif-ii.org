@@ -168,14 +168,16 @@ export default function TrainingPage() {
 	const handleDelete = async () => {
 		if (!deleteConfirm.record || !deleteConfirm.record.SN) return;
 
+		const recordSn = deleteConfirm.record.SN;
+
 		try {
-			setDeleteLoading(deleteConfirm.record.SN);
+			setDeleteLoading(recordSn);
 			const response = await fetch(`/api/training/delete`, {
 				method: 'DELETE',
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ id: deleteConfirm.record.SN }),
+				body: JSON.stringify({ id: recordSn }),
 			});
 
 			const data = await response.json();
@@ -185,7 +187,7 @@ export default function TrainingPage() {
 				setSuccess('Training event deleted successfully');
 				setError(null);
 				// Remove the deleted item from the list
-				setTrainingData(prev => prev.filter(item => item.SN !== deleteConfirm.record.SN));
+				setTrainingData(prev => prev.filter(item => item.SN !== recordSn));
 				// Auto-hide success message after 3 seconds
 				setTimeout(() => {
 					setSuccess(null);
