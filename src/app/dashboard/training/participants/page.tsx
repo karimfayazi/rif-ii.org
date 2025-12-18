@@ -179,7 +179,7 @@ export default function TrainingParticipantsPage() {
 				`"${(item.end_date || "").replace(/"/g, '""')}"`,
 				`"${(item.Training_Unit || "").replace(/"/g, '""')}"`,
 				`"${(item.Venue || "").replace(/"/g, '""')}"`,
-				`"${(item.Duration_Days || "").replace(/"/g, '""')}"`,
+				`"${String(item.Duration_Days || "").replace(/"/g, '""')}"`,
 				`"${(item.date_entered_by || "").replace(/"/g, '""')}"`,
 				`"${(item.entry_timestamp || "").replace(/"/g, '""')}"`
 			].join(","))
