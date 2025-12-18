@@ -249,28 +249,6 @@ export default function AddSecurityIncidentPage() {
 		);
 	}
 
-	if (!hasAccess) {
-		return (
-			<div className="space-y-6">
-				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Security Updates</h1>
-					<p className="text-gray-600 mt-2">Add/Edit security incident</p>
-				</div>
-				<div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-					<AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-					<h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-					<p className="text-gray-600">You do not have permission to access this section. Only users with security access or administrators can manage security incidents.</p>
-					<button
-						onClick={() => router.push('/dashboard')}
-						className="mt-4 px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
-					>
-						Back to Dashboard
-					</button>
-				</div>
-			</div>
-		);
-	}
-
 	return (
 		<div className="space-y-6">
 			{/* Header */}
