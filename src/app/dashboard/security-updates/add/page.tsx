@@ -240,11 +240,11 @@ export default function AddSecurityIncidentPage() {
 		}
 	};
 
-	if (checkingAccess || fetching) {
+	if (fetching) {
 		return (
 			<div className="flex items-center justify-center py-12">
 				<Loader2 className="h-8 w-8 animate-spin text-[#0b4d2b]" />
-				<span className="ml-3 text-gray-600">{checkingAccess ? "Checking access..." : "Loading..."}</span>
+				<span className="ml-3 text-gray-600">Loading...</span>
 			</div>
 		);
 	}
