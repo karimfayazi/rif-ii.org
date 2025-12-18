@@ -76,9 +76,11 @@ export default function ReportsPage() {
 	const handleDelete = async () => {
 		if (!deleteConfirm.report || !deleteConfirm.report.ReportID) return;
 
+		const reportId = deleteConfirm.report.ReportID;
+
 		try {
 			setDeleting(true);
-			const response = await fetch(`/api/reports/${deleteConfirm.report.ReportID}`, {
+			const response = await fetch(`/api/reports/${reportId}`, {
 				method: 'DELETE',
 				headers: {
 					'Content-Type': 'application/json',
@@ -92,7 +94,7 @@ export default function ReportsPage() {
 				setSuccess('Report deleted successfully');
 				setError(null);
 				// Remove the deleted item from the list
-				setReports(prev => prev.filter(report => report.ReportID !== deleteConfirm.report.ReportID));
+				setReports(prev => prev.filter(report => report.ReportID !== reportId));
 				// Auto-hide success message after 3 seconds
 				setTimeout(() => {
 					setSuccess(null);
