@@ -16,6 +16,67 @@ import { useAccess } from "@/hooks/useAccess";
 const DISTRICT_OPTIONS = ["DIK", "Bannu", "Paharpur"];
 const GENDER_OPTIONS = ["Male", "Female"];
 
+// Helper function to format date for HTML date input (YYYY-MM-DD)
+const formatDateForInput = (dateValue: string | Date | null | undefined): string => {
+	if (!dateValue) return "";
+	
+	// If it's already a Date object
+	if (dateValue instanceof Date) {
+		if (isNaN(dateValue.getTime())) return "";
+		const year = dateValue.getFullYear();
+		const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+		const day = String(dateValue.getDate()).padStart(2, '0');
+		return `${year}-${month}-${day}`;
+	}
+	
+	// If it's a string
+	const dateString = String(dateValue).trim();
+	if (!dateString) return "";
+	
+	// If already in YYYY-MM-DD format, return as is
+	if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+		return dateString;
+	}
+	
+	// Try to parse the date string (handles formats like "Dec 18 2025 12:00AM", "2025-12-18", etc.)
+	try {
+		// First try parsing as-is
+		let date = new Date(dateString);
+		
+		// If that fails, try parsing common SQL Server datetime formats
+		if (isNaN(date.getTime())) {
+			// Try parsing formats like "Dec 18 2025 12:00AM"
+			// Remove time portion if present
+			const dateOnly = dateString.split(' ')[0] + ' ' + dateString.split(' ')[1] + ' ' + dateString.split(' ')[2];
+			date = new Date(dateOnly);
+		}
+		
+		if (!isNaN(date.getTime())) {
+			// Format as YYYY-MM-DD
+			const year = date.getFullYear();
+			const month = String(date.getMonth() + 1).padStart(2, '0');
+			const day = String(date.getDate()).padStart(2, '0');
+			return `${year}-${month}-${day}`;
+		}
+		
+		// Try parsing DD-MM-YYYY or DD/MM/YYYY format
+		const parts = dateString.split(/[-\/]/);
+		if (parts.length === 3) {
+			const day = parts[0].padStart(2, '0');
+			const month = parts[1].padStart(2, '0');
+			const year = parts[2].split(' ')[0]; // Remove time if present
+			if (year.length === 4) {
+				return `${year}-${month}-${day}`;
+			}
+		}
+		
+		return "";
+	} catch (error) {
+		console.error("Error formatting date:", dateValue, error);
+		return "";
+	}
+};
+
 type ParticipantFormData = {
 	sn?: number;
 	participant_name?: string;
@@ -28,11 +89,15 @@ type ParticipantFormData = {
 	contact_number?: string;
 	tehsil?: string;
 	district?: string;
+	NC_VC?: string;
 	workshop_training_name?: string;
 	workshop_session_conference?: string;
 	start_date?: string;
 	end_date?: string;
 	date_entered_by?: string;
+	Training_Unit?: string;
+	Venue?: string;
+	Duration_Days?: number;
 };
 
 export default function AddParticipantPage() {
@@ -53,6 +118,7 @@ export default function AddParticipantPage() {
 	const [tehsils, setTehsils] = useState<string[]>([]);
 	const [workshopTrainingNames, setWorkshopTrainingNames] = useState<string[]>([]);
 	const [loadingTehsils, setLoadingTehsils] = useState(false);
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
 	// Fetch existing data if editing
 	useEffect(() => {
@@ -79,6 +145,16 @@ export default function AddParticipantPage() {
 
 			if (data.success && data.participant) {
 				const participant = data.participant;
+				console.log("Fetched participant data:", participant);
+				console.log("Raw start_date:", participant.start_date, "Type:", typeof participant.start_date);
+				console.log("Raw end_date:", participant.end_date, "Type:", typeof participant.end_date);
+				
+				const formattedStartDate = formatDateForInput(participant.start_date);
+				const formattedEndDate = formatDateForInput(participant.end_date);
+				
+				console.log("Formatted start_date:", formattedStartDate);
+				console.log("Formatted end_date:", formattedEndDate);
+				
 				setFormData({
 					sn: participant.sn,
 					participant_name: participant.participant_name || "",
@@ -91,11 +167,15 @@ export default function AddParticipantPage() {
 					contact_number: participant.contact_number || "",
 					tehsil: participant.tehsil || "",
 					district: participant.district || "",
+					NC_VC: participant.NC_VC || "",
 					workshop_training_name: participant.workshop_training_name || "",
 					workshop_session_conference: participant.workshop_session_conference || "",
-					start_date: participant.start_date || "",
-					end_date: participant.end_date || "",
-					date_entered_by: participant.date_entered_by || ""
+					start_date: formattedStartDate,
+					end_date: formattedEndDate,
+					date_entered_by: participant.date_entered_by || "",
+					Training_Unit: participant.Training_Unit || "",
+					Venue: participant.Venue || "",
+					Duration_Days: participant.Duration_Days || undefined
 				});
 			} else {
 				setError("Failed to fetch participant data");
@@ -256,10 +336,6 @@ export default function AddParticipantPage() {
 	const handleDelete = async () => {
 		if (!isEditMode || !sn) return;
 		
-		if (!confirm("Are you sure you want to delete this participant record? This action cannot be undone.")) {
-			return;
-		}
-
 		setLoading(true);
 		setError(null);
 
@@ -271,16 +347,19 @@ export default function AddParticipantPage() {
 			const data = await response.json();
 
 			if (data.success) {
+				setShowDeleteConfirm(false);
 				setSuccess(true);
 				setTimeout(() => {
 					router.push('/dashboard/training/participants');
 				}, 1500);
 			} else {
 				setError(data.message || "Failed to delete participant record");
+				setShowDeleteConfirm(false);
 			}
 		} catch (err) {
 			console.error("Error deleting participant:", err);
 			setError("Error deleting participant record");
+			setShowDeleteConfirm(false);
 		} finally {
 			setLoading(false);
 		}
@@ -364,7 +443,7 @@ export default function AddParticipantPage() {
 				<div className="flex items-center space-x-3">
 					{isEditMode && accessDelete && (
 						<button
-							onClick={handleDelete}
+							onClick={() => setShowDeleteConfirm(true)}
 							disabled={loading}
 							className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
 						>
@@ -622,6 +701,59 @@ export default function AddParticipantPage() {
 							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						/>
 					</div>
+
+					{/* NC/VC */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							NC/VC
+						</label>
+						<input
+							type="text"
+							value={formData.NC_VC || ""}
+							onChange={(e) => handleInputChange('NC_VC', e.target.value)}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+						/>
+					</div>
+
+					{/* Training Unit */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Training Unit
+						</label>
+						<input
+							type="text"
+							value={formData.Training_Unit || ""}
+							onChange={(e) => handleInputChange('Training_Unit', e.target.value)}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+						/>
+					</div>
+
+					{/* Venue */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Venue
+						</label>
+						<input
+							type="text"
+							value={formData.Venue || ""}
+							onChange={(e) => handleInputChange('Venue', e.target.value)}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+						/>
+					</div>
+
+					{/* Duration Days */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Duration (Days)
+						</label>
+						<input
+							type="number"
+							value={formData.Duration_Days || ""}
+							onChange={(e) => handleInputChange('Duration_Days', e.target.value ? parseInt(e.target.value) : undefined)}
+							min="0"
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+						/>
+					</div>
 				</div>
 
 				{/* Submit Button */}
@@ -645,6 +777,87 @@ export default function AddParticipantPage() {
 					</button>
 				</div>
 			</form>
+
+			{/* Delete Confirmation Modal */}
+			{showDeleteConfirm && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all">
+						{/* Modal Header */}
+						<div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl">
+							<div className="flex items-center">
+								<div className="p-2 bg-white/20 rounded-lg mr-4">
+									<Trash2 className="h-6 w-6" />
+								</div>
+								<div>
+									<h2 className="text-2xl font-bold">Confirm Delete</h2>
+									<p className="text-red-100 text-sm mt-1">This action cannot be undone</p>
+								</div>
+							</div>
+						</div>
+
+						{/* Modal Content */}
+						<div className="p-6">
+							<div className="mb-4">
+								<p className="text-gray-700 text-base mb-3">
+									Are you sure you want to delete this participant record?
+								</p>
+								<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+									<p className="text-sm font-medium text-gray-500 mb-1">Participant Name:</p>
+									<p className="text-base font-semibold text-gray-900">
+										{formData.participant_name || "N/A"}
+									</p>
+									{formData.cnic_number && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">CNIC:</p>
+											<p className="text-base text-gray-700">{formData.cnic_number}</p>
+										</>
+									)}
+									{formData.workshop_training_name && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Workshop:</p>
+											<p className="text-base text-gray-700">{formData.workshop_training_name}</p>
+										</>
+									)}
+								</div>
+							</div>
+							<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start">
+								<AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+								<p className="text-sm text-yellow-800">
+									<strong>Warning:</strong> This will permanently delete this participant record from the database. This action cannot be undone.
+								</p>
+							</div>
+						</div>
+
+						{/* Modal Footer */}
+						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
+							<button
+								onClick={() => setShowDeleteConfirm(false)}
+								disabled={loading}
+								className="px-6 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm disabled:opacity-50"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleDelete}
+								disabled={loading}
+								className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+							>
+								{loading ? (
+									<>
+										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										Deleting...
+									</>
+								) : (
+									<>
+										<Trash2 className="h-4 w-4 mr-2" />
+										Yes, Delete
+									</>
+								)}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

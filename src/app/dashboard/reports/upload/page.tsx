@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Upload, ArrowLeft, X, Check } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AccessDenied from "@/components/AccessDenied";
 import { useAccess } from "@/hooks/useAccess";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,16 +25,15 @@ type UploadedFile = {
 
 export default function UploadReportsPage() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
+	const reportId = searchParams.get('id');
+	const isEditMode = !!reportId;
 	
 	// Get user ID using useAuth hook (more reliable)
-	const { user, getUserId } = useAuth();
+	const { user, userProfile, getUserId, loading: authLoading } = useAuth();
 	const userId = user?.id || user?.username || getUserId() || null;
 	
 	const { canUpload, loading: accessLoading, error: accessError } = useAccess(userId);
-	
-	useEffect(() => {
-		console.log('[Upload Page] Access check result:', { canUpload, accessLoading, accessError, userId });
-	}, [canUpload, accessLoading, accessError, userId]);
 	
 	const [formData, setFormData] = useState<UploadFormData>({
 		reportTitle: "",
@@ -49,13 +48,186 @@ export default function UploadReportsPage() {
 	const [uploadProgress, setUploadProgress] = useState(0);
 	const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
 	const [error, setError] = useState<string | null>(null);
+	const [mainCategories, setMainCategories] = useState<Array<{ MainCategoryID: number; Category: string }>>([]);
+	const [subCategories, setSubCategories] = useState<Array<{ SubCategoryID: number; MainCategoryID: number; SubCategory: string }>>([]);
+	const [selectedMainCategoryID, setSelectedMainCategoryID] = useState<number | null>(null);
+	const [loadingCategories, setLoadingCategories] = useState(false);
+	const [loadingReport, setLoadingReport] = useState(false);
+
+	// Fetch sub categories when main category changes
+	const fetchSubCategories = async (mainCategoryID: number) => {
+		try {
+			setLoadingCategories(true);
+			const response = await fetch(`/api/reports/subcategories?mainCategoryID=${mainCategoryID}`);
+			const data = await response.json();
+			
+			if (data.success) {
+				setSubCategories(data.subCategories || []);
+			} else {
+				setSubCategories([]);
+			}
+		} catch (err) {
+			console.error("Error fetching sub categories:", err);
+			setSubCategories([]);
+		} finally {
+			setLoadingCategories(false);
+		}
+	};
+
+	useEffect(() => {
+		console.log('[Upload Page] Access check result:', { canUpload, accessLoading, accessError, userId });
+	}, [canUpload, accessLoading, accessError, userId]);
+
+	// Auto-populate "Uploaded By" with user's full name
+	useEffect(() => {
+		if (userProfile?.full_name || user?.name) {
+			const fullName = userProfile?.full_name || user?.name || '';
+			setFormData(prev => ({
+				...prev,
+				uploadedBy: fullName
+			}));
+		}
+	}, [userProfile, user]);
+
+	// Fetch existing report data for editing
+	useEffect(() => {
+		const fetchReportData = async () => {
+			if (!isEditMode || !reportId) return;
+
+			try {
+				setLoadingReport(true);
+				const response = await fetch(`/api/reports/${reportId}`);
+				
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`);
+				}
+				
+				const contentType = response.headers.get("content-type");
+				if (!contentType || !contentType.includes("application/json")) {
+					throw new Error("Server returned non-JSON response");
+				}
+				
+				const data = await response.json();
+
+				if (data.success && data.report) {
+					const report = data.report;
+					
+					// Format event date for input (YYYY-MM-DD)
+					let formattedDate = '';
+					if (report.EventDate) {
+						try {
+							const date = new Date(report.EventDate);
+							formattedDate = date.toISOString().split('T')[0];
+						} catch (e) {
+							console.error("Error formatting date:", e);
+						}
+					}
+					
+					// Populate form with existing data
+					setFormData({
+						reportTitle: report.ReportTitle || "",
+						description: report.Description || "",
+						mainCategory: report.MainCategory || "",
+						subCategory: report.SubCategory || "",
+						eventDate: formattedDate,
+						uploadedBy: userProfile?.full_name || user?.name || ""
+					});
+
+					// Find and set the main category ID to load sub categories
+					// Wait a bit for mainCategories to be populated if they're still loading
+					if (report.MainCategory) {
+						// Try to find immediately
+						let selectedCategory = mainCategories.find(cat => cat.Category === report.MainCategory);
+						
+						// If not found and mainCategories might still be loading, wait a moment
+						if (!selectedCategory && mainCategories.length === 0) {
+							// Wait for mainCategories to load
+							setTimeout(() => {
+								selectedCategory = mainCategories.find(cat => cat.Category === report.MainCategory);
+								if (selectedCategory) {
+									setSelectedMainCategoryID(selectedCategory.MainCategoryID);
+									fetchSubCategories(selectedCategory.MainCategoryID);
+								}
+							}, 500);
+						} else if (selectedCategory) {
+							setSelectedMainCategoryID(selectedCategory.MainCategoryID);
+							// Fetch sub categories for the selected main category
+							fetchSubCategories(selectedCategory.MainCategoryID);
+						}
+					}
+				} else {
+					setError(data.message || "Failed to load report data");
+				}
+			} catch (err) {
+				console.error("Error fetching report data:", err);
+				setError("Error loading report data. Please try again.");
+			} finally {
+				setLoadingReport(false);
+			}
+		};
+
+		// Fetch report data when in edit mode
+		if (isEditMode) {
+			fetchReportData();
+		}
+	}, [isEditMode, reportId, userProfile, user]);
+	
+	// Update sub categories when main category is set and mainCategories are loaded
+	useEffect(() => {
+		if (isEditMode && formData.mainCategory && mainCategories.length > 0 && !subCategories.length) {
+			const selectedCategory = mainCategories.find(cat => cat.Category === formData.mainCategory);
+			if (selectedCategory && selectedCategory.MainCategoryID !== selectedMainCategoryID) {
+				setSelectedMainCategoryID(selectedCategory.MainCategoryID);
+				fetchSubCategories(selectedCategory.MainCategoryID);
+			}
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [formData.mainCategory, mainCategories, isEditMode, selectedMainCategoryID]);
+
+	// Fetch main categories on component mount
+	useEffect(() => {
+		const fetchMainCategories = async () => {
+			try {
+				setLoadingCategories(true);
+				const response = await fetch('/api/reports/categories');
+				const data = await response.json();
+				
+				if (data.success) {
+					setMainCategories(data.categories || []);
+				}
+			} catch (err) {
+				console.error("Error fetching main categories:", err);
+			} finally {
+				setLoadingCategories(false);
+			}
+		};
+
+		fetchMainCategories();
+	}, []);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
 		const { name, value } = e.target;
-		setFormData(prev => ({
-			...prev,
-			[name]: value
-		}));
+		
+		// If main category changes, fetch sub categories
+		if (name === 'mainCategory') {
+			const selectedCategory = mainCategories.find(cat => cat.Category === value);
+			setSelectedMainCategoryID(selectedCategory?.MainCategoryID || null);
+			setSubCategories([]); // Clear sub categories
+			setFormData(prev => ({
+				...prev,
+				mainCategory: value,
+				subCategory: "" // Reset sub category
+			}));
+			
+			if (selectedCategory?.MainCategoryID) {
+				fetchSubCategories(selectedCategory.MainCategoryID);
+			}
+		} else {
+			setFormData(prev => ({
+				...prev,
+				[name]: value
+			}));
+		}
 	};
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +283,8 @@ export default function UploadReportsPage() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		
-		if (files.length === 0) {
+		// File upload is optional in edit mode
+		if (!isEditMode && files.length === 0) {
 			setError("Please select at least one report file to upload");
 			return;
 		}
@@ -126,71 +299,144 @@ export default function UploadReportsPage() {
 		setError(null);
 
 		try {
-			const formDataToSend = new FormData();
-			
-			// Add form fields
-			formDataToSend.append('reportTitle', formData.reportTitle);
-			formDataToSend.append('description', formData.description);
-			formDataToSend.append('mainCategory', formData.mainCategory);
-			formDataToSend.append('subCategory', formData.subCategory);
-			formDataToSend.append('eventDate', formData.eventDate);
-			formDataToSend.append('uploadedBy', formData.uploadedBy);
+			if (isEditMode) {
+				// Update existing report
+				if (files.length > 0) {
+					// If file is uploaded, use upload endpoint which handles both metadata and file
+					const formDataToSend = new FormData();
+					formDataToSend.append('reportTitle', formData.reportTitle);
+					formDataToSend.append('description', formData.description);
+					formDataToSend.append('mainCategory', formData.mainCategory);
+					formDataToSend.append('subCategory', formData.subCategory);
+					formDataToSend.append('eventDate', formData.eventDate);
+					formDataToSend.append('uploadedBy', formData.uploadedBy);
+					formDataToSend.append('reportId', reportId || '');
 
-			// Add files
-			files.forEach((fileObj, index) => {
-				formDataToSend.append(`files`, fileObj.file);
-			});
+					files.forEach((fileObj) => {
+						formDataToSend.append(`files`, fileObj.file);
+					});
 
-			const response = await fetch('/api/reports/upload', {
-				method: 'POST',
-				body: formDataToSend,
-			});
+					const uploadResponse = await fetch('/api/reports/upload', {
+						method: 'POST',
+						body: formDataToSend,
+					});
 
-			const result = await response.json();
+					const uploadResult = await uploadResponse.json();
+					
+					if (uploadResult.success) {
+						setUploadStatus('success');
+						setUploadProgress(100);
+						
+						// Redirect to reports page after 2 seconds
+						setTimeout(() => {
+							router.push('/dashboard/reports');
+						}, 2000);
+					} else {
+						setError(uploadResult.message || 'Failed to update report');
+						setUploadStatus('error');
+					}
+				} else {
+					// No file uploaded, just update metadata via PUT
+					const response = await fetch(`/api/reports/${reportId}`, {
+						method: 'PUT',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							reportTitle: formData.reportTitle,
+							description: formData.description,
+							mainCategory: formData.mainCategory,
+							subCategory: formData.subCategory,
+							eventDate: formData.eventDate
+						}),
+					});
 
-			if (result.success) {
-				setUploadStatus('success');
-				setUploadProgress(100);
-				
-				// Redirect to reports page after 2 seconds
-				setTimeout(() => {
-					router.push('/dashboard/reports');
-				}, 2000);
+					const result = await response.json();
+
+					if (result.success) {
+						setUploadStatus('success');
+						setUploadProgress(100);
+						
+						// Redirect to reports page after 2 seconds
+						setTimeout(() => {
+							router.push('/dashboard/reports');
+						}, 2000);
+					} else {
+						setError(result.message || 'Update failed');
+						setUploadStatus('error');
+					}
+				}
 			} else {
-				setError(result.message || 'Upload failed');
-				setUploadStatus('error');
+				// Create new report (POST request)
+				const formDataToSend = new FormData();
+				
+				// Add form fields
+				formDataToSend.append('reportTitle', formData.reportTitle);
+				formDataToSend.append('description', formData.description);
+				formDataToSend.append('mainCategory', formData.mainCategory);
+				formDataToSend.append('subCategory', formData.subCategory);
+				formDataToSend.append('eventDate', formData.eventDate);
+				formDataToSend.append('uploadedBy', formData.uploadedBy);
+
+				// Add files
+				files.forEach((fileObj) => {
+					formDataToSend.append(`files`, fileObj.file);
+				});
+
+				const response = await fetch('/api/reports/upload', {
+					method: 'POST',
+					body: formDataToSend,
+				});
+
+				const result = await response.json();
+
+				if (result.success) {
+					setUploadStatus('success');
+					setUploadProgress(100);
+					
+					// Redirect to reports page after 2 seconds
+					setTimeout(() => {
+						router.push('/dashboard/reports');
+					}, 2000);
+				} else {
+					setError(result.message || 'Upload failed');
+					setUploadStatus('error');
+				}
 			}
 		} catch (err) {
-			setError('Upload failed. Please try again.');
+			setError(isEditMode ? 'Update failed. Please try again.' : 'Upload failed. Please try again.');
 			setUploadStatus('error');
-			console.error('Upload error:', err);
+			console.error('Submit error:', err);
 		} finally {
 			setUploading(false);
 		}
 	};
 
 	const resetForm = () => {
+		const fullName = userProfile?.full_name || user?.name || '';
 		setFormData({
 			reportTitle: "",
 			description: "",
 			mainCategory: "",
 			subCategory: "",
 			eventDate: "",
-			uploadedBy: ""
+			uploadedBy: fullName // Preserve user's full name
 		});
 		setFiles([]);
 		setError(null);
 		setUploadStatus('idle');
 		setUploadProgress(0);
+		setSubCategories([]);
+		setSelectedMainCategoryID(null);
 	};
 
-	// Show loading state while checking access
-	if (accessLoading) {
+	// Show loading state while checking access or loading user data or loading report
+	if (accessLoading || authLoading || loadingReport) {
 		return (
 			<div className="space-y-6">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Upload Reports</h1>
-					<p className="text-gray-600 mt-2">Checking permissions...</p>
+					<h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Report' : 'Upload Reports'}</h1>
+					<p className="text-gray-600 mt-2">{loadingReport ? 'Loading report data...' : 'Checking permissions...'}</p>
 				</div>
 				<div className="flex items-center justify-center py-12">
 					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0b4d2b]"></div>
@@ -226,8 +472,11 @@ export default function UploadReportsPage() {
 					</div>
 				)}
 				<AccessDenied 
-					action="upload reports" 
-					customMessage="This action requires Admin access or Upload Report permission. Please contact your administrator if you believe this is an error."
+					action={isEditMode ? "edit reports" : "upload reports"} 
+					customMessage={isEditMode 
+						? "This action requires Admin access or Edit permission. Please contact your administrator if you believe this is an error."
+						: "This action requires Admin access or Upload Report permission. Please contact your administrator if you believe this is an error."
+					}
 				/>
 			</div>
 		);
@@ -238,8 +487,8 @@ export default function UploadReportsPage() {
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Upload Reports</h1>
-					<p className="text-gray-600 mt-2">Upload new reports to the system</p>
+					<h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Report' : 'Upload Reports'}</h1>
+					<p className="text-gray-600 mt-2">{isEditMode ? 'Update report information' : 'Upload new reports to the system'}</p>
 				</div>
 				<Link
 					href="/dashboard/reports"
@@ -293,16 +542,16 @@ export default function UploadReportsPage() {
 									name="mainCategory"
 									value={formData.mainCategory}
 									onChange={handleInputChange}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+									disabled={loadingCategories}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
 									required
 								>
 									<option value="">Select Main Category</option>
-									<option value="Workshop">Workshop</option>
-									<option value="Meeting">Meeting</option>
-									<option value="Training">Training</option>
-									<option value="Event">Event</option>
-									<option value="Conference">Conference</option>
-									<option value="Other">Other</option>
+									{mainCategories.map((category) => (
+										<option key={category.MainCategoryID} value={category.Category}>
+											{category.Category}
+										</option>
+									))}
 								</select>
 							</div>
 
@@ -310,15 +559,29 @@ export default function UploadReportsPage() {
 								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Sub Category <span className="text-red-500">*</span>
 								</label>
-								<input
-									type="text"
+								<select
 									name="subCategory"
 									value={formData.subCategory}
 									onChange={handleInputChange}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-									placeholder="Enter sub category"
+									disabled={!formData.mainCategory || loadingCategories || subCategories.length === 0}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
 									required
-								/>
+								>
+									<option value="">
+										{!formData.mainCategory 
+											? "Select Main Category first" 
+											: loadingCategories 
+											? "Loading sub categories..." 
+											: subCategories.length === 0 
+											? "No sub categories available" 
+											: "Select Sub Category"}
+									</option>
+									{subCategories.map((subCategory) => (
+										<option key={subCategory.SubCategoryID} value={subCategory.SubCategory}>
+											{subCategory.SubCategory}
+										</option>
+									))}
+								</select>
 							</div>
 
 							<div>
@@ -344,8 +607,10 @@ export default function UploadReportsPage() {
 									name="uploadedBy"
 									value={formData.uploadedBy}
 									onChange={handleInputChange}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-									placeholder="Enter your name"
+									disabled
+									readOnly
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed outline-none"
+									placeholder={authLoading ? "Loading..." : "Enter your name"}
 									required
 								/>
 							</div>
@@ -354,7 +619,8 @@ export default function UploadReportsPage() {
 						{/* File Upload */}
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Select Report Files <span className="text-red-500">*</span>
+								Select Report Files {!isEditMode && <span className="text-red-500">*</span>}
+								{isEditMode && <span className="text-gray-500 text-xs ml-2">(Optional - leave empty to keep existing file)</span>}
 							</label>
 							<div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#0b4d2b] transition-colors">
 								<input
@@ -462,10 +728,10 @@ export default function UploadReportsPage() {
 							</button>
 							<button
 								type="submit"
-								disabled={uploading || files.length === 0}
+								disabled={uploading || (!isEditMode && files.length === 0)}
 								className="px-6 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 							>
-								{uploading ? 'Uploading...' : 'Upload Reports'}
+								{uploading ? (isEditMode ? 'Updating...' : 'Uploading...') : (isEditMode ? 'Update Report' : 'Upload Reports')}
 							</button>
 						</div>
 					</form>

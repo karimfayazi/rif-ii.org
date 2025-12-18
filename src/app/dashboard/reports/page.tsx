@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Download, Calendar, Folder, Search, RotateCcw, Filter, Upload, RefreshCw } from "lucide-react";
+import { FileText, Download, Calendar, Folder, Search, RotateCcw, Filter, Upload, RefreshCw, Edit, Trash2, Eye, AlertCircle, Loader2, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useAccess } from "@/hooks/useAccess";
+import { useAuth } from "@/hooks/useAuth";
 import { getUserIdFromCookie } from "@/lib/client-auth";
 
 type ReportData = {
+	ReportID: number;
 	ReportTitle: string;
 	Description: string;
 	FilePath: string;
@@ -17,15 +19,10 @@ type ReportData = {
 
 export default function ReportsPage() {
 	// Get actual user ID from cookie
-	const [userId, setUserId] = useState<string | null>(null);
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
 	
-	useEffect(() => {
-		// Get user ID from cookie on client side
-		const id = getUserIdFromCookie();
-		setUserId(id);
-	}, []);
-	
-	const { canUpload, loading: accessLoading } = useAccess(userId);
+	const { canUpload, accessEdit, accessDelete, loading: accessLoading } = useAccess(userId);
 	
 	const [reports, setReports] = useState<ReportData[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -33,8 +30,11 @@ export default function ReportsPage() {
 	const [selectedMainCategory, setSelectedMainCategory] = useState("");
 	const [selectedSubCategory, setSelectedSubCategory] = useState("");
 	const [error, setError] = useState<string | null>(null);
+	const [success, setSuccess] = useState<string | null>(null);
 	const [mainCategories, setMainCategories] = useState<string[]>([]);
 	const [subCategories, setSubCategories] = useState<string[]>([]);
+	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; report: ReportData | null }>({ show: false, report: null });
+	const [deleting, setDeleting] = useState(false);
 
 	useEffect(() => {
 		fetchReports();
@@ -62,12 +62,53 @@ export default function ReportsPage() {
 				setSubCategories(uniqueSubCategories);
 			} else {
 				setError(data.message || "Failed to fetch reports");
+				setSuccess(null);
 			}
 		} catch (err) {
 			setError("Error fetching reports");
+			setSuccess(null);
 			console.error("Error fetching reports:", err);
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const handleDelete = async () => {
+		if (!deleteConfirm.report || !deleteConfirm.report.ReportID) return;
+
+		try {
+			setDeleting(true);
+			const response = await fetch(`/api/reports/${deleteConfirm.report.ReportID}`, {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+
+			const data = await response.json();
+
+			if (data.success) {
+				setDeleteConfirm({ show: false, report: null });
+				setSuccess('Report deleted successfully');
+				setError(null);
+				// Remove the deleted item from the list
+				setReports(prev => prev.filter(report => report.ReportID !== deleteConfirm.report.ReportID));
+				// Auto-hide success message after 3 seconds
+				setTimeout(() => {
+					setSuccess(null);
+				}, 3000);
+			} else {
+				setError(data.message || "Failed to delete report");
+				setSuccess(null);
+				setDeleteConfirm({ show: false, report: null });
+			}
+		} catch (err) {
+			console.error("Error deleting report:", err);
+			setError("Error deleting report");
+			setSuccess(null);
+			setDeleteConfirm({ show: false, report: null });
+		} finally {
+			setDeleting(false);
 		}
 	};
 
@@ -85,38 +126,33 @@ export default function ReportsPage() {
 	const getFileUrl = (filePath: string) => {
 		if (!filePath) return '';
 		
-		// If already a full URL, return as is
-		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
+		// Handle local path: uploads/reports/{filename}
+		if (filePath.startsWith('uploads/reports/')) {
+			// Local path - use relative URL from public folder
+			return `/${filePath}`;
+		} else if (filePath.startsWith('/uploads/reports/')) {
+			// Already has leading slash
 			return filePath;
+		} else if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
+			// Full URL (for backward compatibility)
+			return filePath;
+		} else if (filePath.startsWith('~/Uploads/Reports/')) {
+			// Legacy format - extract filename
+			const fileName = filePath.replace('~/Uploads/Reports/', '');
+			return `/uploads/reports/${fileName}`;
+		} else {
+			// Just filename, assume it's in uploads/reports
+			return `/uploads/reports/${filePath}`;
 		}
-		
-		// Extract filename from various path formats
-		let fileName = filePath;
-		
-		// Remove ~/Uploads/Reports/ prefix if present
-		if (filePath.startsWith('~/Uploads/Reports/')) {
-			fileName = filePath.replace('~/Uploads/Reports/', '');
-		} 
-		// Remove Uploads/Reports/ prefix if present
-		else if (filePath.startsWith('Uploads/Reports/')) {
-			fileName = filePath.replace('Uploads/Reports/', '');
-		}
-		// Remove uploads/reports/ prefix if present (to avoid duplication)
-		else if (filePath.startsWith('uploads/reports/')) {
-			fileName = filePath.replace('uploads/reports/', '');
-		}
-		
-		// Construct URL with uploads/reports/ prefix
-		return `https://rif-ii.org/uploads/reports/${fileName}`;
 	};
 
 	const handleDownload = (filePath: string, reportTitle: string) => {
 		try {
-			const fullUrl = getFileUrl(filePath);
+			const fileUrl = getFileUrl(filePath);
 			
 			// Create a temporary link element to trigger download
 			const link = document.createElement('a');
-			link.href = fullUrl;
+			link.href = fileUrl;
 			link.download = reportTitle || 'report';
 			link.target = '_blank';
 			document.body.appendChild(link);
@@ -170,7 +206,7 @@ export default function ReportsPage() {
 		);
 	}
 
-	if (error) {
+	if (error && !reports.length) {
 		return (
 			<div className="space-y-6">
 				<div>
@@ -192,6 +228,42 @@ export default function ReportsPage() {
 
 	return (
 		<div className="space-y-6">
+			{/* Success Message */}
+			{success && (
+				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top">
+					<div className="flex items-center">
+						<CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+						<p className="text-green-800 font-medium">{success}</p>
+					</div>
+					<button
+						onClick={() => setSuccess(null)}
+						className="text-green-600 hover:text-green-800 transition-colors"
+					>
+						<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+			)}
+
+			{/* Error Message */}
+			{error && (
+				<div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+					<div className="flex items-center">
+						<AlertCircle className="h-5 w-5 text-red-600 mr-3" />
+						<p className="text-red-800 font-medium">{error}</p>
+					</div>
+					<button
+						onClick={() => setError(null)}
+						className="text-red-600 hover:text-red-800 transition-colors"
+					>
+						<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+			)}
+
 		{/* Header */}
 		<div className="flex items-center justify-between">
 			<div>
@@ -337,6 +409,36 @@ export default function ReportsPage() {
 											</span>
 										</div>
 									</div>
+									{/* View, Edit and Delete Buttons */}
+									{(accessEdit || accessDelete) && (
+										<div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+											<Link
+												href={`/dashboard/reports/view?id=${report.ReportID}`}
+												className="inline-flex items-center px-2 py-1.5 text-sm text-green-600 bg-green-50 rounded hover:bg-green-100 transition-colors"
+												title="View"
+											>
+												<Eye className="h-4 w-4" />
+											</Link>
+											{accessEdit && (
+												<Link
+													href={`/dashboard/reports/upload?id=${report.ReportID}`}
+													className="inline-flex items-center px-2 py-1.5 text-sm text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
+													title="Edit"
+												>
+													<Edit className="h-4 w-4" />
+												</Link>
+											)}
+											{accessDelete && (
+												<button
+													onClick={() => setDeleteConfirm({ show: true, report: report })}
+													className="inline-flex items-center px-2 py-1.5 text-sm text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
+													title="Delete"
+												>
+													<Trash2 className="h-4 w-4" />
+												</button>
+											)}
+										</div>
+									)}
 								</div>
 
 								{/* Report Title */}
@@ -372,15 +474,15 @@ export default function ReportsPage() {
 								</div>
 							</div>
 
-							{/* Download Button */}
+							{/* View Report Button */}
 							<div className="px-6 py-4 bg-gray-50 rounded-b-lg">
-								<button
-									onClick={() => handleDownload(report.FilePath, report.ReportTitle)}
+								<Link
+									href={`/dashboard/reports/view?id=${report.ReportID}`}
 									className="w-full inline-flex items-center justify-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors group-hover:shadow-md"
 								>
-									<Download className="h-4 w-4 mr-2" />
+									<FileText className="h-4 w-4 mr-2" />
 									View Report
-								</button>
+								</Link>
 							</div>
 						</div>
 					))}
@@ -392,6 +494,97 @@ export default function ReportsPage() {
 				<div className="text-center text-sm text-gray-500">
 					Showing {reports.length} report{reports.length !== 1 ? 's' : ''}
 					{(searchTerm || selectedMainCategory || selectedSubCategory) && ' matching your criteria'}
+				</div>
+			)}
+
+			{/* Delete Confirmation Modal */}
+			{deleteConfirm.show && deleteConfirm.report && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all">
+						{/* Modal Header */}
+						<div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl">
+							<div className="flex items-center">
+								<div className="p-2 bg-white/20 rounded-lg mr-4">
+									<Trash2 className="h-6 w-6" />
+								</div>
+								<div>
+									<h2 className="text-2xl font-bold">Confirm Delete</h2>
+									<p className="text-red-100 text-sm mt-1">This action cannot be undone</p>
+								</div>
+							</div>
+						</div>
+
+						{/* Modal Content */}
+						<div className="p-6">
+							<div className="mb-4">
+								<p className="text-gray-700 text-base mb-3">
+									Are you sure you want to delete this report?
+								</p>
+								<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+									{deleteConfirm.report.ReportTitle && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1">Report Title:</p>
+											<p className="text-base font-semibold text-gray-900">
+												{deleteConfirm.report.ReportTitle}
+											</p>
+										</>
+									)}
+									{deleteConfirm.report.MainCategory && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Main Category:</p>
+											<p className="text-base text-gray-700">{deleteConfirm.report.MainCategory}</p>
+										</>
+									)}
+									{deleteConfirm.report.SubCategory && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Sub Category:</p>
+											<p className="text-base text-gray-700">{deleteConfirm.report.SubCategory}</p>
+										</>
+									)}
+									{deleteConfirm.report.EventDate && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Event Date:</p>
+											<p className="text-base text-gray-700">{formatDate(deleteConfirm.report.EventDate)}</p>
+										</>
+									)}
+								</div>
+							</div>
+							<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start">
+								<AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+								<p className="text-sm text-yellow-800">
+									<strong>Warning:</strong> This will permanently delete this report from the database. This action cannot be undone.
+								</p>
+							</div>
+						</div>
+
+						{/* Modal Footer */}
+						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
+							<button
+								onClick={() => setDeleteConfirm({ show: false, report: null })}
+								disabled={deleting}
+								className="px-6 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm disabled:opacity-50"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleDelete}
+								disabled={deleting}
+								className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+							>
+								{deleting ? (
+									<>
+										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										Deleting...
+									</>
+								) : (
+									<>
+										<Trash2 className="h-4 w-4 mr-2" />
+										Yes, Delete
+									</>
+								)}
+							</button>
+						</div>
+					</div>
 				</div>
 			)}
 		</div>

@@ -92,6 +92,8 @@ export async function POST(request: NextRequest) {
 		const subCategory = formData.get('subCategory') as string;
 		const eventDate = formData.get('eventDate') as string;
 		const uploadedBy = formData.get('uploadedBy') as string;
+		const reportId = formData.get('reportId') as string | null;
+		const isUpdate = !!reportId;
 		
 		// Get files
 		const files = formData.getAll('files') as File[];
@@ -103,11 +105,33 @@ export async function POST(request: NextRequest) {
 			}, { status: 400 });
 		}
 		
-		if (files.length === 0) {
+		// Files are required for new uploads, optional for updates
+		if (!isUpdate && files.length === 0) {
 			return NextResponse.json({
 				success: false,
 				message: "No files provided"
 			}, { status: 400 });
+		}
+		
+		// If updating, check if report exists
+		if (isUpdate) {
+			const pool = await getDb();
+			const checkQuery = `
+				SELECT [ReportID], [FilePath]
+				FROM [_rifiiorg_db].[rifiiorg].[tblReports]
+				WHERE [ReportID] = @reportID
+			`;
+			
+			const checkResult = await pool.request()
+				.input('reportID', parseInt(reportId!))
+				.query(checkQuery);
+			
+			if (checkResult.recordset.length === 0) {
+				return NextResponse.json({
+					success: false,
+					message: "Report not found"
+				}, { status: 404 });
+			}
 		}
 
 		// Validate file types and sizes
@@ -142,8 +166,32 @@ export async function POST(request: NextRequest) {
 			}
 		}
 
-		// Create upload directory structure
-		const uploadDir = join(process.cwd(), 'public', 'uploads', 'reports', mainCategory, subCategory);
+		// Helper function to sanitize filename
+		const sanitizeFileName = (str: string): string => {
+			return str
+				.replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
+				.replace(/\s+/g, '_') // Replace spaces with underscores
+				.replace(/_+/g, '_') // Replace multiple underscores with single
+				.trim();
+		};
+
+		// Format event date for filename (YYYY-MM-DD)
+		const formatDateForFilename = (dateString: string): string => {
+			try {
+				const date = new Date(dateString);
+				const year = date.getFullYear();
+				const month = String(date.getMonth() + 1).padStart(2, '0');
+				const day = String(date.getDate()).padStart(2, '0');
+				return `${year}-${month}-${day}`;
+			} catch {
+				// Fallback to current date if parsing fails
+				const now = new Date();
+				return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+			}
+		};
+
+		// Create upload directory structure (just reports folder, no subdirectories)
+		const uploadDir = join(process.cwd(), 'public', 'uploads', 'reports');
 		
 		// Ensure directory exists
 		if (!existsSync(uploadDir)) {
@@ -153,56 +201,102 @@ export async function POST(request: NextRequest) {
 		const pool = await getDb();
 		const uploadedFiles = [];
 
-		// Process each file
-		for (let i = 0; i < files.length; i++) {
-			const file = files[i];
-			const fileExtension = file.name.split('.').pop();
-			const fileName = `${Date.now()}_${i + 1}.${fileExtension}`;
-			const filePath = join(uploadDir, fileName);
-			const relativePath = `uploads/reports/${mainCategory}/${subCategory}/${fileName}`;
-			
-			// Calculate file size in KB
-			const fileSizeKB = Math.round(file.size / 1024);
-			
-			// Get current date for UploadDate
-			const uploadDate = new Date().toISOString().split('T')[0];
-			
-			// Save file to disk
-			const bytes = await file.arrayBuffer();
-			await writeFile(filePath, Buffer.from(bytes));
-			
-			// Insert into database
-			const insertQuery = `
-				INSERT INTO [_rifiiorg_db].[rifiiorg].[tblReports] 
-				([ReportTitle], [Description], [FilePath], [FileExtension], [FileSizeKB], [UploadedBy], [UploadDate], [IsActive], [EventDate], [MainCategory], [SubCategory])
-				VALUES (@reportTitle, @description, @filePath, @fileExtension, @fileSizeKB, @uploadedBy, @uploadDate, @isActive, @eventDate, @mainCategory, @subCategory)
-			`;
-			
-			const request_obj = pool.request();
-			request_obj.input('reportTitle', reportTitle);
-			request_obj.input('description', description || '');
-			request_obj.input('filePath', `~/Uploads/Reports/${fileName}`);
-			request_obj.input('fileExtension', fileExtension || '');
-			request_obj.input('fileSizeKB', fileSizeKB);
-			request_obj.input('uploadedBy', uploadedBy);
-			request_obj.input('uploadDate', uploadDate);
-			request_obj.input('isActive', 1); // Set IsActive to 1 (true) by default
-			request_obj.input('eventDate', eventDate);
-			request_obj.input('mainCategory', mainCategory);
-			request_obj.input('subCategory', subCategory);
-			
-			await request_obj.query(insertQuery);
-			
-			uploadedFiles.push({
-				originalName: file.name,
-				fileName: fileName,
-				filePath: relativePath
-			});
+		// Process files if provided
+		if (files.length > 0) {
+			for (let i = 0; i < files.length; i++) {
+				const file = files[i];
+				const fileExtension = file.name.split('.').pop();
+				
+				// Create filename: ReportTitle_MainCategory_EventDate.extension
+				const sanitizedTitle = sanitizeFileName(reportTitle);
+				const sanitizedCategory = sanitizeFileName(mainCategory);
+				const formattedDate = formatDateForFilename(eventDate);
+				
+				// If multiple files, append index to make unique
+				const fileName = files.length > 1 
+					? `${sanitizedTitle}_${sanitizedCategory}_${formattedDate}_${i + 1}.${fileExtension}`
+					: `${sanitizedTitle}_${sanitizedCategory}_${formattedDate}.${fileExtension}`;
+				
+				const filePath = join(uploadDir, fileName);
+				
+				// Calculate file size in KB
+				const fileSizeKB = Math.round(file.size / 1024);
+				
+				// Get current date for UploadDate
+				const uploadDate = new Date().toISOString().split('T')[0];
+				
+				// Save file to disk
+				const bytes = await file.arrayBuffer();
+				await writeFile(filePath, Buffer.from(bytes));
+				
+				// Store local path in database: uploads/reports/{filename}
+				const localPath = `uploads/reports/${fileName}`;
+				
+				if (isUpdate) {
+					// Update existing report with new file
+					const updateQuery = `
+						UPDATE [_rifiiorg_db].[rifiiorg].[tblReports]
+						SET 
+							[ReportTitle] = @reportTitle,
+							[Description] = @description,
+							[FilePath] = @filePath,
+							[FileExtension] = @fileExtension,
+							[FileSizeKB] = @fileSizeKB,
+							[EventDate] = @eventDate,
+							[MainCategory] = @mainCategory,
+							[SubCategory] = @subCategory
+						WHERE [ReportID] = @reportID
+					`;
+					
+					const request_obj = pool.request();
+					request_obj.input('reportID', parseInt(reportId!));
+					request_obj.input('reportTitle', reportTitle);
+					request_obj.input('description', description || '');
+					request_obj.input('filePath', localPath);
+					request_obj.input('fileExtension', fileExtension || '');
+					request_obj.input('fileSizeKB', fileSizeKB);
+					request_obj.input('eventDate', eventDate);
+					request_obj.input('mainCategory', mainCategory);
+					request_obj.input('subCategory', subCategory);
+					
+					await request_obj.query(updateQuery);
+				} else {
+					// Insert new report into database
+					const insertQuery = `
+						INSERT INTO [_rifiiorg_db].[rifiiorg].[tblReports] 
+						([ReportTitle], [Description], [FilePath], [FileExtension], [FileSizeKB], [UploadedBy], [UploadDate], [IsActive], [EventDate], [MainCategory], [SubCategory])
+						VALUES (@reportTitle, @description, @filePath, @fileExtension, @fileSizeKB, @uploadedBy, @uploadDate, @isActive, @eventDate, @mainCategory, @subCategory)
+					`;
+					
+					const request_obj = pool.request();
+					request_obj.input('reportTitle', reportTitle);
+					request_obj.input('description', description || '');
+					request_obj.input('filePath', localPath);
+					request_obj.input('fileExtension', fileExtension || '');
+					request_obj.input('fileSizeKB', fileSizeKB);
+					request_obj.input('uploadedBy', uploadedBy);
+					request_obj.input('uploadDate', uploadDate);
+					request_obj.input('isActive', 1); // Set IsActive to 1 (true) by default
+					request_obj.input('eventDate', eventDate);
+					request_obj.input('mainCategory', mainCategory);
+					request_obj.input('subCategory', subCategory);
+					
+					await request_obj.query(insertQuery);
+				}
+				
+				uploadedFiles.push({
+					originalName: file.name,
+					fileName: fileName,
+					filePath: localPath
+				});
+			}
 		}
 
 		return NextResponse.json({
 			success: true,
-			message: `Successfully uploaded ${uploadedFiles.length} report(s)`,
+			message: isUpdate 
+				? (uploadedFiles.length > 0 ? `Successfully updated report with new file(s)` : `Successfully updated report`)
+				: `Successfully uploaded ${uploadedFiles.length} report(s)`,
 			uploadedFiles: uploadedFiles
 		});
 

@@ -15,7 +15,10 @@ import {
 	ExternalLink,
 	Plus,
 	Edit,
-	Trash2
+	Trash2,
+	AlertCircle,
+	Loader2,
+	CheckCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
@@ -58,6 +61,7 @@ export default function TrackingSheetPage() {
 	const [trackingData, setTrackingData] = useState<TrackingData[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [success, setSuccess] = useState<string | null>(null);
 	const [selectedSubSubActivityID, setSelectedSubSubActivityID] = useState("");
 	const [selectedSector, setSelectedSector] = useState("");
 	const [selectedDistrict, setSelectedDistrict] = useState("");
@@ -74,6 +78,8 @@ export default function TrackingSheetPage() {
 	const [subSubActivityIDs, setSubSubActivityIDs] = useState<Array<{id: number, activityName: string}>>([]);
 	const [subSubActivityIDToActivityName, setSubSubActivityIDToActivityName] = useState<Map<number, string>>(new Map());
 	const [subSubActivityIDToSubSubActivityName, setSubSubActivityIDToSubSubActivityName] = useState<Map<number, string>>(new Map());
+	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; record: TrackingData | null }>({ show: false, record: null });
+	const [deleting, setDeleting] = useState(false);
 	
 
 	const fetchTrackingData = useCallback(async () => {
@@ -131,9 +137,11 @@ export default function TrackingSheetPage() {
 				setSubSubActivityIDToSubSubActivityName(subSubActivityNameMap);
 			} else {
 				setError(data.message || "Failed to fetch tracking data");
+				setSuccess(null); // Clear success message on error
 			}
 		} catch (err) {
 			setError("Error fetching tracking data");
+			setSuccess(null); // Clear success message on error
 			console.error("Error fetching tracking data:", err);
 		} finally {
 			setLoading(false);
@@ -165,33 +173,42 @@ export default function TrackingSheetPage() {
 		console.log('Edit record:', record);
 	};
 
-	const handleDeleteRecord = async (record: TrackingData) => {
-		if (!record.id) return;
+	const handleDeleteRecord = async () => {
+		if (!deleteConfirm.record || !deleteConfirm.record.id) return;
 		
-		if (!confirm('Are you sure you want to delete this record? This action cannot be undone.')) {
-			return;
-		}
-
 		try {
+			setDeleting(true);
 			const response = await fetch('/api/tracking-sheet/delete', {
 				method: 'DELETE',
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ id: record.id }),
+				body: JSON.stringify({ id: deleteConfirm.record.id }),
 			});
 
 			const data = await response.json();
 
 			if (data.success) {
+				setDeleteConfirm({ show: false, record: null });
+				setSuccess('Record deleted successfully');
+				setError(null);
 				await fetchTrackingData(); // Refresh data
-				alert('Record deleted successfully');
+				// Auto-hide success message after 3 seconds
+				setTimeout(() => {
+					setSuccess(null);
+				}, 3000);
 			} else {
-				alert(data.message || 'Failed to delete record');
+				setError(data.message || 'Failed to delete record');
+				setSuccess(null);
+				setDeleteConfirm({ show: false, record: null });
 			}
 		} catch (error) {
 			console.error('Error deleting record:', error);
-			alert('Error deleting record');
+			setError('Error deleting record');
+			setSuccess(null);
+			setDeleteConfirm({ show: false, record: null });
+		} finally {
+			setDeleting(false);
 		}
 	};
 
@@ -272,7 +289,7 @@ export default function TrackingSheetPage() {
 		);
 	}
 
-	if (error) {
+	if (error && !trackingData.length) {
 		return (
 			<div className="space-y-6">
 				<div>
@@ -294,6 +311,42 @@ export default function TrackingSheetPage() {
 
 	return (
 		<div className="space-y-6">
+			{/* Success Message */}
+			{success && (
+				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top">
+					<div className="flex items-center">
+						<CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+						<p className="text-green-800 font-medium">{success}</p>
+					</div>
+					<button
+						onClick={() => setSuccess(null)}
+						className="text-green-600 hover:text-green-800 transition-colors"
+					>
+						<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+			)}
+
+			{/* Error Message */}
+			{error && (
+				<div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+					<div className="flex items-center">
+						<AlertCircle className="h-5 w-5 text-red-600 mr-3" />
+						<p className="text-red-800 font-medium">{error}</p>
+					</div>
+					<button
+						onClick={() => setError(null)}
+						className="text-red-600 hover:text-red-800 transition-colors"
+					>
+						<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+			)}
+
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
@@ -718,7 +771,7 @@ export default function TrackingSheetPage() {
 															<Edit className="h-4 w-4" />
 														</button>
 														<button 
-															onClick={() => handleDeleteRecord(item)}
+															onClick={() => setDeleteConfirm({ show: true, record: item })}
 															className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
 															title="Delete Record"
 														>
@@ -742,6 +795,100 @@ export default function TrackingSheetPage() {
 					Showing {uniqueFilteredData.length} unique Sub-Sub-Activity {uniqueFilteredData.length !== 1 ? 'IDs' : 'ID'} 
 					({filteredData.length} total record{filteredData.length !== 1 ? 's' : ''})
 					{(selectedSubSubActivityID || selectedSector || selectedDistrict || selectedTehsil) && ' matching your criteria'}
+				</div>
+			)}
+
+			{/* Delete Confirmation Modal */}
+			{deleteConfirm.show && deleteConfirm.record && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all">
+						{/* Modal Header */}
+						<div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl">
+							<div className="flex items-center">
+								<div className="p-2 bg-white/20 rounded-lg mr-4">
+									<Trash2 className="h-6 w-6" />
+								</div>
+								<div>
+									<h2 className="text-2xl font-bold">Confirm Delete</h2>
+									<p className="text-red-100 text-sm mt-1">This action cannot be undone</p>
+								</div>
+							</div>
+						</div>
+
+						{/* Modal Content */}
+						<div className="p-6">
+							<div className="mb-4">
+								<p className="text-gray-700 text-base mb-3">
+									Are you sure you want to delete this tracking sheet record?
+								</p>
+								<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+									{deleteConfirm.record.Output && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1">Output:</p>
+											<p className="text-base font-semibold text-gray-900">
+												{deleteConfirm.record.Output}
+											</p>
+										</>
+									)}
+									{deleteConfirm.record.Sub_Sub_ActivityName && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Sub-Sub Activity:</p>
+											<p className="text-base text-gray-700">{deleteConfirm.record.Sub_Sub_ActivityName}</p>
+										</>
+									)}
+									{deleteConfirm.record.District && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Location:</p>
+											<p className="text-base text-gray-700">
+												{deleteConfirm.record.District}
+												{deleteConfirm.record.Tehsil && `, ${deleteConfirm.record.Tehsil}`}
+											</p>
+										</>
+									)}
+									{deleteConfirm.record.id && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Record ID:</p>
+											<p className="text-base text-gray-700">#{deleteConfirm.record.id}</p>
+										</>
+									)}
+								</div>
+							</div>
+							<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start">
+								<AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+								<p className="text-sm text-yellow-800">
+									<strong>Warning:</strong> This will permanently delete this tracking sheet record from the database. This action cannot be undone.
+								</p>
+							</div>
+						</div>
+
+						{/* Modal Footer */}
+						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
+							<button
+								onClick={() => setDeleteConfirm({ show: false, record: null })}
+								disabled={deleting}
+								className="px-6 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm disabled:opacity-50"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleDeleteRecord}
+								disabled={deleting}
+								className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+							>
+								{deleting ? (
+									<>
+										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										Deleting...
+									</>
+								) : (
+									<>
+										<Trash2 className="h-4 w-4 mr-2" />
+										Yes, Delete
+									</>
+								)}
+							</button>
+						</div>
+					</div>
 				</div>
 			)}
 

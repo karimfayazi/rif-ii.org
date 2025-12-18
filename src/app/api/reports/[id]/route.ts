@@ -17,7 +17,10 @@ export async function GET(
 			return NextResponse.json({
 				success: false,
 				message: "Report ID is required"
-			}, { status: 400 });
+			}, { 
+				status: 400,
+				headers: { 'Content-Type': 'application/json' }
+			});
 		}
 
 		const pool = await getDb();
@@ -42,22 +45,34 @@ export async function GET(
 			return NextResponse.json({
 				success: false,
 				message: "Report not found"
-			}, { status: 404 });
+			}, { 
+				status: 404,
+				headers: { 'Content-Type': 'application/json' }
+			});
 		}
 		
 		return NextResponse.json({
 			success: true,
 			report: result.recordset[0]
+		}, {
+			headers: { 'Content-Type': 'application/json' }
 		});
 	} catch (error) {
 		console.error("Error fetching report:", error);
+		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+		const errorStack = error instanceof Error ? error.stack : undefined;
+		
 		return NextResponse.json(
 			{
 				success: false,
 				message: "Failed to fetch report",
-				error: error instanceof Error ? error.message : "Unknown error"
+				error: errorMessage,
+				...(errorStack && { stack: errorStack })
 			},
-			{ status: 500 }
+			{ 
+				status: 500,
+				headers: { 'Content-Type': 'application/json' }
+			}
 		);
 	}
 }
@@ -254,8 +269,20 @@ export async function DELETE(
 		// Try to delete the physical file if it exists locally
 		try {
 			if (filePath && !filePath.startsWith('http')) {
-				// Extract filename from path
-				const fileName = filePath.replace('~/Uploads/Reports/', '').replace('Uploads/Reports/', '');
+				// Handle local path: uploads/reports/{filename}
+				let fileName = filePath;
+				
+				// Remove path prefixes
+				if (filePath.startsWith('uploads/reports/')) {
+					fileName = filePath.replace('uploads/reports/', '');
+				} else if (filePath.startsWith('/uploads/reports/')) {
+					fileName = filePath.replace('/uploads/reports/', '');
+				} else if (filePath.startsWith('~/Uploads/Reports/')) {
+					fileName = filePath.replace('~/Uploads/Reports/', '');
+				} else if (filePath.startsWith('Uploads/Reports/')) {
+					fileName = filePath.replace('Uploads/Reports/', '');
+				}
+				
 				const physicalPath = join(process.cwd(), 'public', 'uploads', 'reports', fileName);
 				
 				if (existsSync(physicalPath)) {

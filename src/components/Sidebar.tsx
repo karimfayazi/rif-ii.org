@@ -20,10 +20,10 @@ import {
     ChevronsRight,
     ChevronDown,
     ChevronRight,
-    FolderPlus,
     Menu,
     X,
     Layers,
+    Shield,
 } from "lucide-react";
 
 type SidebarProps = {
@@ -58,7 +58,6 @@ const GROUPS: NavGroup[] = [
 		items: [
 			{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
 			{ label: "Tracking-Dashboard", href: "/dashboard/dashboard_v1", icon: LayoutDashboard },
-			{ label: "Add Project", href: "/dashboard/projects/add", icon: FolderPlus },
 			{ 
 				label: "GIS Maps", 
 				icon: Map,
@@ -102,6 +101,15 @@ const GROUPS: NavGroup[] = [
 			{ label: "Reports", href: "/dashboard/reports", icon: BarChart3 },
 			{ label: "Pictures", href: "/dashboard/pictures", icon: ImagePlus },
 			{ label: "Links", href: "/dashboard/links", icon: Link2 },
+			{ 
+				label: "Security Updates", 
+				href: "/dashboard/security-updates",
+				icon: Shield,
+				subItems: [
+					{ label: "All Security Updates", href: "/dashboard/security-updates" },
+					{ label: "Add Security Update", href: "/dashboard/security-updates/add" },
+				]
+			},
 		],
 	},
 	{
@@ -131,7 +139,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
     };
     
     return (
-        <nav className={`rounded-lg border border-gray-200 bg-white p-3 text-[12px] shadow-sm transition-all w-full ${collapsed ? "w-12" : "w-full"}`}>
+        <nav className={`rounded-lg border border-gray-200 bg-white p-3 text-[12px] shadow-sm transition-all ${collapsed ? "w-12" : "w-full"}`}>
 			{/* Toggle Button */}
 			<div className="mb-3 flex items-center justify-end border-b border-gray-200 pb-2">
 				<button
@@ -186,11 +194,16 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 												await fetch("/api/logout", { method: "POST" });
 												window.location.href = "/login";
 											}}
-                                            className={`flex w-full items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 text-left transition-colors hover:bg-red-50 hover:text-red-700`}
-											title={collapsed ? item.label : undefined}
+                                            className={`flex w-full items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 text-left transition-colors hover:bg-red-50 hover:text-red-700 relative group`}
+											title={item.label}
 										>
-											<Icon className="h-4 w-4" />
+											<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""}`} />
 											{!collapsed && <span>{item.label}</span>}
+											{collapsed && (
+												<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+													{item.label}
+												</span>
+											)}
 										</button>
 									) : hasSubItems ? (
 										<>
@@ -210,11 +223,16 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 													}}
 													className={`flex items-center ${
 														collapsed ? "justify-center" : "gap-2"
-													} flex-1`}
-													title={collapsed ? item.label : undefined}
+													} flex-1 relative group`}
+													title={item.label}
 												>
-													<Icon className="h-4 w-4" />
+													<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""}`} />
 													{!collapsed && <span>{item.label}</span>}
+													{collapsed && (
+														<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+															{item.label}
+														</span>
+													)}
 												</Link>
 
 												{/* Expand/collapse chevron */}
@@ -271,15 +289,20 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 														toggleMenu(item.label);
 													}
 												}}
-                                                className={`flex w-full items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 text-left transition-colors hover:bg-gray-100`}
-												title={collapsed ? item.label : undefined}
+                                                className={`flex w-full items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 text-left transition-colors hover:bg-gray-100 relative group`}
+												title={item.label}
 											>
-												<Icon className="h-4 w-4" />
+												<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""}`} />
 												{!collapsed && (
 													<>
 														<span className="flex-1">{item.label}</span>
 														{isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
 													</>
+												)}
+												{collapsed && (
+													<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+														{item.label}
+													</span>
 												)}
 											</button>
 											{isExpanded && !collapsed && item.subMenus && (
@@ -326,15 +349,20 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 												// Don't expand sidebar when clicking menu items - only toggle button should do that
 												e.stopPropagation();
 											}}
-                                            className={`flex items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 transition-colors ${
+                                            className={`flex items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 transition-colors relative group ${
 												isActive
 													? "bg-[#0b4d2b] text-white font-medium"
 													: "hover:bg-gray-100"
 											}`}
-											title={collapsed ? item.label : undefined}
+											title={item.label}
 										>
-											<Icon className="h-4 w-4" />
+											<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""}`} />
 											{!collapsed && <span>{item.label}</span>}
+											{collapsed && (
+												<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+													{item.label}
+												</span>
+											)}
 										</Link>
 									)}
 								</li>

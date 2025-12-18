@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
 		const pool = await getDb();
 		let query = `
 			SELECT TOP (1000) 
+				[ReportID],
 				[ReportTitle],
 				[Description],
 				[FilePath],

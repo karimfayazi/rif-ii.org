@@ -1808,20 +1808,29 @@ export default function DashboardPage() {
 			{trainingDashboardData && (
 				<div className="space-y-6">
 					<div className="flex items-center gap-3">
-					<h2 className="text-xl font-bold text-gray-900 tracking-tight">Training, Capacity Building & Awareness</h2>
-					<p className="text-sm text-gray-500">Overview of trainings, days and participants (event type wise and district wise).</p>
-				</div>
+						<h2 className="text-xl font-bold text-gray-900 tracking-tight">Training, Capacity Building & Awareness</h2>
+						<p className="text-sm text-gray-500">Overview of trainings, days and participants (event type wise and district wise).</p>
+					</div>
 
 					{/* Overall cards */}
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 						<div className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 text-white shadow-md">
 							<p className="text-xs uppercase tracking-wide opacity-80">
 								Total Trainings
 							</p>
-						<p className="mt-2 text-2xl font-semibold">
-							{trainingDashboardData.overall.totalTrainings.toLocaleString()}
-						</p>
-					</div>
+							<p className="mt-2 text-2xl font-semibold">
+								{trainingDashboardData.overall.totalTrainings.toLocaleString()}
+							</p>
+						</div>
+
+						<div className="rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 p-4 text-white shadow-md">
+							<p className="text-xs uppercase tracking-wide opacity-80">
+								Total Days
+							</p>
+							<p className="mt-2 text-2xl font-semibold">
+								{trainingDashboardData.overall.totalDays.toLocaleString()}
+							</p>
+						</div>
 
 						<div className="rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 text-white shadow-md">
 							<p className="text-xs uppercase tracking-wide opacity-80">
@@ -1845,169 +1854,20 @@ export default function DashboardPage() {
 									)}{" "}
 									Female
 								</p>
-				</div>
-			</div>
+							</div>
+						</div>
 
-			<div className="rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 p-4 text-white shadow-md">
-						<p className="text-xs uppercase tracking-wide opacity-80">
-							Total Participants
-						</p>
-						<p className="mt-2 text-2xl font-semibold">
-							{trainingDashboardData.overall.totalParticipants.toLocaleString()}
-						</p>
-					</div>
-				</div>
-
-				{/* Three Graphs Section */}
-				{trainingGraphData.length > 0 && (
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-						{/* Total Male Graph */}
-						<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
-							<h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Total Male by Event Type & District</h3>
-						{(() => {
-								// Group by EventType and District
-								const groupedData: { [key: string]: number } = {};
-								trainingGraphData.forEach(item => {
-									const key = `${item.EventType || 'Unknown'} - ${item.District || 'Unknown'}`;
-									groupedData[key] = (groupedData[key] || 0) + (item.TotalMale || 0);
-								});
-
-								const chartData = Object.entries(groupedData)
-									.map(([label, value]) => ({ label, value }))
-									.sort((a, b) => b.value - a.value)
-									.slice(0, 10); // Top 10
-
-								const maxValue = Math.max(...chartData.map(d => d.value), 1);
-
-							return (
-									<div className="w-full">
-										<div className="flex items-end justify-center gap-2 mb-4" style={{ minHeight: '250px' }}>
-											{chartData.map((item, idx) => {
-												const height = (item.value / maxValue) * 100;
-										return (
-													<div key={idx} className="flex flex-col items-center flex-1">
-														<div className="w-full bg-gray-200 rounded-t-lg relative overflow-hidden shadow-inner mb-2" style={{ height: '200px' }}>
-															<div
-																className="bg-gradient-to-t from-blue-500 to-blue-600 w-full rounded-t-lg transition-all duration-1000 ease-out flex items-start justify-center pt-1 absolute bottom-0"
-																style={{ height: `${Math.min(height, 100)}%` }}
-															>
-																<span className="text-white text-[9px] font-bold">{item.value}</span>
-												</div>
-																</div>
-														<p className="text-[9px] font-semibold text-gray-700 mt-1 text-center max-w-[60px] truncate" title={item.label}>
-															{item.label.split(' - ')[0]}
-														</p>
-														<p className="text-[8px] text-gray-500 text-center max-w-[60px] truncate" title={item.label.split(' - ')[1]}>
-															{item.label.split(' - ')[1]}
-														</p>
-																</div>
-												);
-											})}
-															</div>
-																</div>
-								);
-							})()}
-													</div>
-
-						{/* Total Female Graph */}
-						<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
-							<h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Total Female by Event Type & District</h3>
-							{(() => {
-								// Group by EventType and District
-								const groupedData: { [key: string]: number } = {};
-								trainingGraphData.forEach(item => {
-									const key = `${item.EventType || 'Unknown'} - ${item.District || 'Unknown'}`;
-									groupedData[key] = (groupedData[key] || 0) + (item.TotalFemale || 0);
-								});
-
-								const chartData = Object.entries(groupedData)
-									.map(([label, value]) => ({ label, value }))
-									.sort((a, b) => b.value - a.value)
-									.slice(0, 10); // Top 10
-
-								const maxValue = Math.max(...chartData.map(d => d.value), 1);
-
-								return (
-									<div className="w-full">
-										<div className="flex items-end justify-center gap-2 mb-4" style={{ minHeight: '250px' }}>
-											{chartData.map((item, idx) => {
-												const height = (item.value / maxValue) * 100;
-												return (
-													<div key={idx} className="flex flex-col items-center flex-1">
-														<div className="w-full bg-gray-200 rounded-t-lg relative overflow-hidden shadow-inner mb-2" style={{ height: '200px' }}>
-															<div
-																className="bg-gradient-to-t from-pink-500 to-pink-600 w-full rounded-t-lg transition-all duration-1000 ease-out flex items-start justify-center pt-1 absolute bottom-0"
-																style={{ height: `${Math.min(height, 100)}%` }}
-															>
-																<span className="text-white text-[9px] font-bold">{item.value}</span>
-																	</div>
-																</div>
-														<p className="text-[9px] font-semibold text-gray-700 mt-1 text-center max-w-[60px] truncate" title={item.label}>
-															{item.label.split(' - ')[0]}
-														</p>
-														<p className="text-[8px] text-gray-500 text-center max-w-[60px] truncate" title={item.label.split(' - ')[1]}>
-															{item.label.split(' - ')[1]}
-														</p>
-															</div>
-												);
-											})}
-														</div>
-																	</div>
-								);
-							})()}
-																</div>
-
-						{/* Total Participants Graph */}
-						<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
-							<h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Total Participants by Event Type & District</h3>
-							{(() => {
-								// Group by EventType and District
-								const groupedData: { [key: string]: number } = {};
-								trainingGraphData.forEach(item => {
-									const key = `${item.EventType || 'Unknown'} - ${item.District || 'Unknown'}`;
-									groupedData[key] = (groupedData[key] || 0) + (item.TotalParticipants || 0);
-								});
-
-								const chartData = Object.entries(groupedData)
-									.map(([label, value]) => ({ label, value }))
-									.sort((a, b) => b.value - a.value)
-									.slice(0, 10); // Top 10
-
-								const maxValue = Math.max(...chartData.map(d => d.value), 1);
-
-								return (
-									<div className="w-full">
-										<div className="flex items-end justify-center gap-2 mb-4" style={{ minHeight: '250px' }}>
-											{chartData.map((item, idx) => {
-												const height = (item.value / maxValue) * 100;
-												return (
-													<div key={idx} className="flex flex-col items-center flex-1">
-														<div className="w-full bg-gray-200 rounded-t-lg relative overflow-hidden shadow-inner mb-2" style={{ height: '200px' }}>
-															<div
-																className="bg-gradient-to-t from-green-500 to-green-600 w-full rounded-t-lg transition-all duration-1000 ease-out flex items-start justify-center pt-1 absolute bottom-0"
-																style={{ height: `${Math.min(height, 100)}%` }}
-															>
-																<span className="text-white text-[9px] font-bold">{item.value}</span>
-															</div>
-														</div>
-														<p className="text-[9px] font-semibold text-gray-700 mt-1 text-center max-w-[60px] truncate" title={item.label}>
-															{item.label.split(' - ')[0]}
-														</p>
-														<p className="text-[8px] text-gray-500 text-center max-w-[60px] truncate" title={item.label.split(' - ')[1]}>
-															{item.label.split(' - ')[1]}
-														</p>
-										</div>
-									);
-									})}
-										</div>
-								</div>
-							);
-						})()}
+						<div className="rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 p-4 text-white shadow-md">
+							<p className="text-xs uppercase tracking-wide opacity-80">
+								Total Participants
+							</p>
+							<p className="mt-2 text-2xl font-semibold">
+								{trainingDashboardData.overall.totalParticipants.toLocaleString()}
+							</p>
+						</div>
 					</div>
 				</div>
 			)}
-		</div>
-	)}
 
 			{/* Picture Gallery Section */}
 			<div className="bg-gradient-to-r from-[#0b4d2b] to-[#0a3d24] rounded-xl shadow-lg overflow-hidden">

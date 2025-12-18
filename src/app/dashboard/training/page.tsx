@@ -18,7 +18,10 @@ import {
 	X,
 	FileText,
 	Image as ImageIcon,
-	FileDown
+	FileDown,
+	AlertCircle,
+	Loader2,
+	CheckCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
@@ -87,8 +90,10 @@ export default function TrainingPage() {
 	const [trainingData, setTrainingData] = useState<TrainingEvent[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [success, setSuccess] = useState<string | null>(null);
 	const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
 	const [viewingRecord, setViewingRecord] = useState<TrainingEvent | null>(null);
+	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; record: TrainingEvent | null }>({ show: false, record: null });
 	const [selectedDistrict, setSelectedDistrict] = useState("");
 	const [selectedOutput, setSelectedOutput] = useState("");
 	const [selectedEventType, setSelectedEventType] = useState("");
@@ -160,34 +165,41 @@ export default function TrainingPage() {
 		}
 	};
 
-	const handleDelete = async (sn: number | undefined) => {
-		if (!sn) return;
-		
-		if (!confirm("Are you sure you want to delete this training event? This action cannot be undone.")) {
-			return;
-		}
+	const handleDelete = async () => {
+		if (!deleteConfirm.record || !deleteConfirm.record.SN) return;
 
 		try {
-			setDeleteLoading(sn);
+			setDeleteLoading(deleteConfirm.record.SN);
 			const response = await fetch(`/api/training/delete`, {
 				method: 'DELETE',
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ id: sn }),
+				body: JSON.stringify({ id: deleteConfirm.record.SN }),
 			});
 
 			const data = await response.json();
 
 			if (data.success) {
+				setDeleteConfirm({ show: false, record: null });
+				setSuccess('Training event deleted successfully');
+				setError(null);
 				// Remove the deleted item from the list
-				setTrainingData(prev => prev.filter(item => item.SN !== sn));
+				setTrainingData(prev => prev.filter(item => item.SN !== deleteConfirm.record.SN));
+				// Auto-hide success message after 3 seconds
+				setTimeout(() => {
+					setSuccess(null);
+				}, 3000);
 			} else {
-				alert(data.message || "Failed to delete training event");
+				setError(data.message || "Failed to delete training event");
+				setSuccess(null);
+				setDeleteConfirm({ show: false, record: null });
 			}
 		} catch (err) {
 			console.error("Error deleting training event:", err);
-			alert("Error deleting training event");
+			setError("Error deleting training event");
+			setSuccess(null);
+			setDeleteConfirm({ show: false, record: null });
 		} finally {
 			setDeleteLoading(null);
 		}
@@ -423,8 +435,8 @@ export default function TrainingPage() {
 		);
 	}
 
-	if (error) {
-	return (
+	if (error && !trainingData.length) {
+		return (
 			<div className="space-y-6">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">Training, Capacity Building & Awareness</h1>
@@ -438,13 +450,49 @@ export default function TrainingPage() {
 					>
 						Try Again
 					</button>
+				</div>
 			</div>
-		</div>
-	);
-}
+		);
+	}
 
 	return (
 		<div className="space-y-6">
+			{/* Success Message */}
+			{success && (
+				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top">
+					<div className="flex items-center">
+						<CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+						<p className="text-green-800 font-medium">{success}</p>
+					</div>
+					<button
+						onClick={() => setSuccess(null)}
+						className="text-green-600 hover:text-green-800 transition-colors"
+					>
+						<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+			)}
+
+			{/* Error Message */}
+			{error && (
+				<div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+					<div className="flex items-center">
+						<AlertCircle className="h-5 w-5 text-red-600 mr-3" />
+						<p className="text-red-800 font-medium">{error}</p>
+					</div>
+					<button
+						onClick={() => setError(null)}
+						className="text-red-600 hover:text-red-800 transition-colors"
+					>
+						<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+			)}
+
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
@@ -769,16 +817,12 @@ export default function TrainingPage() {
 														)}
 														{accessDelete && (
 															<button
-																onClick={() => handleDelete(item.SN)}
+																onClick={() => setDeleteConfirm({ show: true, record: item })}
 																disabled={deleteLoading === item.SN}
 																className="inline-flex items-center px-3 py-1.5 text-sm text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors disabled:opacity-50"
 																title="Delete"
 															>
-																{deleteLoading === item.SN ? (
-																	<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-																) : (
-																	<Trash2 className="h-4 w-4" />
-																)}
+																<Trash2 className="h-4 w-4" />
 															</button>
 														)}
 													</>
@@ -1092,6 +1136,106 @@ export default function TrainingPage() {
 								className="px-6 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors font-medium"
 							>
 								Close
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Delete Confirmation Modal */}
+			{deleteConfirm.show && deleteConfirm.record && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all">
+						{/* Modal Header */}
+						<div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl">
+							<div className="flex items-center">
+								<div className="p-2 bg-white/20 rounded-lg mr-4">
+									<Trash2 className="h-6 w-6" />
+								</div>
+								<div>
+									<h2 className="text-2xl font-bold">Confirm Delete</h2>
+									<p className="text-red-100 text-sm mt-1">This action cannot be undone</p>
+								</div>
+							</div>
+						</div>
+
+						{/* Modal Content */}
+						<div className="p-6">
+							<div className="mb-4">
+								<p className="text-gray-700 text-base mb-3">
+									Are you sure you want to delete this training event?
+								</p>
+								<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+									{deleteConfirm.record.TrainingTitle && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1">Training Title:</p>
+											<p className="text-base font-semibold text-gray-900">
+												{deleteConfirm.record.TrainingTitle}
+											</p>
+										</>
+									)}
+									{deleteConfirm.record.Output && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Output:</p>
+											<p className="text-base text-gray-700">{deleteConfirm.record.Output}</p>
+										</>
+									)}
+									{deleteConfirm.record.EventType && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Event Type:</p>
+											<p className="text-base text-gray-700">{deleteConfirm.record.EventType}</p>
+										</>
+									)}
+									{(deleteConfirm.record.District || deleteConfirm.record.LocationTehsil) && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Location:</p>
+											<p className="text-base text-gray-700">
+												{deleteConfirm.record.District}
+												{deleteConfirm.record.LocationTehsil && `, ${deleteConfirm.record.LocationTehsil}`}
+											</p>
+										</>
+									)}
+									{deleteConfirm.record.SN && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Record ID:</p>
+											<p className="text-base text-gray-700">#{deleteConfirm.record.SN}</p>
+										</>
+									)}
+								</div>
+							</div>
+							<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start">
+								<AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+								<p className="text-sm text-yellow-800">
+									<strong>Warning:</strong> This will permanently delete this training event from the database. This action cannot be undone.
+								</p>
+							</div>
+						</div>
+
+						{/* Modal Footer */}
+						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
+							<button
+								onClick={() => setDeleteConfirm({ show: false, record: null })}
+								disabled={deleteLoading === deleteConfirm.record.SN}
+								className="px-6 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm disabled:opacity-50"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleDelete}
+								disabled={deleteLoading === deleteConfirm.record.SN}
+								className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+							>
+								{deleteLoading === deleteConfirm.record.SN ? (
+									<>
+										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										Deleting...
+									</>
+								) : (
+									<>
+										<Trash2 className="h-4 w-4 mr-2" />
+										Yes, Delete
+									</>
+								)}
 							</button>
 						</div>
 					</div>

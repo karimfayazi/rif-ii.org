@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Download, Calendar, Folder, Search, RotateCcw, Filter, Upload, User, RefreshCw } from "lucide-react";
+import { FileText, Download, Calendar, Folder, Search, RotateCcw, Filter, Upload, User, RefreshCw, Edit, Trash2, AlertCircle, Loader2, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useAccess } from "@/hooks/useAccess";
+import { useAuth } from "@/hooks/useAuth";
 
 type DocumentData = {
 	Title: string;
@@ -23,9 +24,9 @@ type DocumentData = {
 };
 
 export default function DocumentsPage() {
-	// For demo purposes, using a hardcoded user ID. In real app, get from auth context
-	const userId = "admin"; // Replace with actual user ID from auth context
-	const { canUpload, loading: accessLoading, error: accessError } = useAccess(userId);
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	const { canUpload, accessEdit, accessDelete, loading: accessLoading, error: accessError } = useAccess(userId);
 	
 	const [documents, setDocuments] = useState<DocumentData[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -33,8 +34,11 @@ export default function DocumentsPage() {
 	const [selectedMainCategory, setSelectedMainCategory] = useState("");
 	const [selectedSubCategory, setSelectedSubCategory] = useState("");
 	const [error, setError] = useState<string | null>(null);
+	const [success, setSuccess] = useState<string | null>(null);
 	const [mainCategories, setMainCategories] = useState<string[]>([]);
 	const [subCategories, setSubCategories] = useState<string[]>([]);
+	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; document: DocumentData | null }>({ show: false, document: null });
+	const [deleting, setDeleting] = useState(false);
 
 	useEffect(() => {
 		fetchDocuments();
@@ -62,12 +66,53 @@ export default function DocumentsPage() {
 				setSubCategories(uniqueSubCategories);
 			} else {
 				setError(data.message || "Failed to fetch documents");
+				setSuccess(null);
 			}
 		} catch (err) {
 			setError("Error fetching documents");
+			setSuccess(null);
 			console.error("Error fetching documents:", err);
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const handleDelete = async () => {
+		if (!deleteConfirm.document || !deleteConfirm.document.DocumentID) return;
+
+		try {
+			setDeleting(true);
+			const response = await fetch(`/api/documents/${deleteConfirm.document.DocumentID}`, {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+
+			const data = await response.json();
+
+			if (data.success) {
+				setDeleteConfirm({ show: false, document: null });
+				setSuccess('Document deleted successfully');
+				setError(null);
+				// Remove the deleted item from the list
+				setDocuments(prev => prev.filter(doc => doc.DocumentID !== deleteConfirm.document.DocumentID));
+				// Auto-hide success message after 3 seconds
+				setTimeout(() => {
+					setSuccess(null);
+				}, 3000);
+			} else {
+				setError(data.message || "Failed to delete document");
+				setSuccess(null);
+				setDeleteConfirm({ show: false, document: null });
+			}
+		} catch (err) {
+			console.error("Error deleting document:", err);
+			setError("Error deleting document");
+			setSuccess(null);
+			setDeleteConfirm({ show: false, document: null });
+		} finally {
+			setDeleting(false);
 		}
 	};
 
@@ -84,27 +129,29 @@ export default function DocumentsPage() {
 
 	const handleDownload = (filePath: string, documentTitle: string) => {
 		try {
-			// Check if filePath already contains the full path or starts with ~/Uploads/Documents/
-			let fullUrl;
-			if (filePath.startsWith('~/Uploads/Documents/')) {
-				// Remove the ~/Uploads/Documents/ prefix and construct the correct URL
-				const fileName = filePath.replace('~/Uploads/Documents/', '');
-				fullUrl = `https://rif-ii.org/${fileName}`;
+			// Handle local path: uploads/documents/{filename}
+			let fileUrl;
+			if (filePath.startsWith('uploads/documents/')) {
+				// Local path - use relative URL from public folder
+				fileUrl = `/${filePath}`;
+			} else if (filePath.startsWith('/uploads/documents/')) {
+				// Already has leading slash
+				fileUrl = filePath;
 			} else if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
-				// Already a full URL
-				fullUrl = filePath;
-			} else if (filePath.startsWith('Uploads/Documents/')) {
-				// Remove Uploads/Documents/ prefix and construct the correct URL
-				const fileName = filePath.replace('Uploads/Documents/', '');
-				fullUrl = `https://rif-ii.org/${fileName}`;
+				// Full URL (for backward compatibility)
+				fileUrl = filePath;
+			} else if (filePath.startsWith('~/Uploads/Documents/')) {
+				// Legacy format - extract filename
+				const fileName = filePath.replace('~/Uploads/Documents/', '');
+				fileUrl = `/uploads/documents/${fileName}`;
 			} else {
-				// Just a filename, construct the full URL
-				fullUrl = `https://rif-ii.org/${filePath}`;
+				// Just filename, assume it's in uploads/documents
+				fileUrl = `/uploads/documents/${filePath}`;
 			}
 			
 			// Create a temporary link element to trigger download
 			const link = document.createElement('a');
-			link.href = fullUrl;
+			link.href = fileUrl;
 			link.download = documentTitle || 'document';
 			link.target = '_blank';
 			document.body.appendChild(link);
@@ -174,7 +221,7 @@ export default function DocumentsPage() {
 		);
 	}
 
-	if (error) {
+	if (error && !documents.length) {
 		return (
 			<div className="space-y-6">
 				<div>
@@ -196,6 +243,42 @@ export default function DocumentsPage() {
 
 	return (
 		<div className="space-y-6">
+			{/* Success Message */}
+			{success && (
+				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top">
+					<div className="flex items-center">
+						<CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+						<p className="text-green-800 font-medium">{success}</p>
+					</div>
+					<button
+						onClick={() => setSuccess(null)}
+						className="text-green-600 hover:text-green-800 transition-colors"
+					>
+						<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+			)}
+
+			{/* Error Message */}
+			{error && (
+				<div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+					<div className="flex items-center">
+						<AlertCircle className="h-5 w-5 text-red-600 mr-3" />
+						<p className="text-red-800 font-medium">{error}</p>
+					</div>
+					<button
+						onClick={() => setError(null)}
+						className="text-red-600 hover:text-red-800 transition-colors"
+					>
+						<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+			)}
+
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
@@ -203,15 +286,13 @@ export default function DocumentsPage() {
 					<p className="text-gray-600 mt-2">Browse and download available documents</p>
 				</div>
 				<div className="flex items-center space-x-3">
-					{(canUpload || accessError) && (
-						<Link
-							href="/dashboard/documents/upload"
-							className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-						>
-							<Upload className="h-4 w-4 mr-2" />
-							Upload Documents
-						</Link>
-					)}
+					<Link
+						href="/dashboard/documents/upload"
+						className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+					>
+						<Upload className="h-4 w-4 mr-2" />
+						Upload document
+					</Link>
 					<button
 						onClick={fetchDocuments}
 						className="inline-flex items-center px-4 py-2 text-[#0b4d2b] bg-[#0b4d2b]/10 rounded-lg hover:bg-[#0b4d2b]/20 transition-colors"
@@ -343,6 +424,29 @@ export default function DocumentsPage() {
 											</span>
 										</div>
 									</div>
+									{/* Edit and Delete Buttons */}
+									{(accessEdit || accessDelete) && (
+										<div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+											{accessEdit && (
+												<Link
+													href={`/dashboard/documents/upload?id=${document.DocumentID}`}
+													className="inline-flex items-center px-2 py-1.5 text-sm text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
+													title="Edit"
+												>
+													<Edit className="h-4 w-4" />
+												</Link>
+											)}
+											{accessDelete && (
+												<button
+													onClick={() => setDeleteConfirm({ show: true, document: document })}
+													className="inline-flex items-center px-2 py-1.5 text-sm text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
+													title="Delete"
+												>
+													<Trash2 className="h-4 w-4" />
+												</button>
+											)}
+										</div>
+									)}
 								</div>
 
 								{/* Document Title */}
@@ -397,15 +501,15 @@ export default function DocumentsPage() {
 								</div>
 							</div>
 
-							{/* Download Button */}
+							{/* View Document Button */}
 							<div className="px-6 py-4 bg-gray-50 rounded-b-lg">
-								<button
-									onClick={() => handleDownload(document.FilePath, document.Title)}
+								<Link
+									href={`/dashboard/documents/view?id=${document.DocumentID}`}
 									className="w-full inline-flex items-center justify-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors group-hover:shadow-md"
 								>
-									<Download className="h-4 w-4 mr-2" />
+									<FileText className="h-4 w-4 mr-2" />
 									View Document
-								</button>
+								</Link>
 							</div>
 						</div>
 					))}
@@ -417,6 +521,103 @@ export default function DocumentsPage() {
 				<div className="text-center text-sm text-gray-500">
 					Showing {documents.length} document{documents.length !== 1 ? 's' : ''}
 					{(searchTerm || selectedMainCategory || selectedSubCategory) && ' matching your criteria'}
+				</div>
+			)}
+
+			{/* Delete Confirmation Modal */}
+			{deleteConfirm.show && deleteConfirm.document && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all">
+						{/* Modal Header */}
+						<div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl">
+							<div className="flex items-center">
+								<div className="p-2 bg-white/20 rounded-lg mr-4">
+									<Trash2 className="h-6 w-6" />
+								</div>
+								<div>
+									<h2 className="text-2xl font-bold">Confirm Delete</h2>
+									<p className="text-red-100 text-sm mt-1">This action cannot be undone</p>
+								</div>
+							</div>
+						</div>
+
+						{/* Modal Content */}
+						<div className="p-6">
+							<div className="mb-4">
+								<p className="text-gray-700 text-base mb-3">
+									Are you sure you want to delete this document?
+								</p>
+								<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+									{deleteConfirm.document.Title && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1">Title:</p>
+											<p className="text-base font-semibold text-gray-900">
+												{deleteConfirm.document.Title}
+											</p>
+										</>
+									)}
+									{deleteConfirm.document.Category && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Category:</p>
+											<p className="text-base text-gray-700">{deleteConfirm.document.Category}</p>
+										</>
+									)}
+									{deleteConfirm.document.SubCategory && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Sub Category:</p>
+											<p className="text-base text-gray-700">{deleteConfirm.document.SubCategory}</p>
+										</>
+									)}
+									{deleteConfirm.document.FileType && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">File Type:</p>
+											<p className="text-base text-gray-700">{deleteConfirm.document.FileType}</p>
+										</>
+									)}
+									{deleteConfirm.document.DocumentID && (
+										<>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Document ID:</p>
+											<p className="text-base text-gray-700">#{deleteConfirm.document.DocumentID}</p>
+										</>
+									)}
+								</div>
+							</div>
+							<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start">
+								<AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+								<p className="text-sm text-yellow-800">
+									<strong>Warning:</strong> This will permanently delete this document from the database. This action cannot be undone.
+								</p>
+							</div>
+						</div>
+
+						{/* Modal Footer */}
+						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
+							<button
+								onClick={() => setDeleteConfirm({ show: false, document: null })}
+								disabled={deleting}
+								className="px-6 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm disabled:opacity-50"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleDelete}
+								disabled={deleting}
+								className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+							>
+								{deleting ? (
+									<>
+										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										Deleting...
+									</>
+								) : (
+									<>
+										<Trash2 className="h-4 w-4 mr-2" />
+										Yes, Delete
+									</>
+								)}
+							</button>
+						</div>
+					</div>
 				</div>
 			)}
 		</div>

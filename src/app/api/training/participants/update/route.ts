@@ -16,11 +16,15 @@ export async function PUT(request: NextRequest) {
 			contact_number,
 			tehsil,
 			district,
+			NC_VC,
 			workshop_training_name,
 			workshop_session_conference,
 			start_date,
 			end_date,
-			date_entered_by
+			date_entered_by,
+			Training_Unit,
+			Venue,
+			Duration_Days
 		} = body;
 
 		if (!sn) {
@@ -39,7 +43,7 @@ export async function PUT(request: NextRequest) {
 	// Exclude the current record being edited
 	const duplicateCheckQuery = `
 		SELECT COUNT(*) AS count
-		FROM [_rifiiorg_db].[rifiiorg].[workshop_participants]
+		FROM [_rifiiorg_db].[dbo].[workshop_participants]
 		WHERE [cnic_number] = @cnic_number
 			AND [workshop_session_conference] = @workshop_session_conference
 			AND CAST([start_date] AS DATE) = CAST(@start_date AS DATE)
@@ -68,7 +72,7 @@ export async function PUT(request: NextRequest) {
 	const request_obj = pool.request();
 
 	const query = `
-		UPDATE [_rifiiorg_db].[rifiiorg].[workshop_participants]
+		UPDATE [_rifiiorg_db].[dbo].[workshop_participants]
 			SET
 				[participant_name] = @participant_name,
 				[so_do_wo_ho] = @so_do_wo_ho,
@@ -80,11 +84,15 @@ export async function PUT(request: NextRequest) {
 				[contact_number] = @contact_number,
 				[tehsil] = @tehsil,
 				[district] = @district,
+				[NC_VC] = @NC_VC,
 				[workshop_training_name] = @workshop_training_name,
 				[workshop_session_conference] = @workshop_session_conference,
 				[start_date] = @start_date,
 				[end_date] = @end_date,
-				[date_entered_by] = @date_entered_by
+				[date_entered_by] = @date_entered_by,
+				[Training_Unit] = @Training_Unit,
+				[Venue] = @Venue,
+				[Duration_Days] = @Duration_Days
 			WHERE [sn] = @sn
 		`;
 
@@ -99,11 +107,15 @@ export async function PUT(request: NextRequest) {
 		request_obj.input('contact_number', contact_number || null);
 		request_obj.input('tehsil', tehsil || null);
 		request_obj.input('district', district || null);
+		request_obj.input('NC_VC', NC_VC || null);
 		request_obj.input('workshop_training_name', workshop_training_name || null);
 		request_obj.input('workshop_session_conference', workshop_session_conference || null);
 		request_obj.input('start_date', start_date ? new Date(start_date) : null);
 		request_obj.input('end_date', end_date ? new Date(end_date) : null);
 		request_obj.input('date_entered_by', date_entered_by || null);
+		request_obj.input('Training_Unit', Training_Unit || null);
+		request_obj.input('Venue', Venue || null);
+		request_obj.input('Duration_Days', Duration_Days ? parseInt(Duration_Days) : null);
 
 		await request_obj.query(query);
 

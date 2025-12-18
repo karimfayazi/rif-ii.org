@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Upload, ArrowLeft, FileText, Calendar, Folder, User, X, Check } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AccessDenied from "@/components/AccessDenied";
 import { useAccess } from "@/hooks/useAccess";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,16 +30,78 @@ type UploadedFile = {
 
 export default function UploadDocumentsPage() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
+	const documentId = searchParams.get('id');
+	const isEditMode = !!documentId;
 	
 	// Get user ID using useAuth hook (more reliable)
-	const { user, getUserId } = useAuth();
+	const { user, userProfile, getUserId, loading: authLoading } = useAuth();
 	const userId = user?.id || user?.username || getUserId() || null;
 	
-	const { canUploadDocuments, loading: accessLoading, error: accessError } = useAccess(userId);
+	const { canUploadDocuments, accessEdit, loading: accessLoading, error: accessError } = useAccess(userId);
 	
 	useEffect(() => {
 		console.log('[Documents Upload Page] Access check result:', { canUploadDocuments, accessLoading, accessError, userId });
 	}, [canUploadDocuments, accessLoading, accessError, userId]);
+
+	// Auto-populate "Uploaded By" with user's full name
+	useEffect(() => {
+		if (userProfile?.full_name || user?.name) {
+			const fullName = userProfile?.full_name || user?.name || '';
+			setFormData(prev => ({
+				...prev,
+				uploadedBy: fullName
+			}));
+		}
+	}, [userProfile, user]);
+
+	// Fetch document data when editing
+	useEffect(() => {
+		const fetchDocument = async () => {
+			if (!documentId) return;
+
+			try {
+				const response = await fetch(`/api/documents/${documentId}`);
+				const data = await response.json();
+
+				if (data.success && data.document) {
+					const doc = data.document;
+					// Format date for input field (YYYY-MM-DD)
+					const formatDateForInput = (dateString: string) => {
+						if (!dateString) return '';
+						try {
+							const date = new Date(dateString);
+							const year = date.getFullYear();
+							const month = String(date.getMonth() + 1).padStart(2, '0');
+							const day = String(date.getDate()).padStart(2, '0');
+							return `${year}-${month}-${day}`;
+						} catch {
+							return dateString;
+						}
+					};
+
+					setFormData({
+						title: doc.Title || '',
+						description: doc.Description || '',
+						category: doc.Category || '',
+						subCategory: doc.SubCategory || '',
+						documentDate: formatDateForInput(doc.document_date) || '',
+						uploadedBy: doc.UploadedBy || '',
+						fileType: doc.FileType || '',
+						documentType: doc.Documentstype || '',
+						allowPriorityUsers: doc.AllowPriorityUsers || false,
+						allowInternalUsers: doc.AllowInternalUsers || false,
+						allowOthersUsers: doc.AllowOthersUsers || false
+					});
+				}
+			} catch (err) {
+				console.error('Error fetching document:', err);
+				setError('Failed to load document data');
+			}
+		};
+
+		fetchDocument();
+	}, [documentId]);
 	
 	const [formData, setFormData] = useState<UploadFormData>({
 		title: "",
@@ -127,7 +189,8 @@ export default function UploadDocumentsPage() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		
-		if (files.length === 0) {
+		// For new uploads, require at least one file
+		if (!isEditMode && files.length === 0) {
 			setError("Please select at least one document file to upload");
 			return;
 		}
@@ -142,62 +205,102 @@ export default function UploadDocumentsPage() {
 		setError(null);
 
 		try {
-			const formDataToSend = new FormData();
-			
-			// Add form fields
-			formDataToSend.append('title', formData.title);
-			formDataToSend.append('description', formData.description);
-			formDataToSend.append('category', formData.category);
-			formDataToSend.append('subCategory', formData.subCategory);
-			formDataToSend.append('documentDate', formData.documentDate);
-			formDataToSend.append('uploadedBy', formData.uploadedBy);
-			formDataToSend.append('fileType', formData.fileType);
-			formDataToSend.append('documentType', formData.documentType);
-			formDataToSend.append('allowPriorityUsers', formData.allowPriorityUsers.toString());
-			formDataToSend.append('allowInternalUsers', formData.allowInternalUsers.toString());
-			formDataToSend.append('allowOthersUsers', formData.allowOthersUsers.toString());
+			if (isEditMode) {
+				// Update existing document
+				const response = await fetch(`/api/documents/${documentId}`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						title: formData.title,
+						description: formData.description,
+						category: formData.category,
+						subCategory: formData.subCategory,
+						documentDate: formData.documentDate,
+						uploadedBy: formData.uploadedBy,
+						fileType: formData.fileType,
+						documentType: formData.documentType,
+						allowPriorityUsers: formData.allowPriorityUsers,
+						allowInternalUsers: formData.allowInternalUsers,
+						allowOthersUsers: formData.allowOthersUsers
+					}),
+				});
 
-			// Add files
-			files.forEach((fileObj, index) => {
-				formDataToSend.append(`files`, fileObj.file);
-			});
+				const result = await response.json();
 
-			const response = await fetch('/api/documents/upload', {
-				method: 'POST',
-				body: formDataToSend,
-			});
-
-			const result = await response.json();
-
-			if (result.success) {
-				setUploadStatus('success');
-				setUploadProgress(100);
-				
-				// Redirect to documents page after 2 seconds
-				setTimeout(() => {
-					router.push('/dashboard/documents');
-				}, 2000);
+				if (result.success) {
+					setUploadStatus('success');
+					setUploadProgress(100);
+					
+					// Redirect to documents page after 2 seconds
+					setTimeout(() => {
+						router.push('/dashboard/documents');
+					}, 2000);
+				} else {
+					setError(result.message || 'Update failed');
+					setUploadStatus('error');
+				}
 			} else {
-				setError(result.message || 'Upload failed');
-				setUploadStatus('error');
+				// Upload new document
+				const formDataToSend = new FormData();
+				
+				// Add form fields
+				formDataToSend.append('title', formData.title);
+				formDataToSend.append('description', formData.description);
+				formDataToSend.append('category', formData.category);
+				formDataToSend.append('subCategory', formData.subCategory);
+				formDataToSend.append('documentDate', formData.documentDate);
+				formDataToSend.append('uploadedBy', formData.uploadedBy);
+				formDataToSend.append('fileType', formData.fileType);
+				formDataToSend.append('documentType', formData.documentType);
+				formDataToSend.append('allowPriorityUsers', formData.allowPriorityUsers.toString());
+				formDataToSend.append('allowInternalUsers', formData.allowInternalUsers.toString());
+				formDataToSend.append('allowOthersUsers', formData.allowOthersUsers.toString());
+
+				// Add files
+				files.forEach((fileObj, index) => {
+					formDataToSend.append(`files`, fileObj.file);
+				});
+
+				const response = await fetch('/api/documents/upload', {
+					method: 'POST',
+					body: formDataToSend,
+				});
+
+				const result = await response.json();
+
+				if (result.success) {
+					setUploadStatus('success');
+					setUploadProgress(100);
+					
+					// Redirect to documents page after 2 seconds
+					setTimeout(() => {
+						router.push('/dashboard/documents');
+					}, 2000);
+				} else {
+					setError(result.message || 'Upload failed');
+					setUploadStatus('error');
+				}
 			}
 		} catch (err) {
-			setError('Upload failed. Please try again.');
+			setError(isEditMode ? 'Update failed. Please try again.' : 'Upload failed. Please try again.');
 			setUploadStatus('error');
-			console.error('Upload error:', err);
+			console.error('Error:', err);
 		} finally {
 			setUploading(false);
 		}
 	};
 
 	const resetForm = () => {
+		const fullName = userProfile?.full_name || user?.name || '';
 		setFormData({
 			title: "",
 			description: "",
 			category: "",
 			subCategory: "",
 			documentDate: "",
-			uploadedBy: "",
+			uploadedBy: fullName, // Preserve user's full name
 			fileType: "",
 			documentType: "",
 			allowPriorityUsers: false,
@@ -210,12 +313,12 @@ export default function UploadDocumentsPage() {
 		setUploadProgress(0);
 	};
 
-	// Show loading state while checking access
-	if (accessLoading) {
+	// Show loading state while checking access or loading user data
+	if (accessLoading || authLoading) {
 		return (
 			<div className="space-y-6">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Upload Documents</h1>
+					<h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Document' : 'Upload Documents'}</h1>
 					<p className="text-gray-600 mt-2">Checking permissions...</p>
 				</div>
 				<div className="flex items-center justify-center py-12">
@@ -226,14 +329,15 @@ export default function UploadDocumentsPage() {
 		);
 	}
 
-	// Show access denied if user doesn't have upload permission
-	if (!canUploadDocuments) {
+	// Show access denied if user doesn't have upload/edit permission
+	const hasAccess = isEditMode ? accessEdit : canUploadDocuments;
+	if (!hasAccess) {
 		return (
 			<div className="space-y-6">
 				<div className="flex items-center justify-between">
 					<div>
-						<h1 className="text-2xl font-bold text-gray-900">Upload Documents</h1>
-						<p className="text-gray-600 mt-2">Upload new documents to the system</p>
+						<h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Document' : 'Upload Documents'}</h1>
+						<p className="text-gray-600 mt-2">{isEditMode ? 'Update document information' : 'Upload new documents to the system'}</p>
 					</div>
 					<Link
 						href="/dashboard/documents"
@@ -252,8 +356,11 @@ export default function UploadDocumentsPage() {
 					</div>
 				)}
 				<AccessDenied 
-					action="upload documents" 
-					customMessage="This action requires Admin access or Upload Documents permission. Please contact your administrator if you believe this is an error."
+					action={isEditMode ? "edit documents" : "upload documents"} 
+					customMessage={isEditMode 
+						? "This action requires Admin access or Edit permission. Please contact your administrator if you believe this is an error."
+						: "This action requires Admin access or Upload Documents permission. Please contact your administrator if you believe this is an error."
+					}
 				/>
 			</div>
 		);
@@ -264,8 +371,8 @@ export default function UploadDocumentsPage() {
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Upload Documents</h1>
-					<p className="text-gray-600 mt-2">Upload new documents to the system</p>
+					<h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Document' : 'Upload Documents'}</h1>
+					<p className="text-gray-600 mt-2">{isEditMode ? 'Update document information' : 'Upload new documents to the system'}</p>
 				</div>
 				<Link
 					href="/dashboard/documents"
@@ -373,8 +480,10 @@ export default function UploadDocumentsPage() {
 									name="uploadedBy"
 									value={formData.uploadedBy}
 									onChange={handleInputChange}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-									placeholder="Enter your name"
+									disabled
+									readOnly
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed outline-none"
+									placeholder={authLoading ? "Loading..." : "Enter your name"}
 									required
 								/>
 							</div>
@@ -469,8 +578,13 @@ export default function UploadDocumentsPage() {
 						{/* File Upload */}
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Select Document Files <span className="text-red-500">*</span>
+								Select Document Files {!isEditMode && <span className="text-red-500">*</span>}
 							</label>
+							{isEditMode && (
+								<p className="text-sm text-gray-500 mb-2">
+									Note: Leave empty to keep the existing file. Upload a new file to replace it.
+								</p>
+							)}
 							<div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#0b4d2b] transition-colors">
 								<input
 									type="file"
@@ -550,7 +664,7 @@ export default function UploadDocumentsPage() {
 								<div className="flex items-center">
 									<Check className="h-5 w-5 text-green-500 mr-2" />
 									<span className="text-sm font-medium text-green-900">
-										Documents uploaded successfully! Redirecting...
+										{isEditMode ? 'Document updated successfully! Redirecting...' : 'Documents uploaded successfully! Redirecting...'}
 									</span>
 								</div>
 							</div>
@@ -577,10 +691,10 @@ export default function UploadDocumentsPage() {
 							</button>
 							<button
 								type="submit"
-								disabled={uploading || files.length === 0}
+								disabled={uploading || (!isEditMode && files.length === 0)}
 								className="px-6 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 							>
-								{uploading ? 'Uploading...' : 'Upload Documents'}
+								{uploading ? (isEditMode ? 'Updating...' : 'Uploading...') : (isEditMode ? 'Update Document' : 'Upload Documents')}
 							</button>
 						</div>
 					</form>

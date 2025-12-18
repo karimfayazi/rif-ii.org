@@ -34,21 +34,27 @@ export default function DocumentViewPage() {
 	const getDocumentUrl = (filePath: string | null) => {
 		if (!filePath) return '';
 		
-		// Check if filePath already contains the full path or starts with ~/Uploads/Documents/
-		if (filePath.startsWith('~/Uploads/Documents/')) {
-			// Remove the ~/Uploads/Documents/ prefix and construct the correct URL
-			const fileName = filePath.replace('~/Uploads/Documents/', '');
-			return `https://rif-ii.org/${fileName}`;
-		} else if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
-			// Already a full URL
+		// Handle local path: uploads/documents/{filename}
+		if (filePath.startsWith('uploads/documents/')) {
+			// Local path - use relative URL from public folder
+			return `/${filePath}`;
+		} else if (filePath.startsWith('/uploads/documents/')) {
+			// Already has leading slash
 			return filePath;
+		} else if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
+			// Full URL (for backward compatibility with old records)
+			return filePath;
+		} else if (filePath.startsWith('~/Uploads/Documents/')) {
+			// Legacy format - extract filename
+			const fileName = filePath.replace('~/Uploads/Documents/', '');
+			return `/uploads/documents/${fileName}`;
 		} else if (filePath.startsWith('Uploads/Documents/')) {
-			// Remove Uploads/Documents/ prefix and construct the correct URL
+			// Legacy format with capital U
 			const fileName = filePath.replace('Uploads/Documents/', '');
-			return `https://rif-ii.org/${fileName}`;
+			return `/uploads/documents/${fileName}`;
 		} else {
-			// Just a filename, construct the full URL
-			return `https://rif-ii.org/${filePath}`;
+			// Just filename, assume it's in uploads/documents
+			return `/uploads/documents/${filePath}`;
 		}
 	};
 

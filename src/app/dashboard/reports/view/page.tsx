@@ -26,29 +26,28 @@ export default function ReportViewPage() {
 	const getReportUrl = (filePath: string | null) => {
 		if (!filePath) return '';
 		
-		// If already a full URL, return as is
-		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
+		// Handle local path: uploads/reports/{filename}
+		if (filePath.startsWith('uploads/reports/')) {
+			// Local path - use relative URL from public folder
+			return `/${filePath}`;
+		} else if (filePath.startsWith('/uploads/reports/')) {
+			// Already has leading slash
 			return filePath;
+		} else if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
+			// Full URL (for backward compatibility with old records)
+			return filePath;
+		} else if (filePath.startsWith('~/Uploads/Reports/')) {
+			// Legacy format - extract filename
+			const fileName = filePath.replace('~/Uploads/Reports/', '');
+			return `/uploads/reports/${fileName}`;
+		} else if (filePath.startsWith('Uploads/Reports/')) {
+			// Legacy format with capital U
+			const fileName = filePath.replace('Uploads/Reports/', '');
+			return `/uploads/reports/${fileName}`;
+		} else {
+			// Just filename, assume it's in uploads/reports
+			return `/uploads/reports/${filePath}`;
 		}
-		
-		// Extract filename from various path formats
-		let fileName = filePath;
-		
-		// Remove ~/Uploads/Reports/ prefix if present
-		if (filePath.startsWith('~/Uploads/Reports/')) {
-			fileName = filePath.replace('~/Uploads/Reports/', '');
-		} 
-		// Remove Uploads/Reports/ prefix if present
-		else if (filePath.startsWith('Uploads/Reports/')) {
-			fileName = filePath.replace('Uploads/Reports/', '');
-		}
-		// Remove uploads/reports/ prefix if present (to avoid duplication)
-		else if (filePath.startsWith('uploads/reports/')) {
-			fileName = filePath.replace('uploads/reports/', '');
-		}
-		
-		// Construct URL with uploads/reports/ prefix
-		return `https://rif-ii.org/uploads/reports/${fileName}`;
 	};
 
 	useEffect(() => {
@@ -62,6 +61,19 @@ export default function ReportViewPage() {
 			try {
 				setLoading(true);
 				const response = await fetch(`/api/reports/${reportId}`);
+				
+				// Check if response is OK and content type is JSON
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`);
+				}
+				
+				const contentType = response.headers.get("content-type");
+				if (!contentType || !contentType.includes("application/json")) {
+					const text = await response.text();
+					console.error("Non-JSON response received:", text.substring(0, 200));
+					throw new Error("Server returned non-JSON response");
+				}
+				
 				const data = await response.json();
 
 				if (data.success && data.report) {
@@ -70,7 +82,7 @@ export default function ReportViewPage() {
 					setError(data.message || "Report not found");
 				}
 			} catch (err) {
-				setError("Error fetching report");
+				setError("Error fetching report. Please try again.");
 				console.error("Error fetching report:", err);
 			} finally {
 				setLoading(false);

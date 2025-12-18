@@ -25,13 +25,23 @@ export async function GET(request: NextRequest) {
 				[contact_number],
 				[tehsil],
 				[district],
+				[NC_VC],
 				[workshop_training_name],
 				[workshop_session_conference],
-				CONVERT(VARCHAR(10), [start_date], 105) AS [start_date],
-				CONVERT(VARCHAR(10), [end_date], 105) AS [end_date],
+				CASE 
+					WHEN [start_date] IS NULL THEN NULL
+					ELSE CONVERT(VARCHAR(10), [start_date], 120)
+				END AS [start_date],
+				CASE 
+					WHEN [end_date] IS NULL THEN NULL
+					ELSE CONVERT(VARCHAR(10), [end_date], 120)
+				END AS [end_date],
 				[date_entered_by],
-				CONVERT(VARCHAR(10), [entry_timestamp], 105) AS [entry_timestamp]
-			FROM [_rifiiorg_db].[rifiiorg].[workshop_participants]
+				CONVERT(VARCHAR(10), [entry_timestamp], 105) AS [entry_timestamp],
+				[Training_Unit],
+				[Venue],
+				[Duration_Days]
+			FROM [_rifiiorg_db].[dbo].[workshop_participants]
 			WHERE 1=1
 		`;
 
@@ -83,11 +93,16 @@ export async function GET(request: NextRequest) {
 		});
 	} catch (error) {
 		console.error("Error fetching workshop participants data:", error);
+		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+		const errorStack = error instanceof Error ? error.stack : undefined;
+		console.error("Error details:", { errorMessage, errorStack });
+		
 		return NextResponse.json(
 			{
 				success: false,
 				message: "Failed to fetch workshop participants data",
-				error: error instanceof Error ? error.message : "Unknown error"
+				error: errorMessage,
+				details: process.env.NODE_ENV === 'development' ? errorStack : undefined
 			},
 			{ status: 500 }
 		);

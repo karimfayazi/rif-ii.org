@@ -7,16 +7,18 @@ export async function GET(request: NextRequest) {
 		
 		const query = `
 			SELECT 
-				[EventType],
-				[District],
-				SUM([TotalMale]) AS TotalMale,
-				SUM([TotalFemale]) AS TotalFemale,
-				SUM([TotalParticipants]) AS TotalParticipants
-			FROM [_rifiiorg_db].[rifiiorg].[TrainingEvents]
-			WHERE [EventType] IS NOT NULL 
-				AND [District] IS NOT NULL
-			GROUP BY [EventType], [District]
-			ORDER BY [EventType], [District]
+				COALESCE([workshop_training_name], [workshop_session_conference], 'Unknown') AS EventType,
+				COALESCE([district], 'Unknown') AS District,
+				SUM(CASE WHEN LOWER(LTRIM(RTRIM([gender]))) = 'male' THEN 1 ELSE 0 END) AS TotalMale,
+				SUM(CASE WHEN LOWER(LTRIM(RTRIM([gender]))) = 'female' THEN 1 ELSE 0 END) AS TotalFemale,
+				COUNT(*) AS TotalParticipants
+			FROM [_rifiiorg_db].[dbo].[workshop_participants]
+			WHERE ([workshop_training_name] IS NOT NULL OR [workshop_session_conference] IS NOT NULL)
+				AND [district] IS NOT NULL
+			GROUP BY 
+				COALESCE([workshop_training_name], [workshop_session_conference], 'Unknown'),
+				COALESCE([district], 'Unknown')
+			ORDER BY EventType, District
 		`;
 		
 		const result = await pool.request().query(query);

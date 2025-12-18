@@ -142,8 +142,32 @@ export async function POST(request: NextRequest) {
 			}
 		}
 
-		// Create upload directory structure
-		const uploadDir = join(process.cwd(), 'public', 'uploads', 'documents', category, subCategory);
+		// Helper function to sanitize filename
+		const sanitizeFileName = (str: string): string => {
+			return str
+				.replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
+				.replace(/\s+/g, '_') // Replace spaces with underscores
+				.replace(/_+/g, '_') // Replace multiple underscores with single
+				.trim();
+		};
+
+		// Format document date for filename (YYYY-MM-DD)
+		const formatDateForFilename = (dateString: string): string => {
+			try {
+				const date = new Date(dateString);
+				const year = date.getFullYear();
+				const month = String(date.getMonth() + 1).padStart(2, '0');
+				const day = String(date.getDate()).padStart(2, '0');
+				return `${year}-${month}-${day}`;
+			} catch {
+				// Fallback to current date if parsing fails
+				const now = new Date();
+				return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+			}
+		};
+
+		// Create upload directory structure (just documents folder, no subdirectories)
+		const uploadDir = join(process.cwd(), 'public', 'uploads', 'documents');
 		
 		// Ensure directory exists
 		if (!existsSync(uploadDir)) {
@@ -157,15 +181,24 @@ export async function POST(request: NextRequest) {
 		for (let i = 0; i < files.length; i++) {
 			const file = files[i];
 			const fileExtension = file.name.split('.').pop();
-			const fileName = `${Date.now()}_${i + 1}.${fileExtension}`;
+			
+			// Create filename: DocumentTitle_Category_DocumentDate.extension
+			const sanitizedTitle = sanitizeFileName(title);
+			const sanitizedCategory = sanitizeFileName(category);
+			const formattedDate = formatDateForFilename(documentDate);
+			
+			// If multiple files, append index to make unique
+			const fileName = files.length > 1 
+				? `${sanitizedTitle}_${sanitizedCategory}_${formattedDate}_${i + 1}.${fileExtension}`
+				: `${sanitizedTitle}_${sanitizedCategory}_${formattedDate}.${fileExtension}`;
+			
 			const filePath = join(uploadDir, fileName);
-			const relativePath = `uploads/documents/${category}/${subCategory}/${fileName}`;
 			
 			// Save file to disk
 			const bytes = await file.arrayBuffer();
 			await writeFile(filePath, Buffer.from(bytes));
 			
-			// Insert into database
+			// Insert into database with full URL path
 			const insertQuery = `
 				INSERT INTO [_rifiiorg_db].[dbo].[tblDocuments] 
 				([Title], [Description], [FilePath], [UploadDate], [UploadedBy], [FileType], [Documentstype], 
@@ -177,7 +210,9 @@ export async function POST(request: NextRequest) {
 			const request_obj = pool.request();
 			request_obj.input('title', title);
 			request_obj.input('description', description || '');
-			request_obj.input('filePath', `~/Uploads/Documents/${fileName}`);
+			// Store local path in database: uploads/documents/{filename}
+			const localPath = `uploads/documents/${fileName}`;
+			request_obj.input('filePath', localPath);
 			request_obj.input('uploadDate', new Date().toISOString());
 			request_obj.input('uploadedBy', uploadedBy);
 			request_obj.input('fileType', fileType || '');
@@ -194,7 +229,7 @@ export async function POST(request: NextRequest) {
 			uploadedFiles.push({
 				originalName: file.name,
 				fileName: fileName,
-				filePath: relativePath
+				filePath: localPath
 			});
 		}
 

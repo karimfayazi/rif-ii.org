@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
+import { Info } from "lucide-react";
 
 type OverallStats = {
   totalTrainings: number;
@@ -41,6 +42,25 @@ type DashboardData = {
   byDistrict: BreakdownRow[];
 };
 
+type TrainingGraphData = {
+  EventType: string;
+  District: string;
+  TotalMale: number;
+  TotalFemale: number;
+  TotalParticipants: number;
+};
+
+type AnalyticsData = {
+  coverage: {
+    TotalParticipants: number;
+    UniqueParticipants: number;
+    DuplicateRecords: number;
+  };
+  gender: Array<{ Gender: string; Count: number }>;
+  geographical: Array<{ District: string; Tehsil: string; NC_VC: string; ParticipantCount: number }>;
+  effectiveness: Array<{ TrainingName: string; ParticipantCount: number; AvgDuration: number; SessionCount: number }>;
+};
+
 function getMaxValue(rows: BreakdownRow[], field: keyof BreakdownRow): number {
   return rows.reduce((max, row) => {
     const value = (row[field] as number) || 0;
@@ -59,6 +79,7 @@ export default function TrainingCapacityBuildingDashboardPage() {
   const { trainingSection, loading: accessLoading } = useAccess(userId);
   
   const [data, setData] = useState<DashboardData | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedEventType, setSelectedEventType] = useState<BreakdownRow | null>(null);
@@ -86,7 +107,23 @@ export default function TrainingCapacityBuildingDashboardPage() {
       }
     };
 
+    const fetchAnalytics = async () => {
+      try {
+        const res = await fetch("/api/training/analytics");
+        if (!res.ok) {
+          throw new Error("Failed to load analytics data");
+        }
+        const json = await res.json();
+        if (json.success) {
+          setAnalyticsData(json);
+        }
+      } catch (err) {
+        console.error("Error fetching analytics data:", err);
+      }
+    };
+
     fetchData();
+    fetchAnalytics();
   }, []);
 
   if (accessLoading || loading) {
@@ -167,28 +204,58 @@ export default function TrainingCapacityBuildingDashboardPage() {
         <>
           {/* Overall cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 text-white shadow-md">
-              <p className="text-xs uppercase tracking-wide opacity-80">
-                Total Trainings
-              </p>
+            <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 text-white shadow-md relative">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wide opacity-80">
+                  Total Trainings
+                </p>
+                <div className="relative group">
+                  <Info className="h-3.5 w-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                  <div className="absolute right-0 bottom-full mb-2 w-56 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                    <p className="font-semibold mb-1">Total Trainings</p>
+                    <p>Total number of training events conducted across all event types and districts.</p>
+                    <div className="absolute right-4 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </div>
               <p className="mt-2 text-2xl font-semibold">
                 {overall.totalTrainings.toLocaleString()}
               </p>
             </div>
 
-            <div className="rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 p-4 text-white shadow-md">
-              <p className="text-xs uppercase tracking-wide opacity-80">
-                Total Days
-              </p>
+            <div className="rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 p-4 text-white shadow-md relative">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wide opacity-80">
+                  Total Days
+                </p>
+                <div className="relative group">
+                  <Info className="h-3.5 w-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                  <div className="absolute right-0 bottom-full mb-2 w-56 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                    <p className="font-semibold mb-1">Total Days</p>
+                    <p>Sum of all training days across all events. Represents the total duration of all training activities.</p>
+                    <div className="absolute right-4 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </div>
               <p className="mt-2 text-2xl font-semibold">
                 {overall.totalDays.toLocaleString()}
               </p>
             </div>
 
-            <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 text-white shadow-md">
-              <p className="text-xs uppercase tracking-wide opacity-80">
-                Total Male / Female
-              </p>
+            <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 text-white shadow-md relative">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wide opacity-80">
+                  Total Male / Female
+                </p>
+                <div className="relative group">
+                  <Info className="h-3.5 w-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                  <div className="absolute right-0 bottom-full mb-2 w-56 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                    <p className="font-semibold mb-1">Total Male / Female</p>
+                    <p>Breakdown of participants by gender. Shows the total count and percentage of male and female participants across all trainings.</p>
+                    <div className="absolute right-4 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </div>
               <div className="mt-2 space-y-0.5 text-sm">
                 <p className="font-semibold">
                   <span>{overall.totalMale.toLocaleString()}</span>
@@ -210,10 +277,20 @@ export default function TrainingCapacityBuildingDashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 p-4 text-white shadow-md">
-              <p className="text-xs uppercase tracking-wide opacity-80">
-                Total Participants
-              </p>
+            <div className="rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 p-4 text-white shadow-md relative">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wide opacity-80">
+                  Total Participants
+                </p>
+                <div className="relative group">
+                  <Info className="h-3.5 w-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                  <div className="absolute right-0 bottom-full mb-2 w-56 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                    <p className="font-semibold mb-1">Total Participants</p>
+                    <p>Total number of unique and duplicate participants across all training events. This includes all individuals who attended any training.</p>
+                    <div className="absolute right-4 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </div>
               <p className="mt-2 text-2xl font-semibold">
                 {overall.totalParticipants.toLocaleString()}
               </p>
@@ -227,9 +304,19 @@ export default function TrainingCapacityBuildingDashboardPage() {
               {/* Event type - Total Participants */}
               <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-gray-800">
-                    Event Type Wise - Total Participants
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-semibold text-gray-800">
+                      Event Type Wise - Total Participants
+                    </h2>
+                    <div className="relative group">
+                      <Info className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 cursor-help transition-colors" />
+                      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                        <p className="font-semibold mb-1">Event Type Wise - Total Participants</p>
+                        <p>Shows the total number of participants grouped by event type (e.g., Training, Workshop). Hover over any bar to see detailed statistics for that event type.</p>
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
+                  </div>
                   <span className="text-[11px] text-gray-500">
                     Total trainings: {overall.totalTrainings.toLocaleString()}
                   </span>
@@ -360,9 +447,19 @@ export default function TrainingCapacityBuildingDashboardPage() {
               {/* Event type - Trainings & Days */}
               <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-gray-800">
-                    Event Type Wise - Trainings &amp; Days
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-semibold text-gray-800">
+                      Event Type Wise - Trainings &amp; Days
+                    </h2>
+                    <div className="relative group">
+                      <Info className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 cursor-help transition-colors" />
+                      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                        <p className="font-semibold mb-1">Event Type Wise - Trainings & Days</p>
+                        <p>Shows the number of trainings and total days for each event type. Displays two bars per event type - one for trainings count and one for days. Hover over any bar to see detailed statistics.</p>
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
+                  </div>
                   <span className="text-[11px] text-gray-500">
                     Types: {byEventType.length.toLocaleString()}
                   </span>
@@ -514,9 +611,19 @@ export default function TrainingCapacityBuildingDashboardPage() {
               {/* District wise - Total Participants */}
               <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-gray-800">
-                    District Wise - Total Participants
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-semibold text-gray-800">
+                      District Wise - Total Participants
+                    </h2>
+                    <div className="relative group">
+                      <Info className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 cursor-help transition-colors" />
+                      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                        <p className="font-semibold mb-1">District Wise - Total Participants</p>
+                        <p>Shows the total number of participants grouped by district. Helps identify which districts have the highest participation rates. Hover over any bar to see detailed statistics for that district.</p>
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
+                  </div>
                   <span className="text-[11px] text-gray-500">
                     Districts: {byDistrict.length.toLocaleString()}
                   </span>
@@ -640,6 +747,275 @@ export default function TrainingCapacityBuildingDashboardPage() {
                 )}
               </div>
             </div>
+
+            {/* Four Analytics Graphs - 2x2 Grid */}
+            {analyticsData && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                {/* 1. Participant Coverage & Uniqueness - Bar Chart */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Participant Coverage & Uniqueness</h3>
+                    <div className="relative group">
+                      <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help transition-colors" />
+                      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                        <p className="font-semibold mb-1">Participant Coverage & Uniqueness</p>
+                        <p>Shows total participants, unique individuals (based on CNIC), and duplicate records. Helps identify data quality and participant reach.</p>
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
+                  </div>
+                  {(() => {
+                    const { TotalParticipants, UniqueParticipants, DuplicateRecords } = analyticsData.coverage;
+                    const maxValue = Math.max(TotalParticipants, UniqueParticipants, DuplicateRecords, 1);
+                    
+                    return (
+                      <div className="w-full">
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="font-medium text-gray-700">Total Participants</span>
+                              <span className="text-gray-600">{TotalParticipants.toLocaleString()}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-6">
+                              <div
+                                className="bg-gradient-to-r from-blue-500 to-blue-600 h-6 rounded-full flex items-center justify-end pr-2 transition-all duration-1000"
+                                style={{ width: `${(TotalParticipants / maxValue) * 100}%` }}
+                              >
+                                <span className="text-white text-xs font-bold">{TotalParticipants.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="font-medium text-gray-700">Unique Participants</span>
+                              <span className="text-gray-600">{UniqueParticipants.toLocaleString()}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-6">
+                              <div
+                                className="bg-gradient-to-r from-green-500 to-green-600 h-6 rounded-full flex items-center justify-end pr-2 transition-all duration-1000"
+                                style={{ width: `${(UniqueParticipants / maxValue) * 100}%` }}
+                              >
+                                <span className="text-white text-xs font-bold">{UniqueParticipants.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="font-medium text-gray-700">Duplicate Records</span>
+                              <span className="text-gray-600">{DuplicateRecords.toLocaleString()}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-6">
+                              <div
+                                className="bg-gradient-to-r from-orange-500 to-orange-600 h-6 rounded-full flex items-center justify-end pr-2 transition-all duration-1000"
+                                style={{ width: `${(DuplicateRecords / maxValue) * 100}%` }}
+                              >
+                                <span className="text-white text-xs font-bold">{DuplicateRecords.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* 2. Gender Distribution & Inclusion - Pie Chart */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Gender Distribution & Inclusion</h3>
+                    <div className="relative group">
+                      <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help transition-colors" />
+                      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                        <p className="font-semibold mb-1">Gender Distribution & Inclusion</p>
+                        <p>Displays the breakdown of participants by gender (Male/Female/Other). Shows overall participation rates and helps assess gender inclusivity in training programs.</p>
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
+                  </div>
+                  {(() => {
+                    const genderData = analyticsData.gender;
+                    const total = genderData.reduce((sum, item) => sum + item.Count, 0);
+                    
+                    if (total === 0) {
+                      return <p className="text-sm text-gray-500 text-center">No data available</p>;
+                    }
+                    
+                    // Create pie chart segments
+                    let currentAngle = 0;
+                    const colors = ['#3b82f6', '#ec4899', '#10b981', '#f59e0b'];
+                    
+                    return (
+                      <div className="w-full">
+                        <div className="flex items-center justify-center mb-4">
+                          <svg width="200" height="200" viewBox="0 0 200 200" className="transform -rotate-90">
+                            {genderData.map((item, idx) => {
+                              const percentage = (item.Count / total) * 100;
+                              const angle = (item.Count / total) * 360;
+                              const largeArc = angle > 180 ? 1 : 0;
+                              
+                              const x1 = 100 + 80 * Math.cos((currentAngle * Math.PI) / 180);
+                              const y1 = 100 + 80 * Math.sin((currentAngle * Math.PI) / 180);
+                              const x2 = 100 + 80 * Math.cos(((currentAngle + angle) * Math.PI) / 180);
+                              const y2 = 100 + 80 * Math.sin(((currentAngle + angle) * Math.PI) / 180);
+                              
+                              const pathData = `M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                              
+                              currentAngle += angle;
+                              
+                              return (
+                                <path
+                                  key={idx}
+                                  d={pathData}
+                                  fill={colors[idx % colors.length]}
+                                  stroke="white"
+                                  strokeWidth="2"
+                                />
+                              );
+                            })}
+                          </svg>
+                        </div>
+                        <div className="space-y-2 mt-4">
+                          {genderData.map((item, idx) => {
+                            const percentage = ((item.Count / total) * 100).toFixed(1);
+                            return (
+                              <div key={idx} className="flex items-center justify-between text-sm">
+                                <div className="flex items-center">
+                                  <div
+                                    className="w-4 h-4 rounded mr-2"
+                                    style={{ backgroundColor: colors[idx % colors.length] }}
+                                  />
+                                  <span className="font-medium text-gray-700 capitalize">{item.Gender || 'Unknown'}</span>
+                                </div>
+                                <div className="text-gray-600">
+                                  <span className="font-semibold">{item.Count.toLocaleString()}</span>
+                                  <span className="text-xs ml-1">({percentage}%)</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* 3. Geographical Coverage - Bar Chart */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Geographical Coverage</h3>
+                    <div className="relative group">
+                      <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help transition-colors" />
+                      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                        <p className="font-semibold mb-1">Geographical Coverage</p>
+                        <p>Shows participant distribution across Districts, Tehsils, and NC/VC areas. Helps identify geographical reach and coverage gaps in training programs.</p>
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
+                  </div>
+                  {(() => {
+                    const geoData = analyticsData.geographical
+                      .sort((a, b) => b.ParticipantCount - a.ParticipantCount)
+                      .slice(0, 8); // Top 8 districts
+                    
+                    if (geoData.length === 0) {
+                      return <p className="text-sm text-gray-500 text-center">No data available</p>;
+                    }
+                    
+                    const maxValue = Math.max(...geoData.map(d => d.ParticipantCount), 1);
+                    
+                    return (
+                      <div className="w-full">
+                        <div className="space-y-3">
+                          {geoData.map((item, idx) => {
+                            const widthPercent = (item.ParticipantCount / maxValue) * 100;
+                            return (
+                              <div key={idx}>
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span className="font-medium text-gray-700 truncate max-w-[60%]">{item.District}</span>
+                                  <span className="text-gray-600">{item.ParticipantCount.toLocaleString()}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-4">
+                                  <div
+                                    className="bg-gradient-to-r from-purple-500 to-purple-600 h-4 rounded-full flex items-center justify-end pr-2 transition-all duration-1000"
+                                    style={{ width: `${widthPercent}%` }}
+                                  >
+                                    <span className="text-white text-[10px] font-bold">{item.ParticipantCount.toLocaleString()}</span>
+                                  </div>
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-1">
+                                  {item.Tehsil !== 'Unknown' && <span>Tehsil: {item.Tehsil}</span>}
+                                  {item.NC_VC !== 'Unknown' && <span className="ml-2">NC/VC: {item.NC_VC}</span>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* 4. Training Effectiveness & Reach - Bar Chart */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Training Effectiveness & Reach</h3>
+                    <div className="relative group">
+                      <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help transition-colors" />
+                      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                        <p className="font-semibold mb-1">Training Effectiveness & Reach</p>
+                        <p>Displays participants per training, average duration, and number of sessions. Helps evaluate training program effectiveness, reach, and participant engagement levels.</p>
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
+                  </div>
+                  {(() => {
+                    const effectivenessData = analyticsData.effectiveness
+                      .sort((a, b) => b.ParticipantCount - a.ParticipantCount)
+                      .slice(0, 6); // Top 6 trainings
+                    
+                    if (effectivenessData.length === 0) {
+                      return <p className="text-sm text-gray-500 text-center">No data available</p>;
+                    }
+                    
+                    const maxParticipants = Math.max(...effectivenessData.map(d => d.ParticipantCount), 1);
+                    
+                    return (
+                      <div className="w-full">
+                        <div className="space-y-3">
+                          {effectivenessData.map((item, idx) => {
+                            const widthPercent = (item.ParticipantCount / maxParticipants) * 100;
+                            const avgDuration = item.AvgDuration ? item.AvgDuration.toFixed(1) : 'N/A';
+                            
+                            return (
+                              <div key={idx}>
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span className="font-medium text-gray-700 truncate max-w-[60%]" title={item.TrainingName}>
+                                    {item.TrainingName}
+                                  </span>
+                                  <span className="text-gray-600">{item.ParticipantCount.toLocaleString()}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-4">
+                                  <div
+                                    className="bg-gradient-to-r from-indigo-500 to-indigo-600 h-4 rounded-full flex items-center justify-end pr-2 transition-all duration-1000"
+                                    style={{ width: `${widthPercent}%` }}
+                                  >
+                                    <span className="text-white text-[10px] font-bold">{item.ParticipantCount.toLocaleString()}</span>
+                                  </div>
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-1 flex justify-between">
+                                  <span>Avg Duration: {avgDuration} days</span>
+                                  <span>Sessions: {item.SessionCount}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

@@ -17,3 +17,4 @@ export function getUserIdFromCookie(): string | null {
 	}
 	return null;
 }
+
