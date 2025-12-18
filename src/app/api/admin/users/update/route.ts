@@ -3,7 +3,16 @@ import { getDb } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
 	try {
-		const body = await request.json();
+		const body = await request.json() as {
+			username?: string;
+			full_name?: string;
+			email?: string;
+			contact_no?: string;
+			department?: string;
+			region?: string;
+			access_level?: string;
+			password?: string;
+		};
 		const { 
 			username, 
 			full_name, 
@@ -99,5 +108,6 @@ export async function POST(request: NextRequest) {
 		);
 	}
 }
+
 
 
