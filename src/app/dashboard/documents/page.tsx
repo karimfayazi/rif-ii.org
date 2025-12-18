@@ -80,9 +80,11 @@ export default function DocumentsPage() {
 	const handleDelete = async () => {
 		if (!deleteConfirm.document || !deleteConfirm.document.DocumentID) return;
 
+		const documentId = deleteConfirm.document.DocumentID;
+
 		try {
 			setDeleting(true);
-			const response = await fetch(`/api/documents/${deleteConfirm.document.DocumentID}`, {
+			const response = await fetch(`/api/documents/${documentId}`, {
 				method: 'DELETE',
 				headers: {
 					'Content-Type': 'application/json',
@@ -96,7 +98,7 @@ export default function DocumentsPage() {
 				setSuccess('Document deleted successfully');
 				setError(null);
 				// Remove the deleted item from the list
-				setDocuments(prev => prev.filter(doc => doc.DocumentID !== deleteConfirm.document.DocumentID));
+				setDocuments(prev => prev.filter(doc => doc.DocumentID !== documentId));
 				// Auto-hide success message after 3 seconds
 				setTimeout(() => {
 					setSuccess(null);
