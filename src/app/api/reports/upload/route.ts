@@ -5,16 +5,17 @@ import { join } from "path";
 import { existsSync } from "fs";
 import { getUserIdFromRequest } from "@/lib/auth";
 
-// Helper function to check if user is Admin
-async function checkAdminAccess(userId: string | null): Promise<{ isAdmin: boolean; message?: string }> {
+// Helper function to check if user has Upload_Report permission or is Admin
+async function checkUploadReportAccess(userId: string | null): Promise<{ canUpload: boolean; message?: string }> {
 	if (!userId) {
-		return { isAdmin: false, message: "Unauthorized" };
+		return { canUpload: false, message: "Unauthorized" };
 	}
 
 	try {
 		const pool = await getDb();
+		// Query to check if user is Admin OR has Upload_Report = true/1
 		const accessQuery = `
-			SELECT [access_level]
+			SELECT [access_level], [Upload_Report]
 			FROM [_rifiiorg_db].[dbo].[tbl_user_access]
 			WHERE [username] = @userId OR [email] = @userId
 		`;
@@ -24,38 +25,59 @@ async function checkAdminAccess(userId: string | null): Promise<{ isAdmin: boole
 			.query(accessQuery);
 		
 		if (accessResult.recordset.length === 0) {
-			return { isAdmin: false, message: "User not found" };
+			return { canUpload: false, message: "User not found" };
 		}
 
 		const accessLevel = accessResult.recordset[0].access_level;
-		// Check if access_level is exactly 'Admin' (case-sensitive)
+		const uploadReportRaw = accessResult.recordset[0].Upload_Report;
+		
+		// Check if user is Admin OR has Upload_Report permission
+		// Admin check: access_level must be exactly 'Admin' (case-sensitive)
 		const isAdmin = accessLevel === 'Admin';
 		
-		if (!isAdmin) {
+		// Upload_Report check: handle various SQL Server BIT field return types
+		let hasUploadPermission = false;
+		if (uploadReportRaw !== null && uploadReportRaw !== undefined) {
+			// If it's a Buffer (SQL Server BIT can return as Buffer), convert to number first
+			if (Buffer.isBuffer(uploadReportRaw)) {
+				hasUploadPermission = uploadReportRaw[0] === 1;
+			} else if (typeof uploadReportRaw === 'boolean') {
+				hasUploadPermission = uploadReportRaw === true;
+			} else if (typeof uploadReportRaw === 'number') {
+				hasUploadPermission = uploadReportRaw === 1;
+			} else if (typeof uploadReportRaw === 'string') {
+				hasUploadPermission = uploadReportRaw === '1' || uploadReportRaw.toLowerCase() === 'true';
+			}
+		}
+		
+		// Allow upload if user is Admin OR has Upload_Report = true/1
+		const canUpload = isAdmin || hasUploadPermission;
+		
+		if (!canUpload) {
 			return { 
-				isAdmin: false, 
-				message: "Insufficient Permissions. This action requires Admin level access. Please contact your administrator if you believe this is an error." 
+				canUpload: false, 
+				message: "Insufficient Permissions. This action requires Admin access or Upload Report permission. Please contact your administrator if you believe this is an error." 
 			};
 		}
 
-		return { isAdmin: true };
+		return { canUpload: true };
 	} catch (error) {
-		console.error("Error checking admin access:", error);
-		return { isAdmin: false, message: "Error checking access permissions" };
+		console.error("Error checking upload report access:", error);
+		return { canUpload: false, message: "Error checking access permissions" };
 	}
 }
 
 export async function POST(request: NextRequest) {
 	try {
-		// Check Admin access
+		// Check Upload_Report permission
 		const userId = getUserIdFromRequest(request);
-		const accessCheck = await checkAdminAccess(userId);
+		const accessCheck = await checkUploadReportAccess(userId);
 		
-		if (!accessCheck.isAdmin) {
+		if (!accessCheck.canUpload) {
 			return NextResponse.json(
 				{
 					success: false,
-					message: accessCheck.message || "Access denied. Admin privileges required."
+					message: accessCheck.message || "Access denied. Upload Report permission required."
 				},
 				{ status: 403 }
 			);
@@ -139,6 +161,12 @@ export async function POST(request: NextRequest) {
 			const filePath = join(uploadDir, fileName);
 			const relativePath = `uploads/reports/${mainCategory}/${subCategory}/${fileName}`;
 			
+			// Calculate file size in KB
+			const fileSizeKB = Math.round(file.size / 1024);
+			
+			// Get current date for UploadDate
+			const uploadDate = new Date().toISOString().split('T')[0];
+			
 			// Save file to disk
 			const bytes = await file.arrayBuffer();
 			await writeFile(filePath, Buffer.from(bytes));
@@ -146,14 +174,19 @@ export async function POST(request: NextRequest) {
 			// Insert into database
 			const insertQuery = `
 				INSERT INTO [_rifiiorg_db].[rifiiorg].[tblReports] 
-				([ReportTitle], [Description], [FilePath], [EventDate], [MainCategory], [SubCategory])
-				VALUES (@reportTitle, @description, @filePath, @eventDate, @mainCategory, @subCategory)
+				([ReportTitle], [Description], [FilePath], [FileExtension], [FileSizeKB], [UploadedBy], [UploadDate], [IsActive], [EventDate], [MainCategory], [SubCategory])
+				VALUES (@reportTitle, @description, @filePath, @fileExtension, @fileSizeKB, @uploadedBy, @uploadDate, @isActive, @eventDate, @mainCategory, @subCategory)
 			`;
 			
 			const request_obj = pool.request();
 			request_obj.input('reportTitle', reportTitle);
 			request_obj.input('description', description || '');
 			request_obj.input('filePath', `~/Uploads/Reports/${fileName}`);
+			request_obj.input('fileExtension', fileExtension || '');
+			request_obj.input('fileSizeKB', fileSizeKB);
+			request_obj.input('uploadedBy', uploadedBy);
+			request_obj.input('uploadDate', uploadDate);
+			request_obj.input('isActive', 1); // Set IsActive to 1 (true) by default
 			request_obj.input('eventDate', eventDate);
 			request_obj.input('mainCategory', mainCategory);
 			request_obj.input('subCategory', subCategory);

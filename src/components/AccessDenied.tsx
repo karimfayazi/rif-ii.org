@@ -5,9 +5,18 @@ import { Shield, Lock, AlertCircle } from "lucide-react";
 type AccessDeniedProps = {
 	action: string;
 	requiredLevel?: string;
+	customMessage?: string;
 };
 
-export default function AccessDenied({ action, requiredLevel = "Admin" }: AccessDeniedProps) {
+export default function AccessDenied({ action, requiredLevel = "Admin", customMessage }: AccessDeniedProps) {
+	// Default message for Admin-only access
+	const defaultMessage = `This action requires ${requiredLevel} level access. Please contact your administrator if you believe this is an error.`;
+	const restrictionMessage = `Restricted to ${requiredLevel} users only`;
+	
+	// Use custom message if provided, otherwise use default
+	const permissionMessage = customMessage || defaultMessage;
+	const restrictionText = customMessage ? "Access restricted" : restrictionMessage;
+	
 	return (
 		<div className="min-h-[400px] flex items-center justify-center p-8">
 			<div className="text-center max-w-md">
@@ -29,8 +38,7 @@ export default function AccessDenied({ action, requiredLevel = "Admin" }: Access
 								Insufficient Permissions
 							</h3>
 							<p className="text-sm text-red-700">
-								This action requires <span className="font-semibold">{requiredLevel}</span> level access. 
-								Please contact your administrator if you believe this is an error.
+								{permissionMessage}
 							</p>
 						</div>
 					</div>
@@ -38,7 +46,7 @@ export default function AccessDenied({ action, requiredLevel = "Admin" }: Access
 				
 				<div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
 					<Lock className="h-4 w-4" />
-					<span>Restricted to {requiredLevel} users only</span>
+					<span>{restrictionText}</span>
 				</div>
 			</div>
 		</div>

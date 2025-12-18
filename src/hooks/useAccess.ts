@@ -8,6 +8,8 @@ type AccessPermissions = {
 	accessLevel: AccessLevel;
 	isAdmin: boolean;
 	canUpload: boolean;
+	canUploadPictures: boolean;
+	canUploadDocuments: boolean;
 	canManageCategories: boolean;
 	canManageSubCategories: boolean;
 	accessAdd: boolean;
@@ -26,6 +28,8 @@ export function useAccess(userId?: string | null) {
 		accessLevel: null,
 		isAdmin: false,
 		canUpload: false,
+		canUploadPictures: false,
+		canUploadDocuments: false,
 		canManageCategories: false,
 		canManageSubCategories: false,
 		accessAdd: false,
@@ -52,27 +56,44 @@ export function useAccess(userId?: string | null) {
 		checkAccess(userId);
 	}, [userId]);
 
-	const checkAccess = async (userId: string) => {
+		const checkAccess = async (userId: string) => {
 		try {
 			setPermissions(prev => ({ ...prev, loading: true, error: null }));
 			
 			const response = await fetch(`/api/auth/access?userId=${encodeURIComponent(userId)}`);
 			const data = await response.json();
 			
+			console.log('[useAccess] API Response:', data);
+			
 			if (data.success) {
+				// Helper function to convert to boolean
+				const toBool = (value: any): boolean => {
+					if (value === true || value === 1 || value === '1' || value === 'true' || value === 'True') return true;
+					return false;
+				};
+				
+				const canUpload = toBool(data.canUpload);
+				const canUploadPics = toBool(data.canUploadPictures);
+				const canUploadDocs = toBool(data.canUploadDocuments);
+				
+				console.log('[useAccess] Setting permissions - canUpload:', canUpload, 'canUploadPictures:', canUploadPics, 'canUploadDocuments:', canUploadDocs);
+				console.log('[useAccess] Raw values - canUpload:', data.canUpload, 'canUploadPictures:', data.canUploadPictures, 'canUploadDocuments:', data.canUploadDocuments);
+				
 				setPermissions({
 					accessLevel: data.accessLevel,
-					isAdmin: data.isAdmin,
-					canUpload: data.canUpload,
-					canManageCategories: data.canManageCategories,
-					canManageSubCategories: data.canManageSubCategories,
-					accessAdd: data.accessAdd === true || data.accessAdd === 1,
-					accessEdit: data.accessEdit === true || data.accessEdit === 1,
-					accessDelete: data.accessDelete === true || data.accessDelete === 1,
-					accessReports: data.accessReports === true || data.accessReports === 1,
-					userLoginLogs: data.userLoginLogs === true || data.userLoginLogs === 1,
-					trackingSection: data.trackingSection !== false,
-					trainingSection: data.trainingSection !== false,
+					isAdmin: data.isAdmin === true || data.isAdmin === 1,
+					canUpload: canUpload,
+					canUploadPictures: canUploadPics,
+					canUploadDocuments: canUploadDocs,
+					canManageCategories: toBool(data.canManageCategories),
+					canManageSubCategories: toBool(data.canManageSubCategories),
+					accessAdd: toBool(data.accessAdd),
+					accessEdit: toBool(data.accessEdit),
+					accessDelete: toBool(data.accessDelete),
+					accessReports: toBool(data.accessReports),
+					userLoginLogs: toBool(data.userLoginLogs),
+					trackingSection: data.trackingSection !== false && data.trackingSection !== 0,
+					trainingSection: data.trainingSection !== false && data.trainingSection !== 0,
 					loading: false,
 					error: null
 				});
@@ -81,6 +102,8 @@ export function useAccess(userId?: string | null) {
 					accessLevel: null,
 					isAdmin: false,
 					canUpload: false,
+					canUploadPictures: false,
+					canUploadDocuments: false,
 					canManageCategories: false,
 					canManageSubCategories: false,
 					accessAdd: false,
@@ -99,6 +122,8 @@ export function useAccess(userId?: string | null) {
 				accessLevel: null,
 				isAdmin: false,
 				canUpload: false,
+				canUploadPictures: false,
+				canUploadDocuments: false,
 				canManageCategories: false,
 				canManageSubCategories: false,
 				accessAdd: false,

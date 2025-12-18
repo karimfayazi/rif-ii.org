@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Shield, Calendar, User, MapPin, AlertTriangle, FileText, CheckCircle, TrendingUp } from "lucide-react";
+import { ArrowLeft, Shield, Calendar, User, MapPin, AlertTriangle, FileText, CheckCircle, TrendingUp, AlertCircle as AlertCircleIcon } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
 
 type SecurityIncident = {
 	id: number;

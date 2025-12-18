@@ -32,19 +32,15 @@ type WorkshopParticipant = {
 	contact_number?: string;
 	tehsil?: string;
 	district?: string;
-	NC_VC?: string;
 	workshop_training_name?: string;
 	workshop_session_conference?: string;
 	start_date?: string;
 	end_date?: string;
 	date_entered_by?: string;
 	entry_timestamp?: string;
-	Training_Unit?: string;
-	Venue?: string;
-	Duration_Days?: number;
 };
 
-const DISTRICT_OPTIONS = ["All", "DIK", "Bannu", "Paharpur"];
+const DISTRICT_OPTIONS = ["All", "DIK", "Bannu"];
 const GENDER_OPTIONS = ["Male", "Female"];
 
 export default function TrainingParticipantsPage() {
@@ -131,53 +127,35 @@ export default function TrainingParticipantsPage() {
 	const handleExport = () => {
 		// Prepare CSV data
 		const headers = [
-			"SN",
 			"Participant Name",
 			"SO/DO/WO/HO",
 			"Gender",
 			"Organization/Department",
-			"Designation",
-			"Profession",
 			"CNIC Number",
 			"Contact Number",
 			"District",
 			"Tehsil",
-			"NC/VC",
 			"Workshop/Training Name",
 			"Workshop/Session/Conference",
 			"Start Date",
-			"End Date",
-			"Training Unit",
-			"Venue",
-			"Duration (Days)",
-			"Entered By",
-			"Entry Timestamp"
+			"End Date"
 		];
 
 		const csvRows = [
 			headers.join(","),
 			...filteredData.map(item => [
-				`"${(item.sn || "").toString().replace(/"/g, '""')}"`,
 				`"${(item.participant_name || "").replace(/"/g, '""')}"`,
 				`"${(item.so_do_wo_ho || "").replace(/"/g, '""')}"`,
 				`"${(item.gender || "").replace(/"/g, '""')}"`,
 				`"${(item.organization_department || "").replace(/"/g, '""')}"`,
-				`"${(item.designation || "").replace(/"/g, '""')}"`,
-				`"${(item.profession || "").replace(/"/g, '""')}"`,
 				`"${(item.cnic_number || "").replace(/"/g, '""')}"`,
 				`"${(item.contact_number || "").replace(/"/g, '""')}"`,
 				`"${(item.district || "").replace(/"/g, '""')}"`,
 				`"${(item.tehsil || "").replace(/"/g, '""')}"`,
-				`"${(item.NC_VC || "").replace(/"/g, '""')}"`,
 				`"${(item.workshop_training_name || "").replace(/"/g, '""')}"`,
 				`"${(item.workshop_session_conference || "").replace(/"/g, '""')}"`,
 				`"${(item.start_date || "").replace(/"/g, '""')}"`,
-				`"${(item.end_date || "").replace(/"/g, '""')}"`,
-				`"${(item.Training_Unit || "").replace(/"/g, '""')}"`,
-				`"${(item.Venue || "").replace(/"/g, '""')}"`,
-				`"${(item.Duration_Days || "").toString().replace(/"/g, '""')}"`,
-				`"${(item.date_entered_by || "").replace(/"/g, '""')}"`,
-				`"${(item.entry_timestamp || "").replace(/"/g, '""')}"`
+				`"${(item.end_date || "").replace(/"/g, '""')}"`
 			].join(","))
 		];
 
@@ -775,27 +753,6 @@ export default function TrainingParticipantsPage() {
 										</div>
 									)}
 
-									{viewingParticipant.NC_VC && (
-										<div>
-											<label className="text-sm font-medium text-gray-500">NC/VC</label>
-											<p className="text-base text-gray-900 mt-1">{viewingParticipant.NC_VC}</p>
-										</div>
-									)}
-
-									{viewingParticipant.Training_Unit && (
-										<div>
-											<label className="text-sm font-medium text-gray-500">Training Unit</label>
-											<p className="text-base text-gray-900 mt-1">{viewingParticipant.Training_Unit}</p>
-										</div>
-									)}
-
-									{viewingParticipant.Venue && (
-										<div>
-											<label className="text-sm font-medium text-gray-500">Venue</label>
-											<p className="text-base text-gray-900 mt-1">{viewingParticipant.Venue}</p>
-										</div>
-									)}
-
 									{viewingParticipant.start_date && (
 										<div>
 											<label className="text-sm font-medium text-gray-500">Start Date</label>
@@ -807,13 +764,6 @@ export default function TrainingParticipantsPage() {
 										<div>
 											<label className="text-sm font-medium text-gray-500">End Date</label>
 											<p className="text-base text-gray-900 mt-1">{viewingParticipant.end_date}</p>
-										</div>
-									)}
-
-									{viewingParticipant.Duration_Days !== undefined && viewingParticipant.Duration_Days !== null && (
-										<div>
-											<label className="text-sm font-medium text-gray-500">Duration (Days)</label>
-											<p className="text-base text-gray-900 mt-1">{viewingParticipant.Duration_Days} day{viewingParticipant.Duration_Days !== 1 ? 's' : ''}</p>
 										</div>
 									)}
 								</div>

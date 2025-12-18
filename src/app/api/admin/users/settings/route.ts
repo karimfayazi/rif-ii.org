@@ -30,12 +30,7 @@ export async function GET(request: NextRequest) {
 					[access_reports],
 					[UserLoginLogs],
 					[Tracking_Section],
-					[Training_Section],
-					[Setting],
-					[Upload_Report],
-					[Upload_Pictures],
-					[Upload_Documents],
-					[security]
+					[Training_Section]
 				FROM [_rifiiorg_db].[dbo].[tbl_user_access]
 				WHERE [username] = @username
 			`;
@@ -72,12 +67,7 @@ export async function GET(request: NextRequest) {
 					[access_reports],
 					[UserLoginLogs],
 					[Tracking_Section],
-					[Training_Section],
-					[Setting],
-					[Upload_Report],
-					[Upload_Pictures],
-					[Upload_Documents],
-					[security]
+					[Training_Section]
 				FROM [_rifiiorg_db].[dbo].[tbl_user_access]
 				ORDER BY [full_name], [username]
 			`;

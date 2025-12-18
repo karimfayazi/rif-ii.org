@@ -37,10 +37,6 @@ type UserFormData = {
 	Tracking_Section: boolean;
 	Training_Section: boolean;
 	Setting: boolean;
-	Upload_Report: boolean;
-	Upload_Pictures: boolean;
-	Upload_Documents: boolean;
-	security: boolean;
 };
 
 export default function AddUserPage() {
@@ -72,10 +68,6 @@ export default function AddUserPage() {
 		Tracking_Section: false,
 		Training_Section: false,
 		Setting: false,
-		Upload_Report: false,
-		Upload_Pictures: false,
-		Upload_Documents: false,
-		security: false,
 	});
 	
 	const [loading, setLoading] = useState(false);
@@ -132,18 +124,14 @@ export default function AddUserPage() {
 					address: userData.address || "",
 					contact_no: userData.contact_no || "",
 					access_level: userData.access_level || "User",
-					access_add: !!(userData.access_add === true || userData.access_add === 1),
-					access_edit: !!(userData.access_edit === true || userData.access_edit === 1),
-					access_delete: !!(userData.access_delete === true || userData.access_delete === 1),
-					access_reports: !!(userData.access_reports === true || userData.access_reports === 1),
-					UserLoginLogs: !!(userData.UserLoginLogs === true || userData.UserLoginLogs === 1),
-					Tracking_Section: !!(userData.Tracking_Section === true || userData.Tracking_Section === 1),
-					Training_Section: !!(userData.Training_Section === true || userData.Training_Section === 1),
-					Setting: !!(userData.Setting === true || userData.Setting === 1),
-					Upload_Report: !!(userData.Upload_Report === true || userData.Upload_Report === 1),
-					Upload_Pictures: !!(userData.Upload_Pictures === true || userData.Upload_Pictures === 1),
-					Upload_Documents: !!(userData.Upload_Documents === true || userData.Upload_Documents === 1),
-					security: !!(userData.security === true || userData.security === 1),
+					access_add: userData.access_add === true || userData.access_add === 1,
+					access_edit: userData.access_edit === true || userData.access_edit === 1,
+					access_delete: userData.access_delete === true || userData.access_delete === 1,
+					access_reports: userData.access_reports === true || userData.access_reports === 1,
+					UserLoginLogs: userData.UserLoginLogs === true || userData.UserLoginLogs === 1,
+					Tracking_Section: userData.Tracking_Section === true || userData.Tracking_Section === 1,
+					Training_Section: userData.Training_Section === true || userData.Training_Section === 1,
+					Setting: userData.Setting === true || userData.Setting === 1,
 				});
 			}
 		} catch (err) {
@@ -504,46 +492,6 @@ export default function AddUserPage() {
 									className="w-5 h-5 text-[#0b4d2b] border-gray-300 rounded focus:ring-2 focus:ring-[#0b4d2b]"
 								/>
 								<span className="ml-3 text-sm font-medium text-gray-700">Setting</span>
-							</label>
-							<label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-								<input
-									type="checkbox"
-									name="Upload_Report"
-									checked={formData.Upload_Report}
-									onChange={handleInputChange}
-									className="w-5 h-5 text-[#0b4d2b] border-gray-300 rounded focus:ring-2 focus:ring-[#0b4d2b]"
-								/>
-								<span className="ml-3 text-sm font-medium text-gray-700">Upload Report</span>
-							</label>
-							<label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-								<input
-									type="checkbox"
-									name="Upload_Pictures"
-									checked={formData.Upload_Pictures}
-									onChange={handleInputChange}
-									className="w-5 h-5 text-[#0b4d2b] border-gray-300 rounded focus:ring-2 focus:ring-[#0b4d2b]"
-								/>
-								<span className="ml-3 text-sm font-medium text-gray-700">Upload Pictures</span>
-							</label>
-							<label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-								<input
-									type="checkbox"
-									name="Upload_Documents"
-									checked={formData.Upload_Documents}
-									onChange={handleInputChange}
-									className="w-5 h-5 text-[#0b4d2b] border-gray-300 rounded focus:ring-2 focus:ring-[#0b4d2b]"
-								/>
-								<span className="ml-3 text-sm font-medium text-gray-700">Upload Documents</span>
-							</label>
-							<label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-								<input
-									type="checkbox"
-									name="security"
-									checked={formData.security}
-									onChange={handleInputChange}
-									className="w-5 h-5 text-[#0b4d2b] border-gray-300 rounded focus:ring-2 focus:ring-[#0b4d2b]"
-								/>
-								<span className="ml-3 text-sm font-medium text-gray-700">Security Access</span>
 							</label>
 						</div>
 					</div>

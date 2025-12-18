@@ -15,15 +15,11 @@ export async function POST(request: NextRequest) {
 			contact_number,
 			tehsil,
 			district,
-			NC_VC,
 			workshop_training_name,
 			workshop_session_conference,
 			start_date,
 			end_date,
-			date_entered_by,
-			Training_Unit,
-			Venue,
-			Duration_Days
+			date_entered_by
 		} = body;
 
 	const pool = await getDb();
@@ -31,7 +27,7 @@ export async function POST(request: NextRequest) {
 	// Check for duplicate entries based on CNIC, Workshop/Session/Conference, and Start Date
 	const duplicateCheckQuery = `
 		SELECT COUNT(*) AS count
-		FROM [_rifiiorg_db].[dbo].[workshop_participants]
+		FROM [_rifiiorg_db].[rifiiorg].[workshop_participants]
 		WHERE [cnic_number] = @cnic_number
 			AND [workshop_session_conference] = @workshop_session_conference
 			AND CAST([start_date] AS DATE) = CAST(@start_date AS DATE)
@@ -58,7 +54,7 @@ export async function POST(request: NextRequest) {
 	const request_obj = pool.request();
 
 	const query = `
-		INSERT INTO [_rifiiorg_db].[dbo].[workshop_participants]
+		INSERT INTO [_rifiiorg_db].[rifiiorg].[workshop_participants]
 			(
 				[participant_name],
 				[so_do_wo_ho],
@@ -70,16 +66,12 @@ export async function POST(request: NextRequest) {
 				[contact_number],
 				[tehsil],
 				[district],
-				[NC_VC],
 				[workshop_training_name],
 				[workshop_session_conference],
 				[start_date],
 				[end_date],
 				[date_entered_by],
-				[entry_timestamp],
-				[Training_Unit],
-				[Venue],
-				[Duration_Days]
+				[entry_timestamp]
 			)
 			VALUES
 			(
@@ -93,16 +85,12 @@ export async function POST(request: NextRequest) {
 				@contact_number,
 				@tehsil,
 				@district,
-				@NC_VC,
 				@workshop_training_name,
 				@workshop_session_conference,
 				@start_date,
 				@end_date,
 				@date_entered_by,
-				GETDATE(),
-				@Training_Unit,
-				@Venue,
-				@Duration_Days
+				GETDATE()
 			);
 			SELECT SCOPE_IDENTITY() AS [sn];
 		`;
@@ -117,15 +105,11 @@ export async function POST(request: NextRequest) {
 		request_obj.input('contact_number', contact_number || null);
 		request_obj.input('tehsil', tehsil || null);
 		request_obj.input('district', district || null);
-		request_obj.input('NC_VC', NC_VC || null);
 		request_obj.input('workshop_training_name', workshop_training_name || null);
 		request_obj.input('workshop_session_conference', workshop_session_conference || null);
 		request_obj.input('start_date', start_date ? new Date(start_date) : null);
 		request_obj.input('end_date', end_date ? new Date(end_date) : null);
 		request_obj.input('date_entered_by', date_entered_by || null);
-		request_obj.input('Training_Unit', Training_Unit || null);
-		request_obj.input('Venue', Venue || null);
-		request_obj.input('Duration_Days', Duration_Days || null);
 
 		const result = await request_obj.query(query);
 		const newId = result.recordset?.[0]?.sn;

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Upload, ArrowLeft, X, Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AccessDenied from "@/components/AccessDenied";
 import { useAccess } from "@/hooks/useAccess";
+import { useAuth } from "@/hooks/useAuth";
 
 type UploadFormData = {
 	reportTitle: string;
@@ -25,9 +26,15 @@ type UploadedFile = {
 export default function UploadReportsPage() {
 	const router = useRouter();
 	
-	// For demo purposes, using a hardcoded user ID. In real app, get from auth context
-	const userId = "1"; // Replace with actual user ID from auth context
-	const { canUpload, loading: accessLoading } = useAccess(userId);
+	// Get user ID using useAuth hook (more reliable)
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	
+	const { canUpload, loading: accessLoading, error: accessError } = useAccess(userId);
+	
+	useEffect(() => {
+		console.log('[Upload Page] Access check result:', { canUpload, accessLoading, accessError, userId });
+	}, [canUpload, accessLoading, accessError, userId]);
 	
 	const [formData, setFormData] = useState<UploadFormData>({
 		reportTitle: "",
@@ -210,7 +217,18 @@ export default function UploadReportsPage() {
 						Back to Reports
 					</Link>
 				</div>
-				<AccessDenied action="upload reports" />
+				{accessError && (
+					<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+						<p className="text-sm text-yellow-800">
+							<strong>Debug Info:</strong> {accessError}
+							{userId && <span className="block mt-1">User ID: {userId}</span>}
+						</p>
+					</div>
+				)}
+				<AccessDenied 
+					action="upload reports" 
+					customMessage="This action requires Admin access or Upload Report permission. Please contact your administrator if you believe this is an error."
+				/>
 			</div>
 		);
 	}

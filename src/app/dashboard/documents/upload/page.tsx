@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Upload, ArrowLeft, FileText, Calendar, Folder, User, X, Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AccessDenied from "@/components/AccessDenied";
 import { useAccess } from "@/hooks/useAccess";
+import { useAuth } from "@/hooks/useAuth";
 
 type UploadFormData = {
 	title: string;
@@ -30,9 +31,15 @@ type UploadedFile = {
 export default function UploadDocumentsPage() {
 	const router = useRouter();
 	
-	// For demo purposes, using a hardcoded user ID. In real app, get from auth context
-	const userId = "1"; // Replace with actual user ID from auth context
-	const { canUpload, loading: accessLoading, error: accessError } = useAccess(userId);
+	// Get user ID using useAuth hook (more reliable)
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	
+	const { canUploadDocuments, loading: accessLoading, error: accessError } = useAccess(userId);
+	
+	useEffect(() => {
+		console.log('[Documents Upload Page] Access check result:', { canUploadDocuments, accessLoading, accessError, userId });
+	}, [canUploadDocuments, accessLoading, accessError, userId]);
 	
 	const [formData, setFormData] = useState<UploadFormData>({
 		title: "",
@@ -220,7 +227,7 @@ export default function UploadDocumentsPage() {
 	}
 
 	// Show access denied if user doesn't have upload permission
-	if (!canUpload) {
+	if (!canUploadDocuments) {
 		return (
 			<div className="space-y-6">
 				<div className="flex items-center justify-between">
@@ -236,7 +243,18 @@ export default function UploadDocumentsPage() {
 						Back to Documents
 					</Link>
 				</div>
-				<AccessDenied action="upload documents" />
+				{accessError && (
+					<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+						<p className="text-sm text-yellow-800">
+							<strong>Debug Info:</strong> {accessError}
+							{userId && <span className="block mt-1">User ID: {userId}</span>}
+						</p>
+					</div>
+				)}
+				<AccessDenied 
+					action="upload documents" 
+					customMessage="This action requires Admin access or Upload Documents permission. Please contact your administrator if you believe this is an error."
+				/>
 			</div>
 		);
 	}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FileText, Download, Calendar, Folder, Search, RotateCcw, Filter, Upload, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useAccess } from "@/hooks/useAccess";
+import { getUserIdFromCookie } from "@/lib/client-auth";
 
 type ReportData = {
 	ReportTitle: string;
@@ -15,8 +16,15 @@ type ReportData = {
 };
 
 export default function ReportsPage() {
-	// For demo purposes, using a hardcoded user ID. In real app, get from auth context
-	const userId = "1"; // Replace with actual user ID from auth context
+	// Get actual user ID from cookie
+	const [userId, setUserId] = useState<string | null>(null);
+	
+	useEffect(() => {
+		// Get user ID from cookie on client side
+		const id = getUserIdFromCookie();
+		setUserId(id);
+	}, []);
+	
 	const { canUpload, loading: accessLoading } = useAccess(userId);
 	
 	const [reports, setReports] = useState<ReportData[]>([]);
@@ -191,15 +199,13 @@ export default function ReportsPage() {
 				<p className="text-gray-600 mt-2">Browse and download available reports</p>
 			</div>
 			<div className="flex items-center space-x-3">
-				{canUpload && (
-					<Link
-						href="/dashboard/reports/upload"
-						className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-					>
-						<Upload className="h-4 w-4 mr-2" />
-						Upload Reports
-					</Link>
-				)}
+				<Link
+					href="/dashboard/reports/upload"
+					className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+				>
+					<Upload className="h-4 w-4 mr-2" />
+					Upload report
+				</Link>
 				<button
 					onClick={fetchReports}
 					className="inline-flex items-center px-4 py-2 text-[#0b4d2b] bg-[#0b4d2b]/10 rounded-lg hover:bg-[#0b4d2b]/20 transition-colors"

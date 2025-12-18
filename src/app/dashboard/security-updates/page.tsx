@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, AlertTriangle, Search, Filter, RefreshCw, Calendar, User, Download, Plus, Edit, Trash2 } from "lucide-react";
+import { Shield, AlertTriangle, Search, Filter, RefreshCw, Calendar, User, Download, Plus, Edit, Trash2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 type SecurityIncident = {
 	id: number;

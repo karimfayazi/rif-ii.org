@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Calendar, Folder, Image as ImageIcon, ExternalLink, TrendingUp, MapPin, Building2, Newspaper, Clock, Layers, Info, Loader2, ChevronDown, ChevronUp, Shield, AlertTriangle, User, Users, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Folder, Image as ImageIcon, ExternalLink, TrendingUp, MapPin, Building2, Newspaper, Clock, Layers, Info, Loader2, ChevronDown, ChevronUp, Shield, AlertTriangle, User, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -1201,31 +1201,6 @@ type DashboardData = {
 	byDistrict: BreakdownRow[];
 };
 
-type ParticipantStats = {
-	overall: {
-		totalParticipants: number;
-		totalMale: number;
-		totalFemale: number;
-	};
-	byCategory: {
-		training: {
-			category: string;
-			TotalParticipants: number;
-			TotalMale: number;
-			TotalFemale: number;
-			subcategories: any[];
-		};
-		workshop: {
-			category: string;
-			TotalParticipants: number;
-			TotalMale: number;
-			TotalFemale: number;
-			subcategories: any[];
-		};
-	};
-	breakdown: any[];
-};
-
 export default function DashboardPage() {
 	const router = useRouter();
 	const [pictures, setPictures] = useState<PictureData[]>([]);
@@ -1237,7 +1212,6 @@ export default function DashboardPage() {
 	const [districtProgressSummary, setDistrictProgressSummary] = useState<DistrictProgressSummary[]>([]);
 	const [trainingDashboardData, setTrainingDashboardData] = useState<DashboardData | null>(null);
 	const [trainingGraphData, setTrainingGraphData] = useState<TrainingGraphData[]>([]);
-	const [participantStats, setParticipantStats] = useState<ParticipantStats | null>(null);
 	const [selectedEventType, setSelectedEventType] = useState<BreakdownRow | null>(null);
 	const [selectedDistrict, setSelectedDistrict] = useState<BreakdownRow | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -1261,7 +1235,6 @@ export default function DashboardPage() {
 		fetchDistrictProgressSummary();
 		fetchTrainingDashboard();
 		fetchTrainingGraphs();
-		fetchParticipantStats();
 		fetchSecurityAlerts();
 	}, []);
 
@@ -1519,21 +1492,6 @@ export default function DashboardPage() {
 			}
 		} catch (err) {
 			console.error("Error fetching training graphs:", err);
-		}
-	};
-
-	const fetchParticipantStats = async () => {
-		try {
-			const response = await fetch('/api/training/participants/stats');
-			const data = await response.json();
-
-			if (data.success) {
-				setParticipantStats(data);
-			} else {
-				console.error("Failed to fetch participant stats:", data.message);
-			}
-		} catch (err) {
-			console.error("Error fetching participant stats:", err);
 		}
 	};
 
@@ -2050,345 +2008,6 @@ export default function DashboardPage() {
 			)}
 		</div>
 	)}
-
-			{/* Training Participants Detailed Statistics */}
-			{participantStats && (
-				<div className="space-y-6">
-					<div className="flex items-center gap-3">
-						<h2 className="text-xl font-bold text-gray-900 tracking-tight">Training Participants Statistics</h2>
-						<p className="text-sm text-gray-500">Detailed breakdown of participants by category and type</p>
-					</div>
-
-					{/* Summary Cards */}
-					<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-						{/* Total Participants Card */}
-						<div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-							<div className="flex items-center justify-between mb-2">
-								<p className="text-sm uppercase tracking-wide opacity-80">Total Participants</p>
-								<User className="h-6 w-6 opacity-80" />
-							</div>
-							<p className="text-3xl font-bold">{participantStats.overall.totalParticipants.toLocaleString()}</p>
-						</div>
-
-						{/* Total Male Card */}
-						<div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-6 text-white shadow-lg">
-							<div className="flex items-center justify-between mb-2">
-								<p className="text-sm uppercase tracking-wide opacity-80">Total Male</p>
-								<User className="h-6 w-6 opacity-80" />
-							</div>
-							<p className="text-3xl font-bold">{participantStats.overall.totalMale.toLocaleString()}</p>
-							<p className="text-sm mt-1 opacity-90">
-								{getPercentage(participantStats.overall.totalMale, participantStats.overall.totalParticipants)} of total
-							</p>
-						</div>
-
-						{/* Total Female Card */}
-						<div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl p-6 text-white shadow-lg">
-							<div className="flex items-center justify-between mb-2">
-								<p className="text-sm uppercase tracking-wide opacity-80">Total Female</p>
-								<User className="h-6 w-6 opacity-80" />
-							</div>
-							<p className="text-3xl font-bold">{participantStats.overall.totalFemale.toLocaleString()}</p>
-							<p className="text-sm mt-1 opacity-90">
-								{getPercentage(participantStats.overall.totalFemale, participantStats.overall.totalParticipants)} of total
-							</p>
-						</div>
-
-						{/* Gender Distribution Card */}
-						<div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-							<div className="flex items-center justify-between mb-2">
-								<p className="text-sm uppercase tracking-wide opacity-80">Gender Distribution</p>
-								<Users className="h-6 w-6 opacity-80" />
-							</div>
-							<div className="space-y-2">
-								<div>
-									<div className="flex justify-between text-sm mb-1">
-										<span>Male</span>
-										<span className="font-semibold">{getPercentage(participantStats.overall.totalMale, participantStats.overall.totalParticipants)}</span>
-									</div>
-									<div className="w-full bg-white/30 rounded-full h-2">
-										<div 
-											className="bg-white rounded-full h-2 transition-all duration-500"
-											style={{ width: getPercentage(participantStats.overall.totalMale, participantStats.overall.totalParticipants) }}
-										/>
-									</div>
-								</div>
-								<div>
-									<div className="flex justify-between text-sm mb-1">
-										<span>Female</span>
-										<span className="font-semibold">{getPercentage(participantStats.overall.totalFemale, participantStats.overall.totalParticipants)}</span>
-									</div>
-									<div className="w-full bg-white/30 rounded-full h-2">
-										<div 
-											className="bg-white rounded-full h-2 transition-all duration-500"
-											style={{ width: getPercentage(participantStats.overall.totalFemale, participantStats.overall.totalParticipants) }}
-										/>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					{/* Category Breakdown - Training vs Workshop */}
-					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-						{/* Training Category */}
-						<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
-							<div className="flex items-center justify-between mb-6">
-								<h3 className="text-lg font-bold text-gray-900">Training Category</h3>
-								<div className="text-right">
-									<p className="text-2xl font-bold text-emerald-600">
-										{participantStats.byCategory.training.TotalParticipants.toLocaleString()}
-									</p>
-									<p className="text-xs text-gray-500">Total Participants</p>
-								</div>
-							</div>
-
-                  {/* Gender Breakdown */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600 mb-1">Male</p>
-                      <p className="text-xl font-bold text-blue-600">{participantStats.byCategory.training.TotalMale.toLocaleString()}</p>
-                      <p className="text-xs text-gray-500">{getPercentage(participantStats.byCategory.training.TotalMale, participantStats.byCategory.training.TotalParticipants)}</p>
-                    </div>
-                    <div className="bg-pink-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600 mb-1">Female</p>
-                      <p className="text-xl font-bold text-pink-600">{participantStats.byCategory.training.TotalFemale.toLocaleString()}</p>
-                      <p className="text-xs text-gray-500">{getPercentage(participantStats.byCategory.training.TotalFemale, participantStats.byCategory.training.TotalParticipants)}</p>
-                    </div>
-                  </div>
-						</div>
-
-						{/* Workshop Category */}
-						<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
-							<div className="flex items-center justify-between mb-6">
-								<h3 className="text-lg font-bold text-gray-900">Workshop Category</h3>
-								<div className="text-right">
-									<p className="text-2xl font-bold text-indigo-600">
-										{participantStats.byCategory.workshop.TotalParticipants.toLocaleString()}
-									</p>
-									<p className="text-xs text-gray-500">Total Participants</p>
-								</div>
-							</div>
-
-                  {/* Gender Breakdown */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600 mb-1">Male</p>
-                      <p className="text-xl font-bold text-blue-600">{participantStats.byCategory.workshop.TotalMale.toLocaleString()}</p>
-                      <p className="text-xs text-gray-500">{getPercentage(participantStats.byCategory.workshop.TotalMale, participantStats.byCategory.workshop.TotalParticipants)}</p>
-                    </div>
-                    <div className="bg-pink-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600 mb-1">Female</p>
-                      <p className="text-xl font-bold text-pink-600">{participantStats.byCategory.workshop.TotalFemale.toLocaleString()}</p>
-                      <p className="text-xs text-gray-500">{getPercentage(participantStats.byCategory.workshop.TotalFemale, participantStats.byCategory.workshop.TotalParticipants)}</p>
-                    </div>
-                  </div>
-						</div>
-					</div>
-
-              {/* Training Types - Full Width - Vertical Bar Chart */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-6 text-center">Training Types - Participants Breakdown</h3>
-                <div className="flex items-end justify-center gap-4" style={{ minHeight: '250px' }}>
-                  {participantStats.byCategory.training.subcategories
-                    .sort((a: any, b: any) => b.TotalParticipants - a.TotalParticipants)
-                    .map((training: any, idx: number) => {
-                      const maxParticipants = Math.max(...participantStats.byCategory.training.subcategories.map((t: any) => t.TotalParticipants));
-                      const height = (training.TotalParticipants / maxParticipants) * 100;
-                      
-                      return (
-                        <div key={idx} className="flex flex-col items-center flex-1 max-w-[120px]">
-                          <div className="w-full bg-gray-200 rounded-t-lg relative overflow-hidden shadow-inner mb-3" style={{ height: '200px' }}>
-                            {/* Male portion (bottom) */}
-                            <div 
-                              className="bg-gradient-to-t from-blue-500 to-blue-600 w-full transition-all duration-1000 ease-out absolute bottom-0 flex items-start justify-center pt-1"
-                              style={{ 
-                                height: `${Math.min((training.TotalMale / training.TotalParticipants) * height, height)}%` 
-                              }}
-                            >
-                              <span className="text-white text-xs font-bold">{training.TotalMale}</span>
-                            </div>
-                            {/* Female portion (on top of male) */}
-                            <div 
-                              className="bg-gradient-to-t from-pink-500 to-pink-600 w-full transition-all duration-1000 ease-out absolute flex items-start justify-center pt-1"
-                              style={{ 
-                                height: `${Math.min((training.TotalFemale / training.TotalParticipants) * height, height)}%`,
-                                bottom: `${Math.min((training.TotalMale / training.TotalParticipants) * height, height)}%`
-                              }}
-                            >
-                              <span className="text-white text-xs font-bold">{training.TotalFemale}</span>
-                            </div>
-                            {/* Total label at the top */}
-                            <div className="absolute top-1 left-0 right-0 flex justify-center">
-                              <span className="text-gray-700 text-sm font-bold bg-white/90 px-2 py-0.5 rounded">{training.TotalParticipants}</span>
-                            </div>
-                          </div>
-                          <p className="text-xs font-bold text-emerald-700 mb-1 text-center leading-tight h-12 line-clamp-2" title={training.workshop_training_name}>
-                            {training.workshop_training_name.length > 40 
-                              ? training.workshop_training_name.substring(0, 40) + '...'
-                              : training.workshop_training_name
-                            }
-                          </p>
-                          <div className="text-xs text-gray-600 text-center">
-                            <span className="text-blue-600">M: {training.TotalMale}</span>
-                            <span className="mx-1">|</span>
-                            <span className="text-pink-600">F: {training.TotalFemale}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-                <div className="mt-4 flex items-center justify-center gap-6 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-gradient-to-t from-blue-500 to-blue-600 rounded"></div>
-                    <span className="text-gray-700">Male</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-gradient-to-t from-pink-500 to-pink-600 rounded"></div>
-                    <span className="text-gray-700">Female</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Workshop Types & Participants by Category - Two Columns */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Workshop Types Horizontal Bar Chart */}
-                {participantStats.byCategory.workshop.subcategories.length > 0 && (
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6">Workshop Types - Participants Breakdown</h3>
-                    <div className="space-y-4">
-                      {participantStats.byCategory.workshop.subcategories
-                        .sort((a: any, b: any) => b.TotalParticipants - a.TotalParticipants)
-                        .map((workshop: any, idx: number) => {
-                          const maxParticipants = Math.max(...participantStats.byCategory.workshop.subcategories.map((w: any) => w.TotalParticipants));
-                          const widthPercent = (workshop.TotalParticipants / maxParticipants) * 100;
-                          const malePercent = (workshop.TotalMale / workshop.TotalParticipants) * 100;
-                          const femalePercent = (workshop.TotalFemale / workshop.TotalParticipants) * 100;
-                          
-                          return (
-                            <div key={idx} className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm font-medium text-gray-900 flex-1 pr-4">
-                                  {workshop.workshop_training_name}
-                                </p>
-                                <span className="text-sm font-bold text-indigo-600">{workshop.TotalParticipants}</span>
-                              </div>
-                              <div className="relative h-4 bg-gray-200 rounded-lg overflow-hidden shadow-inner">
-                                {/* Male portion */}
-                                <div 
-                                  className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-1000 ease-out flex items-center justify-center"
-                                  style={{ width: `${(malePercent / 100) * widthPercent}%` }}
-                                >
-                                  {workshop.TotalMale > 0 && (
-                                    <span className="text-white text-[10px] font-bold">{workshop.TotalMale}</span>
-                                  )}
-                                </div>
-                                {/* Female portion */}
-                                <div 
-                                  className="absolute top-0 h-full bg-gradient-to-r from-pink-500 to-pink-600 transition-all duration-1000 ease-out flex items-center justify-center"
-                                  style={{ 
-                                    left: `${(malePercent / 100) * widthPercent}%`,
-                                    width: `${(femalePercent / 100) * widthPercent}%` 
-                                  }}
-                                >
-                                  {workshop.TotalFemale > 0 && (
-                                    <span className="text-white text-[10px] font-bold">{workshop.TotalFemale}</span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex gap-4 text-xs text-gray-600">
-                                <span className="text-blue-600">M: {workshop.TotalMale}</span>
-                                <span className="text-pink-600">F: {workshop.TotalFemale}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                    <div className="mt-6 flex items-center justify-center gap-6 text-sm border-t border-gray-200 pt-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded"></div>
-                        <span className="text-gray-700">Male</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-gradient-to-r from-pink-500 to-pink-600 rounded"></div>
-                        <span className="text-gray-700">Female</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Participants by Category - Horizontal Bars */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-6">Participants by Category</h3>
-                  <div className="space-y-4">
-                    {/* Training Bar */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-emerald-700">Training</p>
-                        <span className="text-sm font-bold text-emerald-600">{participantStats.byCategory.training.TotalParticipants}</span>
-                      </div>
-                      <div className="relative h-4 bg-gray-200 rounded-lg overflow-hidden shadow-inner">
-                        <div 
-                          className="absolute left-0 top-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-1000 ease-out flex items-center justify-center"
-                          style={{ 
-                            width: `${(participantStats.byCategory.training.TotalParticipants / participantStats.overall.totalParticipants) * 100}%` 
-                          }}
-                        >
-                          <span className="text-white text-[10px] font-bold">{participantStats.byCategory.training.TotalParticipants}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-4 text-xs text-gray-600">
-                        <span className="text-blue-600">M: {participantStats.byCategory.training.TotalMale}</span>
-                        <span className="text-pink-600">F: {participantStats.byCategory.training.TotalFemale}</span>
-                      </div>
-                    </div>
-
-                    {/* Workshop Bar */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-indigo-700">Workshop</p>
-                        <span className="text-sm font-bold text-indigo-600">{participantStats.byCategory.workshop.TotalParticipants}</span>
-                      </div>
-                      <div className="relative h-4 bg-gray-200 rounded-lg overflow-hidden shadow-inner">
-                        <div 
-                          className="absolute left-0 top-0 h-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-1000 ease-out flex items-center justify-center"
-                          style={{ 
-                            width: `${(participantStats.byCategory.workshop.TotalParticipants / participantStats.overall.totalParticipants) * 100}%` 
-                          }}
-                        >
-                          <span className="text-white text-[10px] font-bold">{participantStats.byCategory.workshop.TotalParticipants}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-4 text-xs text-gray-600">
-                        <span className="text-blue-600">M: {participantStats.byCategory.workshop.TotalMale}</span>
-                        <span className="text-pink-600">F: {participantStats.byCategory.workshop.TotalFemale}</span>
-                      </div>
-                    </div>
-
-                    {/* Total Bar */}
-                    <div className="space-y-2 pt-4 border-t-2 border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-orange-700">Grand Total</p>
-                        <span className="text-sm font-bold text-orange-600">{participantStats.overall.totalParticipants}</span>
-                      </div>
-                      <div className="relative h-4 bg-gray-200 rounded-lg overflow-hidden shadow-inner border-2 border-orange-400">
-                        <div 
-                          className="absolute left-0 top-0 h-full bg-gradient-to-r from-orange-500 to-orange-600 transition-all duration-1000 ease-out flex items-center justify-center"
-                          style={{ width: '100%' }}
-                        >
-                          <span className="text-white text-[10px] font-bold">{participantStats.overall.totalParticipants}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-4 text-xs text-gray-600">
-                        <span className="text-blue-600">M: {participantStats.overall.totalMale}</span>
-                        <span className="text-pink-600">F: {participantStats.overall.totalFemale}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-				</div>
-			)}
 
 			{/* Picture Gallery Section */}
 			<div className="bg-gradient-to-r from-[#0b4d2b] to-[#0a3d24] rounded-xl shadow-lg overflow-hidden">

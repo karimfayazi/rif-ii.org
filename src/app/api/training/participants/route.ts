@@ -25,17 +25,13 @@ export async function GET(request: NextRequest) {
 				[contact_number],
 				[tehsil],
 				[district],
-				[NC_VC],
 				[workshop_training_name],
 				[workshop_session_conference],
 				CONVERT(VARCHAR(10), [start_date], 105) AS [start_date],
 				CONVERT(VARCHAR(10), [end_date], 105) AS [end_date],
 				[date_entered_by],
-				CONVERT(VARCHAR(10), [entry_timestamp], 105) AS [entry_timestamp],
-				[Training_Unit],
-				[Venue],
-				[Duration_Days]
-			FROM [_rifiiorg_db].[dbo].[workshop_participants]
+				CONVERT(VARCHAR(10), [entry_timestamp], 105) AS [entry_timestamp]
+			FROM [_rifiiorg_db].[rifiiorg].[workshop_participants]
 			WHERE 1=1
 		`;
 

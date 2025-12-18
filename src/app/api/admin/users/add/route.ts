@@ -44,14 +44,12 @@ export async function POST(request: NextRequest) {
 			INSERT INTO [_rifiiorg_db].[dbo].[tbl_user_access] 
 			([username], [password], [email], [department], [full_name], [region], [address], 
 			 [contact_no], [access_level], [access_add], [access_edit], [access_delete], 
-			 [access_reports], [UserLoginLogs], [Tracking_Section], [Training_Section], [Setting],
-			 [Upload_Report], [Upload_Pictures], [Upload_Documents], [security],
+			 [access_reports], [UserLoginLogs], [Tracking_Section], [Training_Section], 
 			 [created_at], [updated_at], [access_granted_at])
 			VALUES 
 			(@username, @password, @email, @department, @full_name, @region, @address, 
 			 @contact_no, @access_level, @access_add, @access_edit, @access_delete, 
-			 @access_reports, @UserLoginLogs, @Tracking_Section, @Training_Section, @Setting,
-			 @Upload_Report, @Upload_Pictures, @Upload_Documents, @security,
+			 @access_reports, @UserLoginLogs, @Tracking_Section, @Training_Section, 
 			 GETDATE(), GETDATE(), GETDATE())
 		`;
 
@@ -72,11 +70,6 @@ export async function POST(request: NextRequest) {
 			.input("UserLoginLogs", data.UserLoginLogs ? 1 : 0)
 			.input("Tracking_Section", data.Tracking_Section ? 1 : 0)
 			.input("Training_Section", data.Training_Section ? 1 : 0)
-			.input("Setting", data.Setting ? 1 : 0)
-			.input("Upload_Report", data.Upload_Report ? 1 : 0)
-			.input("Upload_Pictures", data.Upload_Pictures ? 1 : 0)
-			.input("Upload_Documents", data.Upload_Documents ? 1 : 0)
-			.input("security", data.security ? 1 : 0)
 			.query(query);
 
 		return NextResponse.json({
@@ -186,26 +179,6 @@ export async function PUT(request: NextRequest) {
 		if (data.Training_Section !== undefined) {
 			updateFields.push("[Training_Section] = @Training_Section");
 			request_obj.input("Training_Section", data.Training_Section ? 1 : 0);
-		}
-		if (data.Setting !== undefined) {
-			updateFields.push("[Setting] = @Setting");
-			request_obj.input("Setting", data.Setting ? 1 : 0);
-		}
-		if (data.Upload_Report !== undefined) {
-			updateFields.push("[Upload_Report] = @Upload_Report");
-			request_obj.input("Upload_Report", data.Upload_Report ? 1 : 0);
-		}
-		if (data.Upload_Pictures !== undefined) {
-			updateFields.push("[Upload_Pictures] = @Upload_Pictures");
-			request_obj.input("Upload_Pictures", data.Upload_Pictures ? 1 : 0);
-		}
-		if (data.Upload_Documents !== undefined) {
-			updateFields.push("[Upload_Documents] = @Upload_Documents");
-			request_obj.input("Upload_Documents", data.Upload_Documents ? 1 : 0);
-		}
-		if (data.security !== undefined) {
-			updateFields.push("[security] = @security");
-			request_obj.input("security", data.security ? 1 : 0);
 		}
 
 		updateFields.push("[updated_at] = GETDATE()");

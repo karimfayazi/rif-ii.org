@@ -5,16 +5,16 @@ import { join } from "path";
 import { existsSync } from "fs";
 import { getUserIdFromRequest } from "@/lib/auth";
 
-// Helper function to check if user is Admin
-async function checkAdminAccess(userId: string | null): Promise<{ isAdmin: boolean; message?: string }> {
+// Helper function to check if user has Upload_Documents permission or is Admin
+async function checkUploadDocumentsAccess(userId: string | null): Promise<{ canUpload: boolean; message?: string }> {
 	if (!userId) {
-		return { isAdmin: false, message: "Unauthorized" };
+		return { canUpload: false, message: "Unauthorized" };
 	}
 
 	try {
 		const pool = await getDb();
 		const accessQuery = `
-			SELECT [access_level]
+			SELECT [access_level], [Upload_Documents]
 			FROM [_rifiiorg_db].[dbo].[tbl_user_access]
 			WHERE [username] = @userId OR [email] = @userId
 		`;
@@ -24,38 +24,52 @@ async function checkAdminAccess(userId: string | null): Promise<{ isAdmin: boole
 			.query(accessQuery);
 		
 		if (accessResult.recordset.length === 0) {
-			return { isAdmin: false, message: "User not found" };
+			return { canUpload: false, message: "User not found" };
 		}
 
 		const accessLevel = accessResult.recordset[0].access_level;
-		// Check if access_level is exactly 'Admin' (case-sensitive)
+		const uploadDocumentsRaw = accessResult.recordset[0].Upload_Documents;
+		
 		const isAdmin = accessLevel === 'Admin';
 		
-		if (!isAdmin) {
+		// Helper function to check BIT field values
+		const checkBitField = (value: any): boolean => {
+			if (value === null || value === undefined) return false;
+			if (Buffer.isBuffer(value)) return value[0] === 1;
+			if (typeof value === 'boolean') return value === true;
+			if (typeof value === 'number') return value === 1;
+			if (typeof value === 'string') return value === '1' || value.toLowerCase() === 'true';
+			return false;
+		};
+		
+		const uploadDocuments = checkBitField(uploadDocumentsRaw);
+		const canUpload = isAdmin || uploadDocuments;
+		
+		if (!canUpload) {
 			return { 
-				isAdmin: false, 
-				message: "Insufficient Permissions. This action requires Admin level access. Please contact your administrator if you believe this is an error." 
+				canUpload: false, 
+				message: "Insufficient Permissions. This action requires Admin access or Upload Documents permission. Please contact your administrator if you believe this is an error." 
 			};
 		}
 
-		return { isAdmin: true };
+		return { canUpload: true };
 	} catch (error) {
-		console.error("Error checking admin access:", error);
-		return { isAdmin: false, message: "Error checking access permissions" };
+		console.error("Error checking upload documents access:", error);
+		return { canUpload: false, message: "Error checking access permissions" };
 	}
 }
 
 export async function POST(request: NextRequest) {
 	try {
-		// Check Admin access
+		// Check Upload_Documents permission
 		const userId = getUserIdFromRequest(request);
-		const accessCheck = await checkAdminAccess(userId);
+		const accessCheck = await checkUploadDocumentsAccess(userId);
 		
-		if (!accessCheck.isAdmin) {
+		if (!accessCheck.canUpload) {
 			return NextResponse.json(
 				{
 					success: false,
-					message: accessCheck.message || "Access denied. Admin privileges required."
+					message: accessCheck.message || "Access denied. Upload Documents permission required."
 				},
 				{ status: 403 }
 			);

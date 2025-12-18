@@ -8,6 +8,7 @@ import CategoryModal from "@/components/CategoryModal";
 import SubCategoryModal from "@/components/SubCategoryModal";
 import AccessDenied from "@/components/AccessDenied";
 import { useAccess } from "@/hooks/useAccess";
+import { useAuth } from "@/hooks/useAuth";
 
 type UploadFormData = {
 	groupName: string;
@@ -38,9 +39,15 @@ type SubCategory = {
 export default function UploadPicturesPage() {
 	const router = useRouter();
 	
-	// For demo purposes, using a hardcoded user ID. In real app, get from auth context
-	const userId = "1"; // Replace with actual user ID from auth context
-	const { canUpload, canManageCategories, canManageSubCategories, loading: accessLoading } = useAccess(userId);
+	// Get user ID using useAuth hook (more reliable)
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	
+	const { canUploadPictures, canManageCategories, canManageSubCategories, loading: accessLoading, error: accessError } = useAccess(userId);
+	
+	useEffect(() => {
+		console.log('[Pictures Upload Page] Access check result:', { canUploadPictures, accessLoading, accessError, userId });
+	}, [canUploadPictures, accessLoading, accessError, userId]);
 	
 	const [formData, setFormData] = useState<UploadFormData>({
 		groupName: "",
@@ -253,7 +260,7 @@ export default function UploadPicturesPage() {
 	}
 
 	// Show access denied if user doesn't have upload permission
-	if (!canUpload) {
+	if (!canUploadPictures) {
 		return (
 			<div className="space-y-6">
 				<div className="flex items-center justify-between">
@@ -269,7 +276,18 @@ export default function UploadPicturesPage() {
 						Back to Pictures
 					</Link>
 				</div>
-				<AccessDenied action="upload pictures" />
+				{accessError && (
+					<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+						<p className="text-sm text-yellow-800">
+							<strong>Debug Info:</strong> {accessError}
+							{userId && <span className="block mt-1">User ID: {userId}</span>}
+						</p>
+					</div>
+				)}
+				<AccessDenied 
+					action="upload pictures" 
+					customMessage="This action requires Admin access or Upload Pictures permission. Please contact your administrator if you believe this is an error."
+				/>
 			</div>
 		);
 	}

@@ -32,7 +32,7 @@ type PictureDetail = {
 export default function PicturesPage() {
 	const { user, getUserId } = useAuth();
 	const userId = user?.id || user?.username || getUserId() || "1";
-	const { canUpload, isAdmin, loading: accessLoading, accessLevel } = useAccess(userId);
+	const { canUploadPictures, isAdmin, loading: accessLoading, accessLevel } = useAccess(userId);
 	
 	const [pictures, setPictures] = useState<PictureData[]>([]);
 	const [pictureDetails, setPictureDetails] = useState<PictureDetail[]>([]);
@@ -52,13 +52,13 @@ export default function PicturesPage() {
 		if (!accessLoading) {
 			console.log('Pictures Page - Access Status:', { 
 				isAdmin, 
-				canUpload, 
+				canUploadPictures, 
 				accessLoading, 
 				accessLevel,
 				userId 
 			});
 		}
-	}, [isAdmin, canUpload, accessLoading, accessLevel, userId]);
+	}, [isAdmin, canUploadPictures, accessLoading, accessLevel, userId]);
 
 	const fetchPictures = async () => {
 		try {
@@ -183,15 +183,13 @@ export default function PicturesPage() {
 				</div>
 				{viewMode === 'categories' && (
 					<div className="flex items-center space-x-3">
-						{canUpload && (
-							<Link
-								href="/dashboard/pictures/upload"
-								className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-							>
-								<Upload className="h-4 w-4 mr-2" />
-								Upload Pictures
-							</Link>
-						)}
+						<Link
+							href="/dashboard/pictures/upload"
+							className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+						>
+							<Upload className="h-4 w-4 mr-2" />
+							Upload picture
+						</Link>
 						{/* Show Add Pictures button only for Admin users */}
 						{!accessLoading && isAdmin && accessLevel === 'Admin' && (
 							<Link

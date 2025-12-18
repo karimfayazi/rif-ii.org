@@ -3,9 +3,78 @@ import { getDb } from "@/lib/db";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { getUserIdFromRequest } from "@/lib/auth";
+
+// Helper function to check if user has Upload_Pictures permission or is Admin
+async function checkUploadPicturesAccess(userId: string | null): Promise<{ canUpload: boolean; message?: string }> {
+	if (!userId) {
+		return { canUpload: false, message: "Unauthorized" };
+	}
+
+	try {
+		const pool = await getDb();
+		const accessQuery = `
+			SELECT [access_level], [Upload_Pictures]
+			FROM [_rifiiorg_db].[dbo].[tbl_user_access]
+			WHERE [username] = @userId OR [email] = @userId
+		`;
+		
+		const accessResult = await pool.request()
+			.input('userId', userId)
+			.query(accessQuery);
+		
+		if (accessResult.recordset.length === 0) {
+			return { canUpload: false, message: "User not found" };
+		}
+
+		const accessLevel = accessResult.recordset[0].access_level;
+		const uploadPicturesRaw = accessResult.recordset[0].Upload_Pictures;
+		
+		const isAdmin = accessLevel === 'Admin';
+		
+		// Helper function to check BIT field values
+		const checkBitField = (value: any): boolean => {
+			if (value === null || value === undefined) return false;
+			if (Buffer.isBuffer(value)) return value[0] === 1;
+			if (typeof value === 'boolean') return value === true;
+			if (typeof value === 'number') return value === 1;
+			if (typeof value === 'string') return value === '1' || value.toLowerCase() === 'true';
+			return false;
+		};
+		
+		const uploadPictures = checkBitField(uploadPicturesRaw);
+		const canUpload = isAdmin || uploadPictures;
+		
+		if (!canUpload) {
+			return { 
+				canUpload: false, 
+				message: "Insufficient Permissions. This action requires Admin access or Upload Pictures permission. Please contact your administrator if you believe this is an error." 
+			};
+		}
+
+		return { canUpload: true };
+	} catch (error) {
+		console.error("Error checking upload pictures access:", error);
+		return { canUpload: false, message: "Error checking access permissions" };
+	}
+}
 
 export async function POST(request: NextRequest) {
 	try {
+		// Check Upload_Pictures permission
+		const userId = getUserIdFromRequest(request);
+		const accessCheck = await checkUploadPicturesAccess(userId);
+		
+		if (!accessCheck.canUpload) {
+			return NextResponse.json(
+				{
+					success: false,
+					message: accessCheck.message || "Access denied. Upload Pictures permission required."
+				},
+				{ status: 403 }
+			);
+		}
+
 		const formData = await request.formData();
 		
 		// Extract form fields
