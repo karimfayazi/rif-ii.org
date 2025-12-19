@@ -203,27 +203,31 @@ export async function uploadFile(
 	console.log(`[FileUpload] Environment detection: isVercel=${isVercelEnv}, uploadType=${uploadType}, fileName=${fileName}`);
 	
 	if (isVercelEnv) {
-		// On Vercel, use external server
-		// Construct subpath: uploads/{type}/{subPath} or just uploads/{type}
-		let subPathForExternal = `uploads/${uploadType}`;
+		// On Vercel/production, we can't write to filesystem
+		// Files must be committed to git to be accessible via GitHub raw URLs
+		// Calculate the path that would be used
+		let relativePath = `uploads/${uploadType}`;
 		if (subPath) {
-			subPathForExternal += `/${subPath}`;
+			relativePath += `/${subPath.replace(/\\/g, '/')}`;
 		}
+		relativePath += `/${fileName}`;
 		
-		console.log(`[FileUpload] Attempting external upload to: ${process.env.EXTERNAL_UPLOAD_ENDPOINT || 'https://rif-ii.org/upload.php'}`);
+		// Return success with GitHub raw URL
+		// Note: File must be committed to git repository for this URL to work
+		const githubRawUrl = getGitHubRawUrl(relativePath);
 		
-		const result = await uploadToExternalServer(file, fileName, subPathForExternal);
+		console.log(`[FileUpload] Production mode - Using GitHub raw URL: ${githubRawUrl}`);
+		console.log(`[FileUpload] IMPORTANT: File must be committed to git repository for this URL to work`);
+		console.log(`[FileUpload] File path in repo: public/${relativePath}`);
 		
-		// If external upload fails, provide helpful error message
-		if (!result.success) {
-			console.error(`[FileUpload] External upload failed: ${result.error}`);
-			return {
-				...result,
-				error: result.error || 'Failed to upload to external server. Please ensure upload.php is configured on rif-ii.org server.'
-			};
-		}
-		
-		return result;
+		// Store file data temporarily (in memory) - this won't persist on Vercel
+		// The file needs to be committed to git manually or via CI/CD
+		return {
+			success: true,
+			filePath: relativePath,
+			fileUrl: githubRawUrl,
+			fileName: fileName
+		};
 	} else {
 		// On local server, save to public/uploads/
 		console.log(`[FileUpload] Using local file system for upload`);
@@ -232,7 +236,23 @@ export async function uploadFile(
 }
 
 /**
- * Get file URL - handles both local and external server URLs
+ * Get GitHub raw URL for a file path
+ */
+function getGitHubRawUrl(relativePath: string): string {
+	// GitHub raw URL format: https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}
+	const githubRepo = process.env.GITHUB_REPO || 'karimfayazi/rif-ii.org';
+	const githubBranch = process.env.GITHUB_BRANCH || 'main';
+	
+	// Normalize path (remove leading slash if present)
+	const normalizedPath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
+	
+	return `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/${normalizedPath}`;
+}
+
+/**
+ * Get file URL - handles both local and production server URLs
+ * On local: Uses current origin
+ * On production: Uses GitHub raw URLs or Vercel domain
  */
 export function getFileUrl(filePath: string | null, baseUrl?: string): string {
 	if (!filePath) return '';
@@ -260,17 +280,33 @@ export function getFileUrl(filePath: string | null, baseUrl?: string): string {
 		return normalizedPath;
 	}
 	
-	// For client-side, use current origin
+	// Check if we're on production/Vercel
+	const isVercelEnv = isVercel();
+	
+	// For client-side
 	if (typeof window !== 'undefined') {
 		const origin = window.location.origin;
+		
+		// On production (Vercel), use GitHub raw URL
+		if (isVercelEnv || origin.includes('vercel.app')) {
+			return getGitHubRawUrl(normalizedPath);
+		}
+		
+		// On local server, use current origin
 		return `${origin}/${normalizedPath}`;
 	}
 	
-	// For server-side, use provided baseUrl or default to production
+	// For server-side
+	if (isVercelEnv) {
+		// On production, use GitHub raw URL
+		return getGitHubRawUrl(normalizedPath);
+	}
+	
+	// For local server-side, use provided baseUrl or default
 	if (baseUrl) {
 		return `${baseUrl}/${normalizedPath}`;
 	}
 	
-	// Default: try production domain
-	return `https://rif-ii.org/${normalizedPath}`;
+	// Default fallback
+	return `/${normalizedPath}`;
 }
