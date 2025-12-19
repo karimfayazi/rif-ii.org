@@ -298,18 +298,20 @@ function PictureViewContent() {
 								className="object-contain"
 								unoptimized
 								onError={(e) => {
-									console.error("Image load error for:", picture.FilePath);
-									console.error("Constructed URL:", imageUrl);
-									const target = e.target as HTMLImageElement;
-									target.style.display = 'none';
-									// Show error message
-									const errorDiv = target.parentElement?.querySelector('.image-error');
-									if (errorDiv) {
-										errorDiv.classList.remove('hidden');
+									try {
+										// Silently handle image errors
+										const target = (e.target || e.currentTarget) as HTMLImageElement;
+										if (target) {
+											target.style.display = 'none';
+											// Show error message
+											const errorDiv = target.parentElement?.querySelector('.image-error');
+											if (errorDiv) {
+												errorDiv.classList.remove('hidden');
+											}
+										}
+									} catch (error) {
+										// Silently fail if error handling itself fails
 									}
-								}}
-								onLoad={() => {
-									console.log("Image loaded successfully:", imageUrl);
 								}}
 							/>
 							<div className="image-error hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-100 p-4">
