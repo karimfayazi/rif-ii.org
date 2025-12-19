@@ -19,9 +19,50 @@ export type UploadResult = {
 
 /**
  * Check if we're running on Vercel
+ * Also checks for localhost/local IP to ensure we don't try external upload on local server
  */
 export function isVercel(): boolean {
-	return process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_VERCEL === '1';
+	// Manual override: If USE_LOCAL_UPLOAD is set, always use local upload
+	if (process.env.USE_LOCAL_UPLOAD === '1' || process.env.USE_LOCAL_UPLOAD === 'true') {
+		console.log('[FileUpload] USE_LOCAL_UPLOAD override detected, using local file system');
+		return false;
+	}
+	
+	// Check environment variables
+	const hasVercelEnv = process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_VERCEL === '1';
+	
+	// If no Vercel env vars, definitely not Vercel
+	if (!hasVercelEnv) {
+		return false;
+	}
+	
+	// If VERCEL env vars are set, check if we're actually on localhost
+	// This prevents false positives when env vars might be accidentally set
+	// Check various environment variables that might indicate localhost
+	const hostname = process.env.HOSTNAME || process.env.VERCEL_URL || process.env.NEXT_PUBLIC_URL || '';
+	const nodeEnv = process.env.NODE_ENV || '';
+	
+	// Check if we're in development mode
+	if (nodeEnv === 'development') {
+		console.log('[FileUpload] NODE_ENV=development detected, using local file system');
+		return false;
+	}
+	
+	// Check if we're on localhost or local IP (common local server patterns)
+	const isLocalhost = hostname.includes('localhost') || 
+	                   hostname.includes('127.0.0.1') || 
+	                   hostname.includes('192.168.') ||
+	                   hostname.includes('10.') ||
+	                   /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
+	
+	// If we're on localhost, don't use Vercel mode even if env vars are set
+	if (isLocalhost) {
+		console.log('[FileUpload] Detected localhost/local IP, using local file system');
+		return false;
+	}
+	
+	// If we have Vercel env vars and we're not on localhost, we're on Vercel
+	return true;
 }
 
 /**
@@ -157,13 +198,19 @@ export async function uploadFile(
 	uploadType: 'documents' | 'reports' | 'pictures',
 	subPath?: string
 ): Promise<UploadResult> {
-	if (isVercel()) {
+	const isVercelEnv = isVercel();
+	
+	console.log(`[FileUpload] Environment detection: isVercel=${isVercelEnv}, uploadType=${uploadType}, fileName=${fileName}`);
+	
+	if (isVercelEnv) {
 		// On Vercel, use external server
 		// Construct subpath: uploads/{type}/{subPath} or just uploads/{type}
 		let subPathForExternal = `uploads/${uploadType}`;
 		if (subPath) {
 			subPathForExternal += `/${subPath}`;
 		}
+		
+		console.log(`[FileUpload] Attempting external upload to: ${process.env.EXTERNAL_UPLOAD_ENDPOINT || 'https://rif-ii.org/upload.php'}`);
 		
 		const result = await uploadToExternalServer(file, fileName, subPathForExternal);
 		
@@ -179,6 +226,7 @@ export async function uploadFile(
 		return result;
 	} else {
 		// On local server, save to public/uploads/
+		console.log(`[FileUpload] Using local file system for upload`);
 		return await uploadToLocal(file, fileName, uploadType, subPath);
 	}
 }
