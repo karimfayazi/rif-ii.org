@@ -1981,14 +1981,18 @@ export default function DashboardPage() {
 																className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
 																unoptimized
 																onError={(e) => {
-																	console.error("Image load error:", {
-																		filePath: picture.FilePath,
-																		imageUrl: imageUrl,
-																		picture: picture
-																	});
-																	const target = e.target as HTMLImageElement;
-																	if (target && !target.src.includes('placeholder')) {
-																		target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not found%3C/text%3E%3C/svg%3E';
+																	try {
+																		console.error("Image load error:", {
+																			filePath: picture.FilePath,
+																			imageUrl: imageUrl,
+																			picture: picture
+																		});
+																		const target = (e.target || e.currentTarget) as HTMLImageElement;
+																		if (target && target.src && !target.src.includes('placeholder') && !target.src.includes('data:image')) {
+																			target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not found%3C/text%3E%3C/svg%3E';
+																		}
+																	} catch (error) {
+																		console.error("Error in image error handler:", error);
 																	}
 																}}
 															/>
