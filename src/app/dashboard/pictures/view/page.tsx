@@ -94,6 +94,16 @@ function PictureViewContent() {
 		fetchPicture();
 	}, [pictureId]);
 
+	// Debug logging - moved before conditional returns to follow Rules of Hooks
+	useEffect(() => {
+		if (picture) {
+			const imageUrl = getImageUrl(picture.FilePath);
+			console.log('[Picture View] Picture data:', picture);
+			console.log('[Picture View] FilePath:', picture.FilePath);
+			console.log('[Picture View] Constructed URL:', imageUrl);
+		}
+	}, [picture]);
+
 	const handleDownload = () => {
 		if (!picture?.FilePath) return;
 		const fullUrl = getImageUrl(picture.FilePath);
@@ -192,15 +202,6 @@ function PictureViewContent() {
 	}
 
 	const imageUrl = getImageUrl(picture.FilePath);
-	
-	// Debug logging
-	useEffect(() => {
-		if (picture) {
-			console.log('[Picture View] Picture data:', picture);
-			console.log('[Picture View] FilePath:', picture.FilePath);
-			console.log('[Picture View] Constructed URL:', imageUrl);
-		}
-	}, [picture, imageUrl]);
 
 	return (
 		<div className="space-y-6">
