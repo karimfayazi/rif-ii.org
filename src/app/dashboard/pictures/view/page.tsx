@@ -64,11 +64,19 @@ function PictureViewContent() {
 			normalizedPath = normalizedPath.substring(1);
 		}
 		
-		// For client-side, use current origin (works for both local and production)
+		// Check if we're on production (Vercel)
 		if (typeof window !== 'undefined') {
 			const origin = window.location.origin;
-			// On Vercel, public folder files are served from root
-			// Ensure the path starts correctly
+			const isProduction = origin.includes('vercel.app') || origin.includes('rif-ii.org');
+			
+			if (isProduction) {
+				// Use GitHub raw URL for production
+				const githubRepo = 'karimfayazi/rif-ii.org';
+				const githubBranch = 'main';
+				return `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/${normalizedPath}`;
+			}
+			
+			// On local server, use current origin
 			return `${origin}/${normalizedPath}`;
 		}
 		
@@ -132,12 +140,31 @@ function PictureViewContent() {
 			}
 		}
 		
-		// Try production domain as fallback
+		// Try GitHub raw URL as fallback for production
 		if (typeof window !== 'undefined') {
 			const origin = window.location.origin;
-			// If not on production domain, try production domain
-			if (!origin.includes('rif-ii.org') && !origin.includes('vercel.app')) {
-				alternatives.push(getImageUrl(filePath).replace(origin, 'https://rif-ii.org'));
+			const isProduction = origin.includes('vercel.app') || origin.includes('rif-ii.org');
+			
+			if (isProduction) {
+				// Add GitHub raw URL as alternative
+				const githubRepo = 'karimfayazi/rif-ii.org';
+				const githubBranch = 'main';
+				let githubPath = filePath.replace(/\\/g, '/');
+				if (githubPath.startsWith('~/')) {
+					githubPath = githubPath.replace('~/', '');
+				}
+				if (!githubPath.startsWith('uploads/')) {
+					githubPath = `uploads/${githubPath}`;
+				}
+				if (githubPath.startsWith('/')) {
+					githubPath = githubPath.substring(1);
+				}
+				alternatives.push(`https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/${githubPath}`);
+			} else {
+				// On local, try production domain as fallback
+				if (!origin.includes('rif-ii.org') && !origin.includes('vercel.app')) {
+					alternatives.push(getImageUrl(filePath).replace(origin, 'https://rif-ii.org'));
+				}
 			}
 		}
 		

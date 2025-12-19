@@ -34,6 +34,7 @@ export default function DocumentViewPage() {
 	const getDocumentUrl = (filePath: string | null) => {
 		if (!filePath) return '';
 		
+		// Import the helper function (we'll use it directly)
 		// If already a full URL, return as-is
 		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
 			return filePath;
@@ -62,9 +63,19 @@ export default function DocumentViewPage() {
 			normalizedPath = normalizedPath.substring(1);
 		}
 		
-		// For client-side, use current origin
+		// Check if we're on production (Vercel)
 		if (typeof window !== 'undefined') {
 			const origin = window.location.origin;
+			const isProduction = origin.includes('vercel.app') || origin.includes('rif-ii.org');
+			
+			if (isProduction) {
+				// Use GitHub raw URL for production
+				const githubRepo = 'karimfayazi/rif-ii.org';
+				const githubBranch = 'main';
+				return `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/${normalizedPath}`;
+			}
+			
+			// On local server, use current origin
 			return `${origin}/${normalizedPath}`;
 		}
 		
