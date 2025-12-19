@@ -44,21 +44,34 @@ function PictureViewContent() {
 		// Normalize backslashes to forward slashes
 		let normalizedPath = filePath.replace(/\\/g, '/');
 		
+		// If already a full URL, return as-is
 		if (normalizedPath.startsWith('https://') || normalizedPath.startsWith('http://')) {
 			return normalizedPath;
-		} else if (normalizedPath.startsWith('~/')) {
-			return `https://rif-ii.org/${normalizedPath.replace('~/', '')}`;
-		} else if (normalizedPath.startsWith('uploads/')) {
-			return `/${normalizedPath}`;
-		} else if (normalizedPath.startsWith('/uploads/')) {
-			return normalizedPath;
-		} else {
-			// If path doesn't start with uploads/, try to construct it
-			if (normalizedPath.includes('pictures')) {
-				return `/${normalizedPath}`;
-			}
-			return `https://rif-ii.org/${normalizedPath}`;
 		}
+		
+		// Handle ~/ prefix (remove it)
+		if (normalizedPath.startsWith('~/')) {
+			normalizedPath = normalizedPath.replace('~/', '');
+		}
+		
+		// Ensure path starts with uploads/ for relative paths
+		if (!normalizedPath.startsWith('uploads/') && !normalizedPath.startsWith('/')) {
+			normalizedPath = `uploads/${normalizedPath}`;
+		}
+		
+		// Remove leading slash if present (we'll add it)
+		if (normalizedPath.startsWith('/')) {
+			normalizedPath = normalizedPath.substring(1);
+		}
+		
+		// For client-side, use current origin (works for both local and production)
+		if (typeof window !== 'undefined') {
+			const origin = window.location.origin;
+			return `${origin}/${normalizedPath}`;
+		}
+		
+		// For server-side or fallback, use relative path
+		return `/${normalizedPath}`;
 	};
 
 	useEffect(() => {
