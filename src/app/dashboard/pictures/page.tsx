@@ -368,7 +368,7 @@ export default function PicturesPage() {
 									</span>
 								</div>
 								<div className="text-xs text-gray-500">
-									{filteredPictures.length} result{filteredPictures.length !== 1 ? 's' : ''} found
+									{filteredMainCategories.length} result{filteredMainCategories.length !== 1 ? 's' : ''} found
 								</div>
 							</div>
 						)}
