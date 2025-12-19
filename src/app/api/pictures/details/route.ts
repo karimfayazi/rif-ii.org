@@ -13,11 +13,16 @@ export async function GET(request: NextRequest) {
 		const pool = await getDb();
 		let query = `
 			SELECT 
+				[PictureID],
 				[GroupName],
 				[MainCategory],
 				[SubCategory],
 				[FileName],
 				[FilePath],
+				[FileSizeKB],
+				[UploadedBy],
+				CONVERT(VARCHAR(19), [UploadDate], 120) AS [UploadDate],
+				[IsActive],
 				CONVERT(VARCHAR(10), [EventDate], 105) AS [EventDate]
 			FROM [_rifiiorg_db].[dbo].[tblPictures]
 			WHERE ([IsActive] = 1 OR [IsActive] IS NULL)

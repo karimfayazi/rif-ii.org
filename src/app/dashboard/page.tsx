@@ -1357,32 +1357,64 @@ export default function DashboardPage() {
 
 	const getImageUrl = (filePath: string | null) => {
 		if (!filePath) return '';
+		
+		// If already a full URL, return as-is
 		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
 			return filePath;
-		} else if (filePath.startsWith('~/')) {
-			// Remove the ~/ prefix
-			return `https://rif-ii.org/${filePath.replace('~/', '')}`;
-		} else if (filePath.startsWith('uploads/')) {
-			return `/${filePath}`;
-		} else {
-			return `https://rif-ii.org/${filePath}`;
 		}
+		
+		// Handle ~/ prefix (remove it)
+		if (filePath.startsWith('~/')) {
+			filePath = filePath.replace('~/', '');
+		}
+		
+		// If starts with uploads/, make it relative to current domain
+		if (filePath.startsWith('uploads/')) {
+			return `/${filePath}`;
+		}
+		
+		// For production, use the full domain
+		if (typeof window !== 'undefined') {
+			const hostname = window.location.hostname;
+			const protocol = window.location.protocol;
+			const port = window.location.port ? `:${window.location.port}` : '';
+			
+			// For local development (IP addresses or localhost)
+			if (hostname === 'localhost' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
+				return `${protocol}//${hostname}${port}/${filePath}`;
+			}
+		}
+		
+		// Default: use production domain
+		return `https://rif-ii.org/${filePath}`;
 	};
 
 	const fetchDashboardPictures = async () => {
 		try {
 			setLoading(true);
+			setError(null);
 			// Fetch all pictures for the gallery
 			const response = await fetch('/api/pictures/details');
+			
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			
 			const data = await response.json();
+			console.log('Dashboard pictures API response:', data);
 
 			if (data.success) {
-				setPictures(data.pictures || []);
+				const fetchedPictures = data.pictures || [];
+				console.log(`Fetched ${fetchedPictures.length} pictures for dashboard`);
+				setPictures(fetchedPictures);
 			} else {
-				setError(data.message || "Failed to fetch pictures");
+				const errorMsg = data.message || "Failed to fetch pictures";
+				setError(errorMsg);
+				console.error("Failed to fetch pictures:", errorMsg, data);
 			}
 		} catch (err) {
-			setError("Error fetching pictures");
+			const errorMsg = err instanceof Error ? err.message : "Error fetching pictures";
+			setError(errorMsg);
 			console.error("Error fetching pictures:", err);
 		} finally {
 			setLoading(false);
@@ -1927,10 +1959,11 @@ export default function DashboardPage() {
 							{carouselPictures.slice(currentIndex, currentIndex + 3).map((picture, index) => {
 								const actualIndex = currentIndex + index;
 								const imageUrl = getImageUrl(picture.FilePath);
+								const uniqueKey = picture.PictureID || `picture-${actualIndex}-${picture.FileName || index}`;
 								
 								return (
 									<div
-										key={picture.PictureID || `picture-${actualIndex}`}
+										key={uniqueKey}
 										className="group relative"
 									>
 										{/* Elegant Card Container */}
@@ -1948,7 +1981,15 @@ export default function DashboardPage() {
 																className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
 																unoptimized
 																onError={(e) => {
-																	console.log("Image load error for:", picture.FilePath);
+																	console.error("Image load error:", {
+																		filePath: picture.FilePath,
+																		imageUrl: imageUrl,
+																		picture: picture
+																	});
+																	const target = e.target as HTMLImageElement;
+																	if (target && !target.src.includes('placeholder')) {
+																		target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not found%3C/text%3E%3C/svg%3E';
+																	}
 																}}
 															/>
 															{/* Elegant Overlay */}
