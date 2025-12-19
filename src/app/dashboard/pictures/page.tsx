@@ -223,16 +223,38 @@ export default function PicturesPage() {
 
 	const getImageUrl = (filePath: string | null) => {
 		if (!filePath) return '';
+		
+		// If already a full URL, return as-is
 		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
 			return filePath;
-		} else if (filePath.startsWith('~/')) {
-			// Remove the ~/ prefix
-			return `https://rif-ii.org/${filePath.replace('~/', '')}`;
-		} else if (filePath.startsWith('uploads/')) {
-			return `/${filePath}`;
-		} else {
-			return `https://rif-ii.org/${filePath}`;
 		}
+		
+		// Normalize backslashes to forward slashes
+		let normalizedPath = filePath.replace(/\\/g, '/');
+		
+		// Handle ~/ prefix (remove it)
+		if (normalizedPath.startsWith('~/')) {
+			normalizedPath = normalizedPath.replace('~/', '');
+		}
+		
+		// Ensure path starts with uploads/ for relative paths
+		if (!normalizedPath.startsWith('uploads/') && !normalizedPath.startsWith('/')) {
+			normalizedPath = `uploads/${normalizedPath}`;
+		}
+		
+		// Remove leading slash if present (we'll add it)
+		if (normalizedPath.startsWith('/')) {
+			normalizedPath = normalizedPath.substring(1);
+		}
+		
+		// For client-side, use current origin (works for both local and production)
+		if (typeof window !== 'undefined') {
+			const origin = window.location.origin;
+			return `${origin}/${normalizedPath}`;
+		}
+		
+		// For server-side or fallback, use relative path
+		return `/${normalizedPath}`;
 	};
 
 

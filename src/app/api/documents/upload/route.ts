@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
 import { getUserIdFromRequest } from "@/lib/auth";
+import { uploadFile } from "@/lib/fileUpload";
 
 // Helper function to check if user has Upload_Documents permission or is Admin
 async function checkUploadDocumentsAccess(userId: string | null): Promise<{ canUpload: boolean; message?: string }> {
@@ -166,14 +164,6 @@ export async function POST(request: NextRequest) {
 			}
 		};
 
-		// Create upload directory structure (just documents folder, no subdirectories)
-		const uploadDir = join(process.cwd(), 'public', 'uploads', 'documents');
-		
-		// Ensure directory exists
-		if (!existsSync(uploadDir)) {
-			await mkdir(uploadDir, { recursive: true });
-		}
-
 		const pool = await getDb();
 		const uploadedFiles = [];
 
@@ -192,13 +182,17 @@ export async function POST(request: NextRequest) {
 				? `${sanitizedTitle}_${sanitizedCategory}_${formattedDate}_${i + 1}.${fileExtension}`
 				: `${sanitizedTitle}_${sanitizedCategory}_${formattedDate}.${fileExtension}`;
 			
-			const filePath = join(uploadDir, fileName);
+			// Upload file (automatically handles local vs Vercel)
+			const uploadResult = await uploadFile(file, fileName, 'documents');
 			
-			// Save file to disk
-			const bytes = await file.arrayBuffer();
-			await writeFile(filePath, Buffer.from(bytes));
+			if (!uploadResult.success) {
+				return NextResponse.json({
+					success: false,
+					message: `Failed to upload file ${file.name}: ${uploadResult.error || 'Unknown error'}`
+				}, { status: 500 });
+			}
 			
-			// Insert into database with full URL path
+			// Insert into database
 			const insertQuery = `
 				INSERT INTO [_rifiiorg_db].[dbo].[tblDocuments] 
 				([Title], [Description], [FilePath], [UploadDate], [UploadedBy], [FileType], [Documentstype], 
@@ -210,9 +204,8 @@ export async function POST(request: NextRequest) {
 			const request_obj = pool.request();
 			request_obj.input('title', title);
 			request_obj.input('description', description || '');
-			// Store local path in database: uploads/documents/{filename}
-			const localPath = `uploads/documents/${fileName}`;
-			request_obj.input('filePath', localPath);
+			// Store file path (works for both local and external)
+			request_obj.input('filePath', uploadResult.filePath);
 			request_obj.input('uploadDate', new Date().toISOString());
 			request_obj.input('uploadedBy', uploadedBy);
 			request_obj.input('fileType', fileType || '');
@@ -228,8 +221,9 @@ export async function POST(request: NextRequest) {
 			
 			uploadedFiles.push({
 				originalName: file.name,
-				fileName: fileName,
-				filePath: localPath
+				fileName: uploadResult.fileName,
+				filePath: uploadResult.filePath,
+				fileUrl: uploadResult.fileUrl
 			});
 		}
 
@@ -241,11 +235,25 @@ export async function POST(request: NextRequest) {
 
 	} catch (error) {
 		console.error("Error uploading documents:", error);
+		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+		
+		// Check if it's a filesystem error (common on Vercel)
+		const isFilesystemError = errorMessage.includes('EACCES') || 
+		                          errorMessage.includes('ENOENT') || 
+		                          errorMessage.includes('EROFS') ||
+		                          errorMessage.includes('read-only') ||
+		                          errorMessage.includes('permission denied');
+		
+		let userMessage = "Failed to upload documents";
+		if (isFilesystemError) {
+			userMessage = "File upload failed: The server filesystem is read-only. On Vercel, files are uploaded to external server (rif-ii.org).";
+		}
+		
 		return NextResponse.json(
 			{
 				success: false,
-				message: "Failed to upload documents",
-				error: error instanceof Error ? error.message : "Unknown error"
+				message: userMessage,
+				error: errorMessage
 			},
 			{ status: 500 }
 		);

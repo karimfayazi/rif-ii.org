@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
 import { getUserIdFromRequest } from "@/lib/auth";
+import { uploadFile } from "@/lib/fileUpload";
 
 // Helper function to check if user has Upload_Report permission or is Admin
 async function checkUploadReportAccess(userId: string | null): Promise<{ canUpload: boolean; message?: string }> {
@@ -190,14 +188,6 @@ export async function POST(request: NextRequest) {
 			}
 		};
 
-		// Create upload directory structure (just reports folder, no subdirectories)
-		const uploadDir = join(process.cwd(), 'public', 'uploads', 'reports');
-		
-		// Ensure directory exists
-		if (!existsSync(uploadDir)) {
-			await mkdir(uploadDir, { recursive: true });
-		}
-
 		const pool = await getDb();
 		const uploadedFiles = [];
 
@@ -217,20 +207,21 @@ export async function POST(request: NextRequest) {
 					? `${sanitizedTitle}_${sanitizedCategory}_${formattedDate}_${i + 1}.${fileExtension}`
 					: `${sanitizedTitle}_${sanitizedCategory}_${formattedDate}.${fileExtension}`;
 				
-				const filePath = join(uploadDir, fileName);
+				// Upload file (automatically handles local vs Vercel)
+				const uploadResult = await uploadFile(file, fileName, 'reports');
+				
+				if (!uploadResult.success) {
+					return NextResponse.json({
+						success: false,
+						message: `Failed to upload file ${file.name}: ${uploadResult.error || 'Unknown error'}`
+					}, { status: 500 });
+				}
 				
 				// Calculate file size in KB
 				const fileSizeKB = Math.round(file.size / 1024);
 				
 				// Get current date for UploadDate
 				const uploadDate = new Date().toISOString().split('T')[0];
-				
-				// Save file to disk
-				const bytes = await file.arrayBuffer();
-				await writeFile(filePath, Buffer.from(bytes));
-				
-				// Store local path in database: uploads/reports/{filename}
-				const localPath = `uploads/reports/${fileName}`;
 				
 				if (isUpdate) {
 					// Update existing report with new file
@@ -252,7 +243,7 @@ export async function POST(request: NextRequest) {
 					request_obj.input('reportID', parseInt(reportId!));
 					request_obj.input('reportTitle', reportTitle);
 					request_obj.input('description', description || '');
-					request_obj.input('filePath', localPath);
+					request_obj.input('filePath', uploadResult.filePath);
 					request_obj.input('fileExtension', fileExtension || '');
 					request_obj.input('fileSizeKB', fileSizeKB);
 					request_obj.input('eventDate', eventDate);
@@ -271,7 +262,7 @@ export async function POST(request: NextRequest) {
 					const request_obj = pool.request();
 					request_obj.input('reportTitle', reportTitle);
 					request_obj.input('description', description || '');
-					request_obj.input('filePath', localPath);
+					request_obj.input('filePath', uploadResult.filePath);
 					request_obj.input('fileExtension', fileExtension || '');
 					request_obj.input('fileSizeKB', fileSizeKB);
 					request_obj.input('uploadedBy', uploadedBy);
@@ -286,8 +277,9 @@ export async function POST(request: NextRequest) {
 				
 				uploadedFiles.push({
 					originalName: file.name,
-					fileName: fileName,
-					filePath: localPath
+					fileName: uploadResult.fileName,
+					filePath: uploadResult.filePath,
+					fileUrl: uploadResult.fileUrl
 				});
 			}
 		}
@@ -302,11 +294,25 @@ export async function POST(request: NextRequest) {
 
 	} catch (error) {
 		console.error("Error uploading reports:", error);
+		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+		
+		// Check if it's a filesystem error (common on Vercel)
+		const isFilesystemError = errorMessage.includes('EACCES') || 
+		                          errorMessage.includes('ENOENT') || 
+		                          errorMessage.includes('EROFS') ||
+		                          errorMessage.includes('read-only') ||
+		                          errorMessage.includes('permission denied');
+		
+		let userMessage = "Failed to upload reports";
+		if (isFilesystemError) {
+			userMessage = "File upload failed: The server filesystem is read-only. On Vercel, files are uploaded to external server (rif-ii.org).";
+		}
+		
 		return NextResponse.json(
 			{
 				success: false,
-				message: "Failed to upload reports",
-				error: error instanceof Error ? error.message : "Unknown error"
+				message: userMessage,
+				error: errorMessage
 			},
 			{ status: 500 }
 		);

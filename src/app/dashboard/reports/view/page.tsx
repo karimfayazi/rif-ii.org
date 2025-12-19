@@ -26,28 +26,42 @@ export default function ReportViewPage() {
 	const getReportUrl = (filePath: string | null) => {
 		if (!filePath) return '';
 		
-		// Handle local path: uploads/reports/{filename}
-		if (filePath.startsWith('uploads/reports/')) {
-			// Local path - use relative URL from public folder
-			return `/${filePath}`;
-		} else if (filePath.startsWith('/uploads/reports/')) {
-			// Already has leading slash
+		// If already a full URL, return as-is
+		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
 			return filePath;
-		} else if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
-			// Full URL (for backward compatibility with old records)
-			return filePath;
-		} else if (filePath.startsWith('~/Uploads/Reports/')) {
-			// Legacy format - extract filename
-			const fileName = filePath.replace('~/Uploads/Reports/', '');
-			return `/uploads/reports/${fileName}`;
-		} else if (filePath.startsWith('Uploads/Reports/')) {
-			// Legacy format with capital U
-			const fileName = filePath.replace('Uploads/Reports/', '');
-			return `/uploads/reports/${fileName}`;
-		} else {
-			// Just filename, assume it's in uploads/reports
-			return `/uploads/reports/${filePath}`;
 		}
+		
+		// Normalize path
+		let normalizedPath = filePath.replace(/\\/g, '/');
+		
+		// Handle ~/ prefix
+		if (normalizedPath.startsWith('~/')) {
+			normalizedPath = normalizedPath.replace('~/', '');
+		}
+		
+		// Handle legacy formats
+		if (normalizedPath.startsWith('Uploads/Reports/')) {
+			normalizedPath = normalizedPath.replace('Uploads/Reports/', 'uploads/reports/');
+		}
+		
+		// Ensure path starts with uploads/reports/
+		if (!normalizedPath.startsWith('uploads/reports/') && !normalizedPath.startsWith('/uploads/reports/')) {
+			normalizedPath = `uploads/reports/${normalizedPath}`;
+		}
+		
+		// Remove leading slash if present
+		if (normalizedPath.startsWith('/')) {
+			normalizedPath = normalizedPath.substring(1);
+		}
+		
+		// For client-side, use current origin
+		if (typeof window !== 'undefined') {
+			const origin = window.location.origin;
+			return `${origin}/${normalizedPath}`;
+		}
+		
+		// For server-side, use relative path
+		return `/${normalizedPath}`;
 	};
 
 	useEffect(() => {

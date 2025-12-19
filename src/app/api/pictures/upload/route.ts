@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { getUserIdFromRequest } from "@/lib/auth";
+import { uploadFile, isVercel } from "@/lib/fileUpload";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
-import { getUserIdFromRequest } from "@/lib/auth";
 
 // Helper function to check if user has Upload_Pictures permission or is Admin
 async function checkUploadPicturesAccess(userId: string | null): Promise<{ canUpload: boolean; message?: string }> {
@@ -147,29 +148,6 @@ export async function POST(request: NextRequest) {
 		const sanitizedGroupName = sanitizeFolderName(groupName);
 		const formattedEventDate = formatDateForFolder(eventDate);
 
-		// Check if we're on Vercel (read-only filesystem)
-		const isVercel = process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_VERCEL === '1';
-		
-		// Create upload directory structure: Main Category > Event Name > Event Date
-		// On Vercel, we can only write to /tmp, but files won't persist
-		const uploadDir = isVercel 
-			? join('/tmp', 'uploads', 'pictures', sanitizedMainCategory, sanitizedGroupName, formattedEventDate)
-			: join(process.cwd(), 'public', 'uploads', 'pictures', sanitizedMainCategory, sanitizedGroupName, formattedEventDate);
-		
-		// Ensure directory exists
-		try {
-			if (!existsSync(uploadDir)) {
-				await mkdir(uploadDir, { recursive: true });
-			}
-		} catch (dirError) {
-			console.error("Error creating upload directory:", dirError);
-			return NextResponse.json({
-				success: false,
-				message: `Failed to create upload directory: ${dirError instanceof Error ? dirError.message : 'Unknown error'}. ${isVercel ? 'Note: Vercel has a read-only filesystem. Consider using cloud storage.' : ''}`,
-				error: dirError instanceof Error ? dirError.message : "Directory creation failed"
-			}, { status: 500 });
-		}
-
 		const pool = await getDb();
 		const uploadedFiles = [];
 
@@ -178,19 +156,20 @@ export async function POST(request: NextRequest) {
 			const file = files[i];
 			const fileExtension = file.name.split('.').pop();
 			const fileName = `${Date.now()}_${i + 1}.${fileExtension}`;
-			const filePath = join(uploadDir, fileName);
-			const relativePath = `uploads/pictures/${sanitizedMainCategory}/${sanitizedGroupName}/${formattedEventDate}/${fileName}`;
 			
-			// Save file to disk
-			try {
-				const bytes = await file.arrayBuffer();
-				await writeFile(filePath, Buffer.from(bytes));
-			} catch (writeError) {
-				console.error(`Error writing file ${file.name}:`, writeError);
+			// Create subpath for pictures: MainCategory/EventName/EventDate
+			const subPath = `${sanitizedMainCategory}/${sanitizedGroupName}/${formattedEventDate}`;
+			
+			// Upload file (automatically handles local vs Vercel)
+			// For local: saves to public/uploads/pictures/MainCategory/EventName/EventDate/
+			// For Vercel: uploads to external server
+			const uploadResult = await uploadFile(file, fileName, 'pictures', subPath);
+			
+			if (!uploadResult.success) {
 				return NextResponse.json({
 					success: false,
-					message: `Failed to save file ${file.name}: ${writeError instanceof Error ? writeError.message : 'Unknown error'}. ${isVercel ? 'Vercel has a read-only filesystem. Files cannot be saved to the filesystem.' : ''}`,
-					error: writeError instanceof Error ? writeError.message : "File write failed"
+					message: `Failed to upload file ${file.name}: ${uploadResult.error || 'Unknown error'}`,
+					error: uploadResult.error
 				}, { status: 500 });
 			}
 			
@@ -209,7 +188,7 @@ export async function POST(request: NextRequest) {
 			request_obj.input('mainCategory', mainCategory);
 			request_obj.input('subCategory', subCategory);
 			request_obj.input('fileName', file.name);
-			request_obj.input('filePath', relativePath);
+			request_obj.input('filePath', uploadResult.filePath);
 			request_obj.input('fileSizeKB', fileSizeKB);
 			request_obj.input('uploadedBy', uploadedBy);
 			request_obj.input('uploadDate', new Date().toISOString());
@@ -220,9 +199,10 @@ export async function POST(request: NextRequest) {
 			
 			uploadedFiles.push({
 				originalName: file.name,
-				fileName: fileName,
-				filePath: relativePath,
-				fileSizeKB: fileSizeKB
+				fileName: uploadResult.fileName,
+				filePath: uploadResult.filePath,
+				fileSizeKB: fileSizeKB,
+				fileUrl: uploadResult.fileUrl
 			});
 		}
 
