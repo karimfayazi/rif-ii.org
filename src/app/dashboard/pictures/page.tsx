@@ -253,6 +253,15 @@ export default function PicturesPage() {
 	}
 
 	if (error) {
+		const handleRetry = () => {
+			setError(null);
+			setSelectedMainCategory(null);
+			setSelectedEventName(null);
+			setSelectedEventDate(null);
+			setViewMode('mainCategories');
+			fetchMainCategories();
+		};
+
 		return (
 			<div className="space-y-6">
 				<div>
@@ -262,7 +271,7 @@ export default function PicturesPage() {
 				<div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
 					<p className="text-red-600">{error}</p>
 					<button
-						onClick={fetchPictures}
+						onClick={handleRetry}
 						className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
 					>
 						Try Again
