@@ -1364,29 +1364,29 @@ export default function DashboardPage() {
 		}
 		
 		// Handle ~/ prefix (remove it)
-		if (filePath.startsWith('~/')) {
-			filePath = filePath.replace('~/', '');
+		let cleanPath = filePath;
+		if (cleanPath.startsWith('~/')) {
+			cleanPath = cleanPath.replace('~/', '');
 		}
 		
-		// If starts with uploads/, make it relative to current domain
-		if (filePath.startsWith('uploads/')) {
-			return `/${filePath}`;
+		// Ensure path starts with uploads/ for relative paths
+		if (!cleanPath.startsWith('uploads/') && !cleanPath.startsWith('/')) {
+			cleanPath = `uploads/${cleanPath}`;
 		}
 		
-		// For production, use the full domain
+		// Remove leading slash if present (we'll add it)
+		if (cleanPath.startsWith('/')) {
+			cleanPath = cleanPath.substring(1);
+		}
+		
+		// For client-side, use current origin
 		if (typeof window !== 'undefined') {
-			const hostname = window.location.hostname;
-			const protocol = window.location.protocol;
-			const port = window.location.port ? `:${window.location.port}` : '';
-			
-			// For local development (IP addresses or localhost)
-			if (hostname === 'localhost' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
-				return `${protocol}//${hostname}${port}/${filePath}`;
-			}
+			const origin = window.location.origin;
+			return `${origin}/${cleanPath}`;
 		}
 		
-		// Default: use production domain
-		return `https://rif-ii.org/${filePath}`;
+		// For server-side or fallback, use relative path
+		return `/${cleanPath}`;
 	};
 
 	const fetchDashboardPictures = async () => {
@@ -1401,21 +1401,26 @@ export default function DashboardPage() {
 			}
 			
 			const data = await response.json();
-			console.log('Dashboard pictures API response:', data);
 
 			if (data.success) {
 				const fetchedPictures = data.pictures || [];
-				console.log(`Fetched ${fetchedPictures.length} pictures for dashboard`);
+				// Log first picture's FilePath for debugging
+				if (fetchedPictures.length > 0 && fetchedPictures[0].FilePath) {
+					const firstPic = fetchedPictures[0];
+					const testUrl = getImageUrl(firstPic.FilePath);
+					console.log('Sample picture URL:', {
+						filePath: firstPic.FilePath,
+						generatedUrl: testUrl
+					});
+				}
 				setPictures(fetchedPictures);
 			} else {
 				const errorMsg = data.message || "Failed to fetch pictures";
 				setError(errorMsg);
-				console.error("Failed to fetch pictures:", errorMsg, data);
 			}
 		} catch (err) {
 			const errorMsg = err instanceof Error ? err.message : "Error fetching pictures";
 			setError(errorMsg);
-			console.error("Error fetching pictures:", err);
 		} finally {
 			setLoading(false);
 		}
@@ -1981,18 +1986,10 @@ export default function DashboardPage() {
 																className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
 																unoptimized
 																onError={(e) => {
-																	try {
-																		console.error("Image load error:", {
-																			filePath: picture.FilePath,
-																			imageUrl: imageUrl,
-																			picture: picture
-																		});
-																		const target = (e.target || e.currentTarget) as HTMLImageElement;
-																		if (target && target.src && !target.src.includes('placeholder') && !target.src.includes('data:image')) {
-																			target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not found%3C/text%3E%3C/svg%3E';
-																		}
-																	} catch (error) {
-																		console.error("Error in image error handler:", error);
+																	// Silently handle image errors - show placeholder
+																	const target = (e.target || e.currentTarget) as HTMLImageElement;
+																	if (target && target.src && !target.src.includes('data:image')) {
+																		target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not found%3C/text%3E%3C/svg%3E';
 																	}
 																}}
 															/>
