@@ -147,12 +147,27 @@ export async function POST(request: NextRequest) {
 		const sanitizedGroupName = sanitizeFolderName(groupName);
 		const formattedEventDate = formatDateForFolder(eventDate);
 
+		// Check if we're on Vercel (read-only filesystem)
+		const isVercel = process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_VERCEL === '1';
+		
 		// Create upload directory structure: Main Category > Event Name > Event Date
-		const uploadDir = join(process.cwd(), 'public', 'uploads', 'pictures', sanitizedMainCategory, sanitizedGroupName, formattedEventDate);
+		// On Vercel, we can only write to /tmp, but files won't persist
+		const uploadDir = isVercel 
+			? join('/tmp', 'uploads', 'pictures', sanitizedMainCategory, sanitizedGroupName, formattedEventDate)
+			: join(process.cwd(), 'public', 'uploads', 'pictures', sanitizedMainCategory, sanitizedGroupName, formattedEventDate);
 		
 		// Ensure directory exists
-		if (!existsSync(uploadDir)) {
-			await mkdir(uploadDir, { recursive: true });
+		try {
+			if (!existsSync(uploadDir)) {
+				await mkdir(uploadDir, { recursive: true });
+			}
+		} catch (dirError) {
+			console.error("Error creating upload directory:", dirError);
+			return NextResponse.json({
+				success: false,
+				message: `Failed to create upload directory: ${dirError instanceof Error ? dirError.message : 'Unknown error'}. ${isVercel ? 'Note: Vercel has a read-only filesystem. Consider using cloud storage.' : ''}`,
+				error: dirError instanceof Error ? dirError.message : "Directory creation failed"
+			}, { status: 500 });
 		}
 
 		const pool = await getDb();
@@ -167,8 +182,17 @@ export async function POST(request: NextRequest) {
 			const relativePath = `uploads/pictures/${sanitizedMainCategory}/${sanitizedGroupName}/${formattedEventDate}/${fileName}`;
 			
 			// Save file to disk
-			const bytes = await file.arrayBuffer();
-			await writeFile(filePath, Buffer.from(bytes));
+			try {
+				const bytes = await file.arrayBuffer();
+				await writeFile(filePath, Buffer.from(bytes));
+			} catch (writeError) {
+				console.error(`Error writing file ${file.name}:`, writeError);
+				return NextResponse.json({
+					success: false,
+					message: `Failed to save file ${file.name}: ${writeError instanceof Error ? writeError.message : 'Unknown error'}. ${isVercel ? 'Vercel has a read-only filesystem. Files cannot be saved to the filesystem.' : ''}`,
+					error: writeError instanceof Error ? writeError.message : "File write failed"
+				}, { status: 500 });
+			}
 			
 			// Calculate file size in KB
 			const fileSizeKB = Math.round(file.size / 1024);
@@ -210,11 +234,32 @@ export async function POST(request: NextRequest) {
 
 	} catch (error) {
 		console.error("Error uploading pictures:", error);
+		
+		// Provide more detailed error information
+		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+		const errorStack = error instanceof Error ? error.stack : undefined;
+		
+		// Check if it's a filesystem error (common on Vercel)
+		const isFilesystemError = errorMessage.includes('EACCES') || 
+		                          errorMessage.includes('ENOENT') || 
+		                          errorMessage.includes('EROFS') ||
+		                          errorMessage.includes('read-only') ||
+		                          errorMessage.includes('permission denied');
+		
+		let userMessage = "Failed to upload pictures";
+		if (isFilesystemError) {
+			userMessage = "File upload failed: The server filesystem is read-only. This may be a deployment limitation. Please contact the administrator.";
+		}
+		
 		return NextResponse.json(
 			{
 				success: false,
-				message: "Failed to upload pictures",
-				error: error instanceof Error ? error.message : "Unknown error"
+				message: userMessage,
+				error: errorMessage,
+				...(process.env.NODE_ENV === 'development' && { stack: errorStack }),
+				...(isFilesystemError && { 
+					hint: "For Vercel deployments, consider using cloud storage (Vercel Blob, S3, or Cloudinary) instead of local filesystem."
+				})
 			},
 			{ status: 500 }
 		);

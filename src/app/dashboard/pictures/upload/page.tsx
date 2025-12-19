@@ -249,8 +249,17 @@ export default function UploadPicturesPage() {
 					router.push('/dashboard/pictures');
 				}, 2000);
 			} else {
-				setError(result.message || 'Upload failed');
+				// Show detailed error message
+				let errorMessage = result.message || 'Upload failed';
+				if (result.error) {
+					errorMessage += ` (${result.error})`;
+				}
+				if (result.hint) {
+					errorMessage += ` ${result.hint}`;
+				}
+				setError(errorMessage);
 				setUploadStatus('error');
+				console.error('Upload error details:', result);
 			}
 		} catch (err) {
 			setError('Upload failed. Please try again.');
