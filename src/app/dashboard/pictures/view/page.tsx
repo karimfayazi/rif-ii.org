@@ -67,6 +67,8 @@ function PictureViewContent() {
 		// For client-side, use current origin (works for both local and production)
 		if (typeof window !== 'undefined') {
 			const origin = window.location.origin;
+			// On Vercel, public folder files are served from root
+			// Ensure the path starts correctly
 			return `${origin}/${normalizedPath}`;
 		}
 		
@@ -130,6 +132,15 @@ function PictureViewContent() {
 			}
 		}
 		
+		// Try production domain as fallback
+		if (typeof window !== 'undefined') {
+			const origin = window.location.origin;
+			// If not on production domain, try production domain
+			if (!origin.includes('rif-ii.org') && !origin.includes('vercel.app')) {
+				alternatives.push(getImageUrl(filePath).replace(origin, 'https://rif-ii.org'));
+			}
+		}
+		
 		// Remove duplicates
 		return [...new Set(alternatives)];
 	};
@@ -171,9 +182,12 @@ function PictureViewContent() {
 	useEffect(() => {
 		if (picture) {
 			const imageUrl = getImageUrl(picture.FilePath);
+			const alternatives = getAlternativeImageUrls(picture.FilePath);
 			console.log('[Picture View] Picture data:', picture);
 			console.log('[Picture View] FilePath:', picture.FilePath);
 			console.log('[Picture View] Constructed URL:', imageUrl);
+			console.log('[Picture View] Alternative URLs:', alternatives);
+			console.log('[Picture View] Current origin:', typeof window !== 'undefined' ? window.location.origin : 'server-side');
 		}
 	}, [picture]);
 
@@ -370,6 +384,7 @@ function PictureViewContent() {
 								fill
 								className="object-contain"
 								unoptimized
+								priority
 								onError={(e) => {
 									try {
 										const target = (e.target || e.currentTarget) as HTMLImageElement;
@@ -392,26 +407,39 @@ function PictureViewContent() {
 											}
 										}
 									} catch (error) {
-										// Silently fail if error handling itself fails
+										console.error('Error in image error handler:', error);
 									}
 								}}
+								onLoad={() => {
+									console.log('Image loaded successfully:', imageUrl);
+								}}
 							/>
-							<div className="image-error hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-100 p-4">
+							<div className="image-error hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-100 p-4 overflow-auto">
 								<ImageIcon className="h-24 w-24 text-gray-400 mb-4" />
 								<p className="text-sm font-medium text-gray-700 mb-2">Failed to load image</p>
-								<div className="text-xs text-gray-500 text-center max-w-md space-y-1">
+								<div className="text-xs text-gray-500 text-center max-w-md space-y-1 mb-3">
 									<p><strong>Database Path:</strong> {picture.FilePath}</p>
 									<p><strong>File Name:</strong> {picture.FileName || 'N/A'}</p>
 									<p><strong>Last Tried URL:</strong> {imageUrl}</p>
+									{typeof window !== 'undefined' && (
+										<p><strong>Current Origin:</strong> {window.location.origin}</p>
+									)}
 								</div>
-								<div className="text-xs text-gray-400 text-center max-w-md mt-3 p-3 bg-yellow-50 rounded border border-yellow-200">
-									<p className="font-medium text-yellow-800 mb-1">Possible Issues:</p>
-									<ul className="text-left space-y-1 text-yellow-700">
+								<div className="text-xs text-gray-400 text-center max-w-md p-3 bg-yellow-50 rounded border border-yellow-200">
+									<p className="font-medium text-yellow-800 mb-2">Possible Issues:</p>
+									<ul className="text-left space-y-1 text-yellow-700 mb-2">
 										<li>• File may not exist at this path</li>
 										<li>• Folder names may have spaces instead of underscores</li>
 										<li>• File may have been moved or deleted</li>
-										<li>• Check if file exists in: <code className="bg-yellow-100 px-1 rounded">public/uploads/pictures/</code></li>
+										<li>• On Vercel: Files must be in <code className="bg-yellow-100 px-1 rounded">public/</code> folder</li>
+										<li>• Check browser console for detailed error messages</li>
 									</ul>
+									<p className="text-yellow-600 text-xs mt-2">
+										Try accessing the file directly: <br/>
+										<a href={imageUrl} target="_blank" rel="noopener noreferrer" className="underline break-all">
+											{imageUrl}
+										</a>
+									</p>
 								</div>
 							</div>
 						</>
