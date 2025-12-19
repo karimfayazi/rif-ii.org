@@ -74,6 +74,66 @@ function PictureViewContent() {
 		return `/${normalizedPath}`;
 	};
 
+	// Try alternative paths if the main path fails (handle folder name mismatches)
+	const getAlternativeImageUrls = (filePath: string | null): string[] => {
+		if (!filePath) return [];
+		
+		const alternatives: string[] = [];
+		const mainUrl = getImageUrl(filePath);
+		alternatives.push(mainUrl);
+		
+		// Try replacing underscores with spaces in folder names
+		if (filePath.includes('_')) {
+			const altPath = filePath.replace(/_/g, ' ');
+			alternatives.push(getImageUrl(altPath));
+		}
+		
+		// Try replacing spaces with underscores
+		if (filePath.includes(' ')) {
+			const altPath = filePath.replace(/ /g, '_');
+			alternatives.push(getImageUrl(altPath));
+		}
+		
+		// Try adding "Consultative workshop" parent folder if Workshop is in path
+		if (filePath.includes('Workshop/') && !filePath.includes('Consultative workshop')) {
+			const altPath = filePath.replace('Workshop/', 'Workshop/Consultative workshop/');
+			alternatives.push(getImageUrl(altPath));
+			
+			// Also try with spaces instead of underscores
+			if (altPath.includes('_')) {
+				const altPath2 = altPath.replace(/_/g, ' ');
+				alternatives.push(getImageUrl(altPath2));
+			}
+		}
+		
+		// Try removing date folder (YYYY-MM-DD pattern) if present
+		const dateFolderPattern = /\d{4}-\d{2}-\d{2}\//;
+		if (dateFolderPattern.test(filePath)) {
+			const altPath = filePath.replace(dateFolderPattern, '');
+			alternatives.push(getImageUrl(altPath));
+			
+			// Also try with spaces
+			if (altPath.includes('_')) {
+				const altPath2 = altPath.replace(/_/g, ' ');
+				alternatives.push(getImageUrl(altPath2));
+			}
+			
+			// Try with Consultative workshop parent folder and no date folder
+			if (altPath.includes('Workshop/') && !altPath.includes('Consultative workshop')) {
+				const altPath3 = altPath.replace('Workshop/', 'Workshop/Consultative workshop/');
+				alternatives.push(getImageUrl(altPath3));
+				
+				if (altPath3.includes('_')) {
+					const altPath4 = altPath3.replace(/_/g, ' ');
+					alternatives.push(getImageUrl(altPath4));
+				}
+			}
+		}
+		
+		// Remove duplicates
+		return [...new Set(alternatives)];
+	};
+
 	useEffect(() => {
 		const fetchPicture = async () => {
 			if (!pictureId) {
@@ -312,11 +372,20 @@ function PictureViewContent() {
 								unoptimized
 								onError={(e) => {
 									try {
-										// Silently handle image errors
 										const target = (e.target || e.currentTarget) as HTMLImageElement;
 										if (target) {
+											// Try alternative URLs
+											const alternativeUrls = getAlternativeImageUrls(picture.FilePath);
+											const currentIndex = alternativeUrls.indexOf(target.src);
+											
+											if (currentIndex < alternativeUrls.length - 1) {
+												// Try next alternative URL
+												target.src = alternativeUrls[currentIndex + 1];
+												return;
+											}
+											
+											// All alternatives failed, show error
 											target.style.display = 'none';
-											// Show error message
 											const errorDiv = target.parentElement?.querySelector('.image-error');
 											if (errorDiv) {
 												errorDiv.classList.remove('hidden');
@@ -330,12 +399,20 @@ function PictureViewContent() {
 							<div className="image-error hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-100 p-4">
 								<ImageIcon className="h-24 w-24 text-gray-400 mb-4" />
 								<p className="text-sm font-medium text-gray-700 mb-2">Failed to load image</p>
-								<p className="text-xs text-gray-500 text-center max-w-md">
-									Path: {picture.FilePath}
-								</p>
-								<p className="text-xs text-gray-500 text-center max-w-md mt-1">
-									URL: {imageUrl}
-								</p>
+								<div className="text-xs text-gray-500 text-center max-w-md space-y-1">
+									<p><strong>Database Path:</strong> {picture.FilePath}</p>
+									<p><strong>File Name:</strong> {picture.FileName || 'N/A'}</p>
+									<p><strong>Last Tried URL:</strong> {imageUrl}</p>
+								</div>
+								<div className="text-xs text-gray-400 text-center max-w-md mt-3 p-3 bg-yellow-50 rounded border border-yellow-200">
+									<p className="font-medium text-yellow-800 mb-1">Possible Issues:</p>
+									<ul className="text-left space-y-1 text-yellow-700">
+										<li>• File may not exist at this path</li>
+										<li>• Folder names may have spaces instead of underscores</li>
+										<li>• File may have been moved or deleted</li>
+										<li>• Check if file exists in: <code className="bg-yellow-100 px-1 rounded">public/uploads/pictures/</code></li>
+									</ul>
+								</div>
 							</div>
 						</>
 					) : (

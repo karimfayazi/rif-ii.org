@@ -32,7 +32,7 @@ type PictureDetail = {
 export default function PicturesPage() {
 	const { user, getUserId } = useAuth();
 	const userId = user?.id || user?.username || getUserId() || "1";
-	const { canUploadPictures, isAdmin, loading: accessLoading, accessLevel } = useAccess(userId);
+	const { canUploadPictures, isAdmin, loading: accessLoading, accessLevel, accessDelete } = useAccess(userId);
 	
 	const [mainCategories, setMainCategories] = useState<Array<{MainCategory: string; TotalPictures: number; PreviewImage: string | null}>>([]);
 	const [eventNames, setEventNames] = useState<Array<{EventName: string; TotalPictures: number; PreviewImage: string | null}>>([]);
@@ -745,75 +745,77 @@ export default function PicturesPage() {
 									key={picture.PictureID}
 									className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 group relative"
 								>
-									<Link
-										href={`/dashboard/pictures/view?id=${picture.PictureID}`}
-										className="block"
-									>
-										<div className="aspect-video relative bg-gray-100 rounded-t-lg overflow-hidden">
-											{picture.FilePath ? (
-												<Image
-													src={getImageUrl(picture.FilePath)}
-													alt={picture.FileName || "Picture"}
-													fill
-													className="object-cover group-hover:scale-105 transition-transform duration-200"
-													unoptimized
-												/>
-											) : (
-												<div className="flex items-center justify-center h-full">
-													<FileImage className="h-12 w-12 text-gray-400" />
+									<div className="aspect-video relative bg-gray-100 rounded-t-lg overflow-hidden">
+										{picture.FilePath ? (
+											<Image
+												src={getImageUrl(picture.FilePath)}
+												alt={picture.FileName || "Picture"}
+												fill
+												className="object-cover group-hover:scale-105 transition-transform duration-200"
+												unoptimized
+											/>
+										) : (
+											<div className="flex items-center justify-center h-full">
+												<FileImage className="h-12 w-12 text-gray-400" />
+											</div>
+										)}
+										<div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+											{formatFileSize(picture.FileSizeKB)}
+										</div>
+									</div>
+									<div className="p-4">
+										<div className="flex items-start justify-between mb-3">
+											<div className="flex-1">
+												<h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#0b4d2b] transition-colors line-clamp-2">
+													{picture.FileName || "Untitled"}
+												</h3>
+											</div>
+											<Eye className="h-4 w-4 text-gray-400 group-hover:text-[#0b4d2b] transition-colors flex-shrink-0 ml-2" />
+										</div>
+										<div className="space-y-1 text-xs text-gray-600 mb-3">
+											{picture.GroupName && (
+												<div className="flex items-center">
+													<Calendar className="h-3 w-3 mr-1" />
+													<span className="line-clamp-1">{picture.GroupName}</span>
 												</div>
 											)}
-											<div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-												{formatFileSize(picture.FileSizeKB)}
-											</div>
-										</div>
-										<div className="p-4">
-											<div className="flex items-start justify-between mb-3">
-												<div className="flex-1">
-													<h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#0b4d2b] transition-colors line-clamp-2">
-														{picture.FileName || "Untitled"}
-													</h3>
+											{picture.EventDate && (
+												<div className="flex items-center">
+													<Calendar className="h-3 w-3 mr-1" />
+													<span>{formatDate(picture.EventDate)}</span>
 												</div>
-												<Eye className="h-4 w-4 text-gray-400 group-hover:text-[#0b4d2b] transition-colors flex-shrink-0 ml-2" />
-											</div>
-											<div className="space-y-1 text-xs text-gray-600">
-												{picture.GroupName && (
-													<div className="flex items-center">
-														<Calendar className="h-3 w-3 mr-1" />
-														<span className="line-clamp-1">{picture.GroupName}</span>
-													</div>
-												)}
-												{picture.EventDate && (
-													<div className="flex items-center">
-														<Calendar className="h-3 w-3 mr-1" />
-														<span>{formatDate(picture.EventDate)}</span>
-													</div>
-												)}
-												{picture.UploadedBy && (
-													<div className="flex items-center">
-														<FileImage className="h-3 w-3 mr-1" />
-														<span className="line-clamp-1">{picture.UploadedBy}</span>
-													</div>
-												)}
-											</div>
+											)}
+											{picture.UploadedBy && (
+												<div className="flex items-center">
+													<FileImage className="h-3 w-3 mr-1" />
+													<span className="line-clamp-1">{picture.UploadedBy}</span>
+												</div>
+											)}
 										</div>
-									</Link>
-									{/* Delete Button - Only show for Admin */}
-									{isAdmin && accessLevel === 'Admin' && (
-										<div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-											<button
-												onClick={(e) => {
-													e.preventDefault();
-													e.stopPropagation();
-													setDeleteConfirm({ show: true, picture });
-												}}
-												className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-lg"
-												title="Delete Picture"
+										{/* Action Buttons */}
+										<div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+											<Link
+												href={`/dashboard/pictures/view?id=${picture.PictureID}`}
+												className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors"
 											>
-												<Trash2 className="h-4 w-4" />
-											</button>
+												<Eye className="h-3 w-3 mr-1" />
+												Click to view
+											</Link>
+											{(isAdmin || accessDelete) && (
+												<button
+													onClick={(e) => {
+														e.preventDefault();
+														e.stopPropagation();
+														setDeleteConfirm({ show: true, picture });
+													}}
+													className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+													title="Delete Picture"
+												>
+													<Trash2 className="h-3 w-3" />
+												</button>
+											)}
 										</div>
-									)}
+									</div>
 								</div>
 							))}
 						</div>
