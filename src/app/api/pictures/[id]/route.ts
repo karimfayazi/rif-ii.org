@@ -4,10 +4,10 @@ import { getDb } from "@/lib/db";
 // GET - Fetch picture by ID
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: { id: string } }
+	{ params }: { params: Promise<{ id: string }> }
 ) {
 	try {
-		const pictureId = params.id;
+		const { id: pictureId } = await params;
 		
 		if (!pictureId) {
 			return NextResponse.json({
