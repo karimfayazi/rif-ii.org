@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Upload, ArrowLeft, X, Check } from "lucide-react";
+import { Upload, ArrowLeft, X, Check, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import AccessDenied from "@/components/AccessDenied";
 import { useAccess } from "@/hooks/useAccess";
 import { useAuth } from "@/hooks/useAuth";
+import ReportMainCategoryModal from "@/components/ReportMainCategoryModal";
+import ReportSubCategoryModal from "@/components/ReportSubCategoryModal";
 
 type UploadFormData = {
 	reportTitle: string;
@@ -53,6 +55,8 @@ export default function UploadReportsPage() {
 	const [selectedMainCategoryID, setSelectedMainCategoryID] = useState<number | null>(null);
 	const [loadingCategories, setLoadingCategories] = useState(false);
 	const [loadingReport, setLoadingReport] = useState(false);
+	const [showMainCategoryModal, setShowMainCategoryModal] = useState(false);
+	const [showSubCategoryModal, setShowSubCategoryModal] = useState(false);
 
 	// Fetch sub categories when main category changes
 	const fetchSubCategories = async (mainCategoryID: number) => {
@@ -184,24 +188,25 @@ export default function UploadReportsPage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [formData.mainCategory, mainCategories, isEditMode, selectedMainCategoryID]);
 
+	// Fetch main categories
+	const fetchMainCategories = async () => {
+		try {
+			setLoadingCategories(true);
+			const response = await fetch('/api/reports/categories');
+			const data = await response.json();
+			
+			if (data.success) {
+				setMainCategories(data.categories || []);
+			}
+		} catch (err) {
+			console.error("Error fetching main categories:", err);
+		} finally {
+			setLoadingCategories(false);
+		}
+	};
+
 	// Fetch main categories on component mount
 	useEffect(() => {
-		const fetchMainCategories = async () => {
-			try {
-				setLoadingCategories(true);
-				const response = await fetch('/api/reports/categories');
-				const data = await response.json();
-				
-				if (data.success) {
-					setMainCategories(data.categories || []);
-				}
-			} catch (err) {
-				console.error("Error fetching main categories:", err);
-			} finally {
-				setLoadingCategories(false);
-			}
-		};
-
 		fetchMainCategories();
 	}, []);
 
@@ -538,50 +543,75 @@ export default function UploadReportsPage() {
 								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Main Category <span className="text-red-500">*</span>
 								</label>
-								<select
-									name="mainCategory"
-									value={formData.mainCategory}
-									onChange={handleInputChange}
-									disabled={loadingCategories}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-									required
-								>
-									<option value="">Select Main Category</option>
-									{mainCategories.map((category) => (
-										<option key={category.MainCategoryID} value={category.Category}>
-											{category.Category}
-										</option>
-									))}
-								</select>
+								<div className="flex items-center space-x-2">
+									<select
+										name="mainCategory"
+										value={formData.mainCategory}
+										onChange={handleInputChange}
+										disabled={loadingCategories}
+										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+										required
+									>
+										<option value="">Select Main Category</option>
+										{mainCategories.map((category) => (
+											<option key={category.MainCategoryID} value={category.Category}>
+												{category.Category}
+											</option>
+										))}
+									</select>
+									<button
+										type="button"
+										onClick={() => setShowMainCategoryModal(true)}
+										className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors flex items-center justify-center"
+										title="Manage Main Categories"
+									>
+										<Plus className="h-4 w-4" />
+									</button>
+								</div>
 							</div>
 
 							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Sub Category <span className="text-red-500">*</span>
 								</label>
-								<select
-									name="subCategory"
-									value={formData.subCategory}
-									onChange={handleInputChange}
-									disabled={!formData.mainCategory || loadingCategories || subCategories.length === 0}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-									required
-								>
-									<option value="">
-										{!formData.mainCategory 
-											? "Select Main Category first" 
-											: loadingCategories 
-											? "Loading sub categories..." 
-											: subCategories.length === 0 
-											? "No sub categories available" 
-											: "Select Sub Category"}
-									</option>
-									{subCategories.map((subCategory) => (
-										<option key={subCategory.SubCategoryID} value={subCategory.SubCategory}>
-											{subCategory.SubCategory}
+								<div className="flex items-center space-x-2">
+									<select
+										name="subCategory"
+										value={formData.subCategory}
+										onChange={handleInputChange}
+										disabled={!formData.mainCategory || loadingCategories || subCategories.length === 0}
+										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+										required
+									>
+										<option value="">
+											{!formData.mainCategory 
+												? "Select Main Category first" 
+												: loadingCategories 
+												? "Loading sub categories..." 
+												: subCategories.length === 0 
+												? "No sub categories available" 
+												: "Select Sub Category"}
 										</option>
-									))}
-								</select>
+										{subCategories.map((subCategory) => (
+											<option key={subCategory.SubCategoryID} value={subCategory.SubCategory}>
+												{subCategory.SubCategory}
+											</option>
+										))}
+									</select>
+									<button
+										type="button"
+										onClick={() => {
+											if (selectedMainCategoryID && formData.mainCategory) {
+												setShowSubCategoryModal(true);
+											}
+										}}
+										disabled={!formData.mainCategory || !selectedMainCategoryID}
+										className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+										title="Manage Sub Categories"
+									>
+										<Plus className="h-4 w-4" />
+									</button>
+								</div>
 							</div>
 
 							<div>
@@ -737,6 +767,45 @@ export default function UploadReportsPage() {
 					</form>
 				</div>
 			</div>
+
+			{/* Main Category Modal */}
+			<ReportMainCategoryModal
+				isOpen={showMainCategoryModal}
+				onClose={() => setShowMainCategoryModal(false)}
+				onCategorySelect={(category) => {
+					setFormData(prev => ({
+						...prev,
+						mainCategory: category
+					}));
+					const selectedCategory = mainCategories.find(cat => cat.Category === category);
+					if (selectedCategory) {
+						setSelectedMainCategoryID(selectedCategory.MainCategoryID);
+						fetchSubCategories(selectedCategory.MainCategoryID);
+					}
+				}}
+				onCategoryChange={() => {
+					fetchMainCategories();
+				}}
+			/>
+
+			{/* Sub Category Modal */}
+			<ReportSubCategoryModal
+				isOpen={showSubCategoryModal}
+				onClose={() => setShowSubCategoryModal(false)}
+				onSubCategorySelect={(subCategory) => {
+					setFormData(prev => ({
+						...prev,
+						subCategory: subCategory
+					}));
+				}}
+				onSubCategoryChange={() => {
+					if (selectedMainCategoryID) {
+						fetchSubCategories(selectedMainCategoryID);
+					}
+				}}
+				mainCategoryID={selectedMainCategoryID}
+				mainCategoryName={formData.mainCategory || ""}
+			/>
 		</div>
 	);
 }

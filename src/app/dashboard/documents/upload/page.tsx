@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Upload, ArrowLeft, FileText, Calendar, Folder, User, X, Check } from "lucide-react";
+import { Upload, ArrowLeft, FileText, Calendar, Folder, User, X, Check, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import AccessDenied from "@/components/AccessDenied";
 import { useAccess } from "@/hooks/useAccess";
 import { useAuth } from "@/hooks/useAuth";
+import DocumentMainCategoryModal from "@/components/DocumentMainCategoryModal";
+import DocumentSubCategoryModal from "@/components/DocumentSubCategoryModal";
 
 type UploadFormData = {
 	title: string;
@@ -40,6 +42,69 @@ export default function UploadDocumentsPage() {
 	
 	const { canUploadDocuments, accessEdit, loading: accessLoading, error: accessError } = useAccess(userId);
 	
+	// State declarations
+	const [formData, setFormData] = useState<UploadFormData>({
+		title: "",
+		description: "",
+		category: "",
+		subCategory: "",
+		documentDate: "",
+		uploadedBy: "",
+		fileType: "",
+		documentType: "",
+		allowPriorityUsers: false,
+		allowInternalUsers: false,
+		allowOthersUsers: false
+	});
+	const [files, setFiles] = useState<UploadedFile[]>([]);
+	const [uploading, setUploading] = useState(false);
+	const [uploadProgress, setUploadProgress] = useState(0);
+	const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+	const [error, setError] = useState<string | null>(null);
+	const [mainCategories, setMainCategories] = useState<Array<{ MainCategoryID: number; Category: string }>>([]);
+	const [subCategories, setSubCategories] = useState<Array<{ SubCategoryID: number; MainCategoryID: number; SubCategory: string }>>([]);
+	const [selectedMainCategoryID, setSelectedMainCategoryID] = useState<number | null>(null);
+	const [loadingCategories, setLoadingCategories] = useState(false);
+	const [showMainCategoryModal, setShowMainCategoryModal] = useState(false);
+	const [showSubCategoryModal, setShowSubCategoryModal] = useState(false);
+
+	// Fetch main categories
+	const fetchMainCategories = async () => {
+		try {
+			setLoadingCategories(true);
+			const response = await fetch('/api/documents/categories');
+			const data = await response.json();
+			
+			if (data.success) {
+				setMainCategories(data.categories || []);
+			}
+		} catch (err) {
+			console.error("Error fetching main categories:", err);
+		} finally {
+			setLoadingCategories(false);
+		}
+	};
+
+	// Fetch sub categories when main category changes
+	const fetchSubCategories = async (mainCategoryID: number) => {
+		try {
+			setLoadingCategories(true);
+			const response = await fetch(`/api/documents/subcategories?mainCategoryID=${mainCategoryID}`);
+			const data = await response.json();
+			
+			if (data.success) {
+				setSubCategories(data.subCategories || []);
+			} else {
+				setSubCategories([]);
+			}
+		} catch (err) {
+			console.error("Error fetching sub categories:", err);
+			setSubCategories([]);
+		} finally {
+			setLoadingCategories(false);
+		}
+	};
+
 	useEffect(() => {
 		console.log('[Documents Upload Page] Access check result:', { canUploadDocuments, accessLoading, accessError, userId });
 	}, [canUploadDocuments, accessLoading, accessError, userId]);
@@ -55,10 +120,15 @@ export default function UploadDocumentsPage() {
 		}
 	}, [userProfile, user]);
 
-	// Fetch document data when editing
+	// Fetch main categories on component mount
+	useEffect(() => {
+		fetchMainCategories();
+	}, []);
+
+	// Fetch document data when editing (after categories are loaded)
 	useEffect(() => {
 		const fetchDocument = async () => {
-			if (!documentId) return;
+			if (!documentId || !isEditMode) return;
 
 			try {
 				const response = await fetch(`/api/documents/${documentId}`);
@@ -93,6 +163,16 @@ export default function UploadDocumentsPage() {
 						allowInternalUsers: doc.AllowInternalUsers || false,
 						allowOthersUsers: doc.AllowOthersUsers || false
 					});
+
+					// Find and set the main category ID to load sub categories
+					// Wait for categories to be loaded
+					if (doc.Category && mainCategories.length > 0) {
+						const selectedCategory = mainCategories.find(cat => cat.Category === doc.Category);
+						if (selectedCategory) {
+							setSelectedMainCategoryID(selectedCategory.MainCategoryID);
+							fetchSubCategories(selectedCategory.MainCategoryID);
+						}
+					}
 				}
 			} catch (err) {
 				console.error('Error fetching document:', err);
@@ -100,34 +180,35 @@ export default function UploadDocumentsPage() {
 			}
 		};
 
-		fetchDocument();
-	}, [documentId]);
-	
-	const [formData, setFormData] = useState<UploadFormData>({
-		title: "",
-		description: "",
-		category: "",
-		subCategory: "",
-		documentDate: "",
-		uploadedBy: "",
-		fileType: "",
-		documentType: "",
-		allowPriorityUsers: false,
-		allowInternalUsers: false,
-		allowOthersUsers: false
-	});
-	const [files, setFiles] = useState<UploadedFile[]>([]);
-	const [uploading, setUploading] = useState(false);
-	const [uploadProgress, setUploadProgress] = useState(0);
-	const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
-	const [error, setError] = useState<string | null>(null);
+		// Only fetch document if categories are loaded
+		if (documentId && isEditMode && mainCategories.length > 0) {
+			fetchDocument();
+		}
+	}, [documentId, isEditMode, mainCategories]);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
 		const { name, value, type } = e.target;
-		setFormData(prev => ({
-			...prev,
-			[name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-		}));
+		
+		// If category changes, fetch sub categories
+		if (name === 'category') {
+			const selectedCategory = mainCategories.find(cat => cat.Category === value);
+			setSelectedMainCategoryID(selectedCategory?.MainCategoryID || null);
+			setSubCategories([]); // Clear sub categories
+			setFormData(prev => ({
+				...prev,
+				category: value,
+				subCategory: "" // Reset sub category
+			}));
+			
+			if (selectedCategory?.MainCategoryID) {
+				fetchSubCategories(selectedCategory.MainCategoryID);
+			}
+		} else {
+			setFormData(prev => ({
+				...prev,
+				[name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+			}));
+		}
 	};
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -422,39 +503,75 @@ export default function UploadDocumentsPage() {
 								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Category <span className="text-red-500">*</span>
 								</label>
-								<select
-									name="category"
-									value={formData.category}
-									onChange={handleInputChange}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-									required
-								>
-									<option value="">Select Category</option>
-									<option value="Workshop">Workshop</option>
-									<option value="Meeting">Meeting</option>
-									<option value="Training">Training</option>
-									<option value="Event">Event</option>
-									<option value="Conference">Conference</option>
-									<option value="Policy">Policy</option>
-									<option value="Procedure">Procedure</option>
-									<option value="Form">Form</option>
-									<option value="Other">Other</option>
-								</select>
+								<div className="flex items-center space-x-2">
+									<select
+										name="category"
+										value={formData.category}
+										onChange={handleInputChange}
+										disabled={loadingCategories}
+										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+										required
+									>
+										<option value="">Select Category</option>
+										{mainCategories.map((category) => (
+											<option key={category.MainCategoryID} value={category.Category}>
+												{category.Category}
+											</option>
+										))}
+									</select>
+									<button
+										type="button"
+										onClick={() => setShowMainCategoryModal(true)}
+										className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors flex items-center justify-center"
+										title="Manage Categories"
+									>
+										<Plus className="h-4 w-4" />
+									</button>
+								</div>
 							</div>
 
 							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Sub Category <span className="text-red-500">*</span>
 								</label>
-								<input
-									type="text"
-									name="subCategory"
-									value={formData.subCategory}
-									onChange={handleInputChange}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-									placeholder="Enter sub category"
-									required
-								/>
+								<div className="flex items-center space-x-2">
+									<select
+										name="subCategory"
+										value={formData.subCategory}
+										onChange={handleInputChange}
+										disabled={!formData.category || loadingCategories || subCategories.length === 0}
+										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+										required
+									>
+										<option value="">
+											{!formData.category 
+												? "Select Category first" 
+												: loadingCategories 
+												? "Loading sub categories..." 
+												: subCategories.length === 0 
+												? "No sub categories available" 
+												: "Select Sub Category"}
+										</option>
+										{subCategories.map((subCategory) => (
+											<option key={subCategory.SubCategoryID} value={subCategory.SubCategory}>
+												{subCategory.SubCategory}
+											</option>
+										))}
+									</select>
+									<button
+										type="button"
+										onClick={() => {
+											if (selectedMainCategoryID && formData.category) {
+												setShowSubCategoryModal(true);
+											}
+										}}
+										disabled={!formData.category || !selectedMainCategoryID}
+										className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+										title="Manage Sub Categories"
+									>
+										<Plus className="h-4 w-4" />
+									</button>
+								</div>
 							</div>
 
 							<div>
@@ -700,6 +817,45 @@ export default function UploadDocumentsPage() {
 					</form>
 				</div>
 			</div>
+
+			{/* Main Category Modal */}
+			<DocumentMainCategoryModal
+				isOpen={showMainCategoryModal}
+				onClose={() => setShowMainCategoryModal(false)}
+				onCategorySelect={(category) => {
+					setFormData(prev => ({
+						...prev,
+						category: category
+					}));
+					const selectedCategory = mainCategories.find(cat => cat.Category === category);
+					if (selectedCategory) {
+						setSelectedMainCategoryID(selectedCategory.MainCategoryID);
+						fetchSubCategories(selectedCategory.MainCategoryID);
+					}
+				}}
+				onCategoryChange={() => {
+					fetchMainCategories();
+				}}
+			/>
+
+			{/* Sub Category Modal */}
+			<DocumentSubCategoryModal
+				isOpen={showSubCategoryModal}
+				onClose={() => setShowSubCategoryModal(false)}
+				onSubCategorySelect={(subCategory) => {
+					setFormData(prev => ({
+						...prev,
+						subCategory: subCategory
+					}));
+				}}
+				onSubCategoryChange={() => {
+					if (selectedMainCategoryID) {
+						fetchSubCategories(selectedMainCategoryID);
+					}
+				}}
+				mainCategoryID={selectedMainCategoryID}
+				mainCategoryName={formData.category || ""}
+			/>
 		</div>
 	);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Download, Calendar, Folder, Search, RotateCcw, Filter, Upload, User, RefreshCw, Edit, Trash2, AlertCircle, Loader2, CheckCircle } from "lucide-react";
+import { FileText, Download, Calendar, Folder, Search, RotateCcw, Filter, Upload, User, RefreshCw, Edit, Trash2, Eye, AlertCircle, Loader2, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useAccess } from "@/hooks/useAccess";
 import { useAuth } from "@/hooks/useAuth";
@@ -290,7 +290,7 @@ export default function DocumentsPage() {
 				<div className="flex items-center space-x-3">
 					<Link
 						href="/dashboard/documents/upload"
-						className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+						className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
 					>
 						<Upload className="h-4 w-4 mr-2" />
 						Upload document
@@ -394,7 +394,7 @@ export default function DocumentsPage() {
 				</div>
 			</div>
 
-			{/* Documents Grid */}
+			{/* Documents Grid - Horizontal View */}
 			{documents.length === 0 ? (
 				<div className="bg-gray-50 rounded-lg border border-gray-200 p-12 text-center">
 					<FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -407,111 +407,95 @@ export default function DocumentsPage() {
 					</p>
 				</div>
 			) : (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div className="space-y-4">
 					{documents.map((document, index) => (
 						<div
 							key={index}
-							className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 group"
+							className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
 						>
-							{/* File Icon and Type */}
-							<div className="p-6 pb-4">
-								<div className="flex items-start justify-between mb-4">
-									<div className="flex items-center space-x-3">
+							<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-6 gap-4">
+								{/* Left Section: File Icon, Type, and Document Name */}
+								<div className="flex items-center space-x-4 flex-1 min-w-0">
+									<div className="flex items-center space-x-3 flex-shrink-0">
 										<div className="text-3xl">
 											{getFileIcon(document.FilePath)}
 										</div>
 										<div>
-											<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+											<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
 												{getFileExtension(document.FilePath)}
 											</span>
 										</div>
 									</div>
-									{/* Edit and Delete Buttons */}
-									{(accessEdit || accessDelete) && (
-										<div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-											{accessEdit && (
-												<Link
-													href={`/dashboard/documents/upload?id=${document.DocumentID}`}
-													className="inline-flex items-center px-2 py-1.5 text-sm text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
-													title="Edit"
-												>
-													<Edit className="h-4 w-4" />
-												</Link>
-											)}
-											{accessDelete && (
-												<button
-													onClick={() => setDeleteConfirm({ show: true, document: document })}
-													className="inline-flex items-center px-2 py-1.5 text-sm text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
-													title="Delete"
-												>
-													<Trash2 className="h-4 w-4" />
-												</button>
-											)}
-										</div>
-									)}
+									<div className="flex-1 min-w-0">
+										<h3 className="text-lg font-semibold text-gray-900 truncate mb-1">
+											{document.Title}
+										</h3>
+										{document.Description && (
+											<p className="text-sm text-gray-600 truncate">
+												{document.Description}
+											</p>
+										)}
+									</div>
 								</div>
 
-								{/* Document Title */}
-								<h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#0b4d2b] transition-colors line-clamp-2 mb-3">
-									{document.Title}
-								</h3>
-
-								{/* Description */}
-								<p className="text-sm text-gray-600 line-clamp-3 mb-4">
-									{document.Description || "No description available"}
-								</p>
-
-								{/* Document Information */}
-								<div className="space-y-2 text-sm text-gray-500 mb-4">
+								{/* Middle Section: Category Information */}
+								<div className="flex items-center space-x-4 lg:space-x-6 px-0 lg:px-6 flex-shrink-0 border-t lg:border-t-0 lg:border-l lg:border-r border-gray-200 pt-4 lg:pt-0">
 									{document.Category && (
-										<div className="flex items-center">
-											<Folder className="h-4 w-4 mr-2" />
-											<span className="line-clamp-1">{document.Category}</span>
+										<div className="flex flex-col">
+											<span className="text-xs font-medium text-gray-500 mb-1">Category</span>
+											<span className="text-sm font-semibold text-gray-900">{document.Category}</span>
 										</div>
 									)}
 									{document.SubCategory && (
-										<div className="flex items-center">
-											<Folder className="h-4 w-4 mr-2" />
-											<span className="line-clamp-1">{document.SubCategory}</span>
+										<div className="flex flex-col">
+											<span className="text-xs font-medium text-gray-500 mb-1">Sub Category</span>
+											<span className="text-sm font-semibold text-gray-900">{document.SubCategory}</span>
 										</div>
 									)}
 									{document.document_date && (
-										<div className="flex items-center">
-											<Calendar className="h-4 w-4 mr-2" />
-											<span>{formatDate(document.document_date)}</span>
-										</div>
-									)}
-									{document.UploadedBy && (
-										<div className="flex items-center">
-											<User className="h-4 w-4 mr-2" />
-											<span className="line-clamp-1">{document.UploadedBy}</span>
-										</div>
-									)}
-									{document.FileType && (
-										<div className="flex items-center">
-											<FileText className="h-4 w-4 mr-2" />
-											<span className="line-clamp-1">{document.FileType}</span>
+										<div className="flex flex-col">
+											<span className="text-xs font-medium text-gray-500 mb-1">Date</span>
+											<span className="text-sm font-semibold text-gray-900">{formatDate(document.document_date)}</span>
 										</div>
 									)}
 								</div>
 
-								{/* Access Level Badge */}
-								<div className="mb-4">
-									<span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getAccessColor(document)}`}>
-										{getAccessLevel(document)}
-									</span>
-								</div>
-							</div>
+								{/* Right Section: Action Buttons */}
+								<div className="flex items-center space-x-2 flex-shrink-0 pl-0 lg:pl-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-gray-200">
+									{/* View Button */}
+									<Link
+										href={`/dashboard/documents/view?id=${document.DocumentID}`}
+										className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
+										title="View Document"
+									>
+										<Eye className="h-4 w-4 mr-1.5" />
+										View
+									</Link>
 
-							{/* View Document Button */}
-							<div className="px-6 py-4 bg-gray-50 rounded-b-lg">
-								<Link
-									href={`/dashboard/documents/view?id=${document.DocumentID}`}
-									className="w-full inline-flex items-center justify-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors group-hover:shadow-md"
-								>
-									<FileText className="h-4 w-4 mr-2" />
-									View Document
-								</Link>
+									{/* Edit/Update Button */}
+									{accessEdit && (
+										<Link
+											href={`/dashboard/documents/upload?id=${document.DocumentID}`}
+											className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
+											title="Edit/Update Document"
+										>
+											<Edit className="h-4 w-4 mr-1.5" />
+											Edit
+										</Link>
+									)}
+
+									{/* Delete Button */}
+									{accessDelete && (
+										<button
+											onClick={() => setDeleteConfirm({ show: true, document: document })}
+											className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
+											title="Delete Document"
+										>
+											<Trash2 className="h-4 w-4 mr-1.5" />
+											Delete
+										</button>
+									)}
+								</div>
 							</div>
 						</div>
 					))}

@@ -6,8 +6,8 @@ export async function GET() {
 	try {
 		const pool = await getDb();
 		const query = `
-			SELECT TOP (1000) [MainCategoryID], [Category]
-			FROM [_rifiiorg_db].[rifiiorg].[tblReportMainCategory]
+			SELECT TOP (1000) [Category], [MainCategoryID]
+			FROM [_rifiiorg_db].[dbo].[tblDocumentMainCategory]
 			ORDER BY [Category]
 		`;
 		
@@ -19,7 +19,7 @@ export async function GET() {
 			categories: categories
 		});
 	} catch (error) {
-		console.error("Error fetching report main categories:", error);
+		console.error("Error fetching document main categories:", error);
 		return NextResponse.json(
 			{
 				success: false,
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 		// Check if category already exists
 		const checkQuery = `
 			SELECT [MainCategoryID] 
-			FROM [_rifiiorg_db].[rifiiorg].[tblReportMainCategory] 
+			FROM [_rifiiorg_db].[dbo].[tblDocumentMainCategory] 
 			WHERE [Category] = @category
 		`;
 		
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
 		// Insert new category
 		const insertQuery = `
-			INSERT INTO [_rifiiorg_db].[rifiiorg].[tblReportMainCategory] ([Category])
+			INSERT INTO [_rifiiorg_db].[dbo].[tblDocumentMainCategory] ([Category])
 			OUTPUT INSERTED.[MainCategoryID], INSERTED.[Category]
 			VALUES (@category)
 		`;
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 			category: newCategory
 		});
 	} catch (error) {
-		console.error("Error creating report main category:", error);
+		console.error("Error creating document main category:", error);
 		return NextResponse.json(
 			{
 				success: false,
@@ -111,7 +111,7 @@ export async function PUT(request: NextRequest) {
 		// Check if category already exists (excluding current one)
 		const checkQuery = `
 			SELECT [MainCategoryID] 
-			FROM [_rifiiorg_db].[rifiiorg].[tblReportMainCategory] 
+			FROM [_rifiiorg_db].[dbo].[tblDocumentMainCategory] 
 			WHERE [Category] = @category AND [MainCategoryID] != @mainCategoryID
 		`;
 		
@@ -129,7 +129,7 @@ export async function PUT(request: NextRequest) {
 
 		// Update category
 		const updateQuery = `
-			UPDATE [_rifiiorg_db].[rifiiorg].[tblReportMainCategory] 
+			UPDATE [_rifiiorg_db].[dbo].[tblDocumentMainCategory] 
 			SET [Category] = @category
 			OUTPUT INSERTED.[MainCategoryID], INSERTED.[Category]
 			WHERE [MainCategoryID] = @mainCategoryID
@@ -155,7 +155,7 @@ export async function PUT(request: NextRequest) {
 			category: updatedCategory
 		});
 	} catch (error) {
-		console.error("Error updating report main category:", error);
+		console.error("Error updating document main category:", error);
 		return NextResponse.json(
 			{
 				success: false,
@@ -182,12 +182,12 @@ export async function DELETE(request: NextRequest) {
 
 		const pool = await getDb();
 		
-		// Check if category is being used in reports
+		// Check if category is being used in documents
 		const checkUsageQuery = `
 			SELECT COUNT(*) as count
-			FROM [_rifiiorg_db].[rifiiorg].[tblReports] 
-			WHERE [MainCategory] = (
-				SELECT [Category] FROM [_rifiiorg_db].[rifiiorg].[tblReportMainCategory] 
+			FROM [_rifiiorg_db].[dbo].[tblDocuments] 
+			WHERE [Category] = (
+				SELECT [Category] FROM [_rifiiorg_db].[dbo].[tblDocumentMainCategory] 
 				WHERE [MainCategoryID] = @mainCategoryID
 			)
 		`;
@@ -199,13 +199,13 @@ export async function DELETE(request: NextRequest) {
 		if (usageResult.recordset[0].count > 0) {
 			return NextResponse.json({
 				success: false,
-				message: "Cannot delete category that is being used by reports"
+				message: "Cannot delete category that is being used by documents"
 			}, { status: 400 });
 		}
 
 		// Delete category
 		const deleteQuery = `
-			DELETE FROM [_rifiiorg_db].[rifiiorg].[tblReportMainCategory] 
+			DELETE FROM [_rifiiorg_db].[dbo].[tblDocumentMainCategory] 
 			WHERE [MainCategoryID] = @mainCategoryID
 		`;
 		
@@ -225,7 +225,7 @@ export async function DELETE(request: NextRequest) {
 			message: "Category deleted successfully"
 		});
 	} catch (error) {
-		console.error("Error deleting report main category:", error);
+		console.error("Error deleting document main category:", error);
 		return NextResponse.json(
 			{
 				success: false,
@@ -236,7 +236,5 @@ export async function DELETE(request: NextRequest) {
 		);
 	}
 }
-
-
 
 

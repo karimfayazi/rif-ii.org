@@ -30,7 +30,10 @@ async function checkUploadPicturesAccess(userId: string | null): Promise<{ canUp
 		const accessLevel = accessResult.recordset[0].access_level;
 		const uploadPicturesRaw = accessResult.recordset[0].Upload_Pictures;
 		
+		// Check if access_level is exactly 'Admin' (case-sensitive as per database requirement)
 		const isAdmin = accessLevel === 'Admin';
+		
+		console.log(`[Upload Pictures Access] User: ${userId}, access_level: "${accessLevel}", isAdmin: ${isAdmin}, Upload_Pictures raw:`, uploadPicturesRaw);
 		
 		// Helper function to check BIT field values
 		const checkBitField = (value: any): boolean => {
@@ -44,6 +47,8 @@ async function checkUploadPicturesAccess(userId: string | null): Promise<{ canUp
 		
 		const uploadPictures = checkBitField(uploadPicturesRaw);
 		const canUpload = isAdmin || uploadPictures;
+		
+		console.log(`[Upload Pictures Access] uploadPictures permission: ${uploadPictures}, canUpload: ${canUpload}`);
 		
 		if (!canUpload) {
 			return { 
@@ -119,8 +124,31 @@ export async function POST(request: NextRequest) {
 			}
 		}
 
-		// Create upload directory structure
-		const uploadDir = join(process.cwd(), 'public', 'uploads', 'pictures', mainCategory, subCategory, groupName);
+		// Format event date for folder name (YYYY-MM-DD format)
+		const formatDateForFolder = (dateString: string) => {
+			try {
+				const date = new Date(dateString);
+				const year = date.getFullYear();
+				const month = String(date.getMonth() + 1).padStart(2, '0');
+				const day = String(date.getDate()).padStart(2, '0');
+				return `${year}-${month}-${day}`;
+			} catch {
+				// Fallback: use date string as-is, sanitize it
+				return dateString.replace(/[^a-zA-Z0-9-]/g, '_');
+			}
+		};
+
+		// Sanitize folder names to avoid filesystem issues
+		const sanitizeFolderName = (name: string) => {
+			return name.replace(/[^a-zA-Z0-9-_]/g, '_').trim();
+		};
+
+		const sanitizedMainCategory = sanitizeFolderName(mainCategory);
+		const sanitizedGroupName = sanitizeFolderName(groupName);
+		const formattedEventDate = formatDateForFolder(eventDate);
+
+		// Create upload directory structure: Main Category > Event Name > Event Date
+		const uploadDir = join(process.cwd(), 'public', 'uploads', 'pictures', sanitizedMainCategory, sanitizedGroupName, formattedEventDate);
 		
 		// Ensure directory exists
 		if (!existsSync(uploadDir)) {
@@ -136,7 +164,7 @@ export async function POST(request: NextRequest) {
 			const fileExtension = file.name.split('.').pop();
 			const fileName = `${Date.now()}_${i + 1}.${fileExtension}`;
 			const filePath = join(uploadDir, fileName);
-			const relativePath = `uploads/pictures/${mainCategory}/${subCategory}/${groupName}/${fileName}`;
+			const relativePath = `uploads/pictures/${sanitizedMainCategory}/${sanitizedGroupName}/${formattedEventDate}/${fileName}`;
 			
 			// Save file to disk
 			const bytes = await file.arrayBuffer();

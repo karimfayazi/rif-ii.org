@@ -40,14 +40,48 @@ export default function UploadPicturesPage() {
 	const router = useRouter();
 	
 	// Get user ID using useAuth hook (more reliable)
-	const { user, getUserId } = useAuth();
-	const userId = user?.id || user?.username || getUserId() || null;
+	const { user, getUserId, loading: authLoading } = useAuth();
+	
+	// Fallback function to get user ID directly from cookie if useAuth hasn't loaded yet
+	const getUserIdFromCookie = (): string | null => {
+		if (typeof window === 'undefined') return null;
+		const authCookie = document.cookie
+			.split("; ")
+			.find((row) => row.startsWith("auth="))
+			?.split("=")[1];
+		if (authCookie && authCookie.startsWith("authenticated:")) {
+			return decodeURIComponent(authCookie.split(":")[1]);
+		}
+		return null;
+	};
+	
+	const userId = user?.id || user?.username || getUserId() || getUserIdFromCookie() || null;
 	
 	const { canUploadPictures, canManageCategories, canManageSubCategories, loading: accessLoading, error: accessError } = useAccess(userId);
 	
 	useEffect(() => {
-		console.log('[Pictures Upload Page] Access check result:', { canUploadPictures, accessLoading, accessError, userId });
-	}, [canUploadPictures, accessLoading, accessError, userId]);
+		console.log('[Pictures Upload Page] Auth state:', { 
+			userId, 
+			user, 
+			authLoading, 
+			getUserId: getUserId(),
+			canUploadPictures, 
+			accessLoading, 
+			accessError 
+		});
+	}, [userId, user, authLoading, canUploadPictures, accessLoading, accessError, getUserId]);
+
+	// Set uploadedBy to username when user is loaded
+	useEffect(() => {
+		if (!authLoading && (user?.username || userId)) {
+			// Prefer username from user object, fallback to userId (which could be username or email)
+			const username = user?.username || userId;
+			setFormData(prev => ({
+				...prev,
+				uploadedBy: username || ''
+			}));
+		}
+	}, [user, userId, authLoading]);
 	
 	const [formData, setFormData] = useState<UploadFormData>({
 		groupName: "",
@@ -241,8 +275,8 @@ export default function UploadPicturesPage() {
 		setUploadProgress(0);
 	};
 
-	// Show loading state while checking access
-	if (accessLoading) {
+	// Show loading state while checking auth or access
+	if (authLoading || accessLoading) {
 		return (
 			<div className="space-y-6">
 				<div className="flex items-center justify-between">
@@ -255,6 +289,39 @@ export default function UploadPicturesPage() {
 					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0b4d2b]"></div>
 					<span className="ml-3 text-gray-600">Loading...</span>
 				</div>
+			</div>
+		);
+	}
+	
+	// Show error if no user ID is found
+	if (!userId && !authLoading) {
+		return (
+			<div className="space-y-6">
+				<div className="flex items-center justify-between">
+					<div>
+						<h1 className="text-2xl font-bold text-gray-900">Upload Pictures</h1>
+						<p className="text-gray-600 mt-2">Upload new pictures to the system</p>
+					</div>
+					<Link
+						href="/dashboard/pictures"
+						className="inline-flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+					>
+						<ArrowLeft className="h-4 w-4 mr-2" />
+						Back to Pictures
+					</Link>
+				</div>
+				<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+					<p className="text-sm text-yellow-800">
+						<strong>Authentication Required:</strong> Please log in to upload pictures.
+					</p>
+					<p className="text-xs text-yellow-700 mt-2">
+						Debug: User ID not found. Cookie: {typeof window !== 'undefined' ? document.cookie : 'N/A'}
+					</p>
+				</div>
+				<AccessDenied 
+					action="upload pictures" 
+					customMessage="You must be logged in to upload pictures. Please log in and try again."
+				/>
 			</div>
 		);
 	}
@@ -420,9 +487,9 @@ export default function UploadPicturesPage() {
 									type="text"
 									name="uploadedBy"
 									value={formData.uploadedBy}
-									onChange={handleInputChange}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-									placeholder="Enter your name"
+									readOnly
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed outline-none"
+									placeholder="Username will be auto-filled"
 									required
 								/>
 							</div>

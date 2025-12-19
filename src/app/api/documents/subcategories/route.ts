@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
 		
 		const pool = await getDb();
 		const query = `
-			SELECT TOP (1000) [SubCategoryID], [MainCategoryID], [SubCategory]
-			FROM [_rifiiorg_db].[dbo].[tblReportSubCategory]
+			SELECT TOP (1000) [MainCategoryID], [SubCategory], [SubCategoryID]
+			FROM [_rifiiorg_db].[dbo].[tblDocumentSubCategory]
 			WHERE [MainCategoryID] = @mainCategoryID
 			ORDER BY [SubCategory]
 		`;
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 			subCategories: subCategories
 		});
 	} catch (error) {
-		console.error("Error fetching report sub categories:", error);
+		console.error("Error fetching document sub categories:", error);
 		return NextResponse.json(
 			{
 				success: false,
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 		// Check if sub category already exists for this main category
 		const checkQuery = `
 			SELECT [SubCategoryID] 
-			FROM [_rifiiorg_db].[dbo].[tblReportSubCategory] 
+			FROM [_rifiiorg_db].[dbo].[tblDocumentSubCategory] 
 			WHERE [MainCategoryID] = @mainCategoryID AND [SubCategory] = @subCategory
 		`;
 		
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
 		// Insert new sub category
 		const insertQuery = `
-			INSERT INTO [_rifiiorg_db].[dbo].[tblReportSubCategory] ([MainCategoryID], [SubCategory])
+			INSERT INTO [_rifiiorg_db].[dbo].[tblDocumentSubCategory] ([MainCategoryID], [SubCategory])
 			OUTPUT INSERTED.[SubCategoryID], INSERTED.[MainCategoryID], INSERTED.[SubCategory]
 			VALUES (@mainCategoryID, @subCategory)
 		`;
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 			subCategory: newSubCategory
 		});
 	} catch (error) {
-		console.error("Error creating report sub category:", error);
+		console.error("Error creating document sub category:", error);
 		return NextResponse.json(
 			{
 				success: false,
@@ -127,7 +127,7 @@ export async function PUT(request: NextRequest) {
 		// Get the main category ID for this sub category
 		const getMainCategoryQuery = `
 			SELECT [MainCategoryID] 
-			FROM [_rifiiorg_db].[dbo].[tblReportSubCategory] 
+			FROM [_rifiiorg_db].[dbo].[tblDocumentSubCategory] 
 			WHERE [SubCategoryID] = @subCategoryID
 		`;
 		
@@ -147,7 +147,7 @@ export async function PUT(request: NextRequest) {
 		// Check if sub category already exists for this main category (excluding current one)
 		const checkQuery = `
 			SELECT [SubCategoryID] 
-			FROM [_rifiiorg_db].[dbo].[tblReportSubCategory] 
+			FROM [_rifiiorg_db].[dbo].[tblDocumentSubCategory] 
 			WHERE [MainCategoryID] = @mainCategoryID AND [SubCategory] = @subCategory AND [SubCategoryID] != @subCategoryID
 		`;
 		
@@ -166,7 +166,7 @@ export async function PUT(request: NextRequest) {
 
 		// Update sub category
 		const updateQuery = `
-			UPDATE [_rifiiorg_db].[dbo].[tblReportSubCategory] 
+			UPDATE [_rifiiorg_db].[dbo].[tblDocumentSubCategory] 
 			SET [SubCategory] = @subCategory
 			OUTPUT INSERTED.[SubCategoryID], INSERTED.[MainCategoryID], INSERTED.[SubCategory]
 			WHERE [SubCategoryID] = @subCategoryID
@@ -192,7 +192,7 @@ export async function PUT(request: NextRequest) {
 			subCategory: updatedSubCategory
 		});
 	} catch (error) {
-		console.error("Error updating report sub category:", error);
+		console.error("Error updating document sub category:", error);
 		return NextResponse.json(
 			{
 				success: false,
@@ -219,12 +219,12 @@ export async function DELETE(request: NextRequest) {
 
 		const pool = await getDb();
 		
-		// Check if sub category is being used in reports
+		// Check if sub category is being used in documents
 		const checkUsageQuery = `
 			SELECT COUNT(*) as count
-			FROM [_rifiiorg_db].[rifiiorg].[tblReports] 
+			FROM [_rifiiorg_db].[dbo].[tblDocuments] 
 			WHERE [SubCategory] = (
-				SELECT [SubCategory] FROM [_rifiiorg_db].[dbo].[tblReportSubCategory] 
+				SELECT [SubCategory] FROM [_rifiiorg_db].[dbo].[tblDocumentSubCategory] 
 				WHERE [SubCategoryID] = @subCategoryID
 			)
 		`;
@@ -236,13 +236,13 @@ export async function DELETE(request: NextRequest) {
 		if (usageResult.recordset[0].count > 0) {
 			return NextResponse.json({
 				success: false,
-				message: "Cannot delete sub category that is being used by reports"
+				message: "Cannot delete sub category that is being used by documents"
 			}, { status: 400 });
 		}
 
 		// Delete sub category
 		const deleteQuery = `
-			DELETE FROM [_rifiiorg_db].[dbo].[tblReportSubCategory] 
+			DELETE FROM [_rifiiorg_db].[dbo].[tblDocumentSubCategory] 
 			WHERE [SubCategoryID] = @subCategoryID
 		`;
 		
@@ -262,7 +262,7 @@ export async function DELETE(request: NextRequest) {
 			message: "Sub Category deleted successfully"
 		});
 	} catch (error) {
-		console.error("Error deleting report sub category:", error);
+		console.error("Error deleting document sub category:", error);
 		return NextResponse.json(
 			{
 				success: false,
@@ -273,7 +273,5 @@ export async function DELETE(request: NextRequest) {
 		);
 	}
 }
-
-
 
 
