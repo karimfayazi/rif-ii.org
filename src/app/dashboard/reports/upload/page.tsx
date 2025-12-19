@@ -337,8 +337,17 @@ export default function UploadReportsPage() {
 							router.push('/dashboard/reports');
 						}, 2000);
 					} else {
-						setError(uploadResult.message || 'Failed to update report');
+						// Show detailed error message
+						let errorMessage = uploadResult.message || 'Failed to update report';
+						if (uploadResult.error) {
+							errorMessage += ` (${uploadResult.error})`;
+						}
+						if (uploadResult.hint) {
+							errorMessage += ` ${uploadResult.hint}`;
+						}
+						setError(errorMessage);
 						setUploadStatus('error');
+						console.error('Upload error details:', uploadResult);
 					}
 				} else {
 					// No file uploaded, just update metadata via PUT
@@ -404,12 +413,25 @@ export default function UploadReportsPage() {
 						router.push('/dashboard/reports');
 					}, 2000);
 				} else {
-					setError(result.message || 'Upload failed');
+					// Show detailed error message
+					let errorMessage = result.message || 'Upload failed';
+					if (result.error) {
+						errorMessage += ` (${result.error})`;
+					}
+					if (result.hint) {
+						errorMessage += ` ${result.hint}`;
+					}
+					setError(errorMessage);
 					setUploadStatus('error');
+					console.error('Upload error details:', result);
 				}
 			}
 		} catch (err) {
-			setError(isEditMode ? 'Update failed. Please try again.' : 'Upload failed. Please try again.');
+			const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+			setError(isEditMode 
+				? `Update failed: ${errorMessage}. Please try again.` 
+				: `Upload failed: ${errorMessage}. Please try again.`
+			);
 			setUploadStatus('error');
 			console.error('Submit error:', err);
 		} finally {

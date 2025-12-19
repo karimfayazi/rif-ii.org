@@ -78,12 +78,22 @@ async function uploadToExternalServer(
 		}
 	} catch (error) {
 		console.error('Error uploading to external server:', error);
+		const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+		
+		// Provide more helpful error messages
+		let userFriendlyError = errorMessage;
+		if (errorMessage.includes('fetch')) {
+			userFriendlyError = 'Failed to connect to external upload server. Please ensure upload.php is configured on rif-ii.org server.';
+		} else if (errorMessage.includes('status')) {
+			userFriendlyError = `External server returned an error. ${errorMessage}`;
+		}
+		
 		return {
 			success: false,
 			filePath: '',
 			fileUrl: '',
 			fileName: fileName,
-			error: error instanceof Error ? error.message : 'Unknown error'
+			error: userFriendlyError
 		};
 	}
 }

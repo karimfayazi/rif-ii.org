@@ -360,14 +360,27 @@ export default function UploadDocumentsPage() {
 						router.push('/dashboard/documents');
 					}, 2000);
 				} else {
-					setError(result.message || 'Upload failed');
+					// Show detailed error message
+					let errorMessage = result.message || 'Upload failed';
+					if (result.error) {
+						errorMessage += ` (${result.error})`;
+					}
+					if (result.hint) {
+						errorMessage += ` ${result.hint}`;
+					}
+					setError(errorMessage);
 					setUploadStatus('error');
+					console.error('Upload error details:', result);
 				}
 			}
 		} catch (err) {
-			setError(isEditMode ? 'Update failed. Please try again.' : 'Upload failed. Please try again.');
+			const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+			setError(isEditMode 
+				? `Update failed: ${errorMessage}. Please try again.` 
+				: `Upload failed: ${errorMessage}. Please try again.`
+			);
 			setUploadStatus('error');
-			console.error('Error:', err);
+			console.error('Upload error:', err);
 		} finally {
 			setUploading(false);
 		}
