@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, FileText, Calendar, Folder } from "lucide-react";
@@ -15,7 +15,7 @@ type ReportData = {
 	SubCategory: string;
 };
 
-export default function ReportViewPage() {
+function ReportViewContent() {
 	const searchParams = useSearchParams();
 	const reportId = searchParams.get('id');
 
@@ -276,5 +276,20 @@ export default function ReportViewPage() {
 				</div>
 			</div>
 		</div>
+	);
+}
+
+export default function ReportViewPage() {
+	return (
+		<Suspense fallback={
+			<div className="space-y-6">
+				<div className="flex items-center justify-center py-12">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0b4d2b]"></div>
+					<span className="ml-3 text-gray-600">Loading...</span>
+				</div>
+			</div>
+		}>
+			<ReportViewContent />
+		</Suspense>
 	);
 }

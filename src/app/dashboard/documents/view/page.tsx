@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, FileText, Calendar, Folder, User, X } from "lucide-react";
@@ -22,7 +22,7 @@ type DocumentData = {
 	DocumentID: number;
 };
 
-export default function DocumentViewPage() {
+function DocumentViewContent() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const documentId = searchParams.get('id');
@@ -287,6 +287,21 @@ export default function DocumentViewPage() {
 				</div>
 			</div>
 		</div>
+	);
+}
+
+export default function DocumentViewPage() {
+	return (
+		<Suspense fallback={
+			<div className="space-y-6">
+				<div className="flex items-center justify-center py-12">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0b4d2b]"></div>
+					<span className="ml-3 text-gray-600">Loading...</span>
+				</div>
+			</div>
+		}>
+			<DocumentViewContent />
+		</Suspense>
 	);
 }
 
