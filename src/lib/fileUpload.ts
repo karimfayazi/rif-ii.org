@@ -292,10 +292,14 @@ async function uploadToVercelBlob(
 		console.log(`[FileUpload] Successfully uploaded to Vercel Blob Storage`);
 		console.log(`[FileUpload] Blob URL: ${blob.url}`);
 		console.log(`[FileUpload] Store Name: rif_ii_org`);
+		console.log(`[FileUpload] Base URL: https://nxswt3jgqihxbavy.public.blob.vercel-storage.com`);
 		
 		// Verify the URL matches the expected store
-		if (blob.url.includes('public.blob.vercel-storage.com')) {
+		const expectedBaseUrl = 'https://nxswt3jgqihxbavy.public.blob.vercel-storage.com';
+		if (blob.url.includes('nxswt3jgqihxbavy.public.blob.vercel-storage.com')) {
 			console.log(`[FileUpload] ✓ Blob URL matches your store (rif_ii_org)`);
+		} else {
+			console.warn(`[FileUpload] ⚠ Blob URL does not match expected base URL. Expected: ${expectedBaseUrl}`);
 		}
 		
 		// Store the blob URL in database
