@@ -291,11 +291,11 @@ async function uploadToVercelBlob(
 		
 		console.log(`[FileUpload] Successfully uploaded to Vercel Blob Storage`);
 		console.log(`[FileUpload] Blob URL: ${blob.url}`);
-		console.log(`[FileUpload] Expected base URL: https://nxswt3jgqihxbavy.public.blob.vercel-storage.com`);
+		console.log(`[FileUpload] Store Name: rif_ii_org`);
 		
 		// Verify the URL matches the expected store
-		if (blob.url.includes('nxswt3jgqihxbavy.public.blob.vercel-storage.com')) {
-			console.log(`[FileUpload] ✓ Blob URL matches your store (store_nxSwT3jgqihXbAVy)`);
+		if (blob.url.includes('public.blob.vercel-storage.com')) {
+			console.log(`[FileUpload] ✓ Blob URL matches your store (rif_ii_org)`);
 		}
 		
 		// Store the blob URL in database
@@ -355,7 +355,7 @@ export async function uploadFile(
 				filePath: '',
 				fileUrl: '',
 				fileName: fileName,
-				error: `Vercel Blob Storage is not configured. Please add BLOB_READ_WRITE_TOKEN environment variable in your Vercel project settings.\n\nSteps:\n1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables\n2. Add: BLOB_READ_WRITE_TOKEN\n3. Get the token from: https://vercel.com/karimfayazis-projects/~/stores/blob/store_nxSwT3jgqihXbAVy/browser\n4. Redeploy your project\n\nNote: Vercel filesystem is read-only, so local file uploads are not possible.`
+				error: `Vercel Blob Storage is not configured. Please add BLOB_READ_WRITE_TOKEN environment variable in your Vercel project settings.\n\nSteps:\n1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables\n2. Add: BLOB_READ_WRITE_TOKEN\n3. Get the token from your Blob Storage store: rif_ii_org\n4. Redeploy your project\n\nNote: Vercel filesystem is read-only, so local file uploads are not possible.`
 			};
 		}
 		
