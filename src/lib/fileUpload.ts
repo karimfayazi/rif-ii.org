@@ -286,7 +286,14 @@ async function uploadToVercelBlob(
 			token: blobToken,
 		});
 		
-		console.log(`[FileUpload] Successfully uploaded to Vercel Blob: ${blob.url}`);
+		console.log(`[FileUpload] Successfully uploaded to Vercel Blob Storage`);
+		console.log(`[FileUpload] Blob URL: ${blob.url}`);
+		console.log(`[FileUpload] Expected base URL: https://nxswt3jgqihxbavy.public.blob.vercel-storage.com`);
+		
+		// Verify the URL matches the expected store
+		if (blob.url.includes('nxswt3jgqihxbavy.public.blob.vercel-storage.com')) {
+			console.log(`[FileUpload] ✓ Blob URL matches your store (store_nxSwT3jgqihXbAVy)`);
+		}
 		
 		// Store the blob URL in database
 		// For database, we'll store the blob URL as filePath
