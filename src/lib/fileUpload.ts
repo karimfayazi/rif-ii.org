@@ -86,16 +86,59 @@ async function uploadToExternalServer(
 		// Determine upload endpoint
 		const uploadEndpoint = process.env.EXTERNAL_UPLOAD_ENDPOINT || 'https://rif-ii.org/upload.php';
 		
-		const response = await fetch(uploadEndpoint, {
-			method: 'POST',
-			body: formData,
-		});
+		console.log(`[FileUpload] Attempting to upload to: ${uploadEndpoint}`);
+		console.log(`[FileUpload] File: ${fileName}, Size: ${file.size} bytes, SubPath: ${subPath}`);
+		
+		// Create AbortController for timeout
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+		
+		let response: Response;
+		try {
+			response = await fetch(uploadEndpoint, {
+				method: 'POST',
+				body: formData,
+				signal: controller.signal,
+				// Don't set Content-Type header - let browser set it with boundary for multipart/form-data
+			});
+			clearTimeout(timeoutId);
+		} catch (fetchError: any) {
+			clearTimeout(timeoutId);
+			
+			// Handle specific error types
+			if (fetchError.name === 'AbortError') {
+				throw new Error('Upload request timed out after 30 seconds. The server may be slow or unreachable.');
+			} else if (fetchError.code === 'ENOTFOUND' || fetchError.code === 'ECONNREFUSED') {
+				throw new Error(`Cannot connect to ${uploadEndpoint}. Please check if the server is accessible and upload.php exists.`);
+			} else if (fetchError.message?.includes('Failed to fetch') || fetchError.message?.includes('NetworkError')) {
+				throw new Error(`Network error: Cannot reach ${uploadEndpoint}. This could be due to CORS issues, server being down, or network connectivity problems.`);
+			}
+			throw fetchError;
+		}
 
+		console.log(`[FileUpload] Response status: ${response.status} ${response.statusText}`);
+		
 		if (!response.ok) {
-			throw new Error(`Upload failed with status: ${response.status}`);
+			// Try to get error message from response
+			let errorMessage = `Upload failed with status: ${response.status}`;
+			try {
+				const errorData = await response.text();
+				console.error(`[FileUpload] Error response: ${errorData}`);
+				// Try to parse as JSON
+				try {
+					const errorJson = JSON.parse(errorData);
+					errorMessage = errorJson.message || errorMessage;
+				} catch {
+					errorMessage = errorData || errorMessage;
+				}
+			} catch {
+				// Ignore errors reading response
+			}
+			throw new Error(errorMessage);
 		}
 
 		const result = await response.json();
+		console.log(`[FileUpload] Upload response:`, result);
 
 		if (result.success) {
 			// PHP script returns path as "documents/filename.pdf" (without uploads/ prefix)
@@ -127,15 +170,23 @@ async function uploadToExternalServer(
 			};
 		}
 	} catch (error) {
-		console.error('Error uploading to external server:', error);
+		console.error('[FileUpload] Error uploading to external server:', error);
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 		
 		// Provide more helpful error messages
 		let userFriendlyError = errorMessage;
-		if (errorMessage.includes('fetch')) {
-			userFriendlyError = 'Failed to connect to external upload server. Please ensure upload.php is configured on rif-ii.org server.';
+		
+		// Check for specific error patterns
+		if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+			userFriendlyError = 'Upload request timed out. The server may be slow or unreachable. Please try again.';
+		} else if (errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED') || errorMessage.includes('Cannot connect')) {
+			userFriendlyError = `Cannot connect to upload server (${process.env.EXTERNAL_UPLOAD_ENDPOINT || 'https://rif-ii.org/upload.php'}). Please verify:\n1. The upload.php file exists on the server\n2. The server is accessible\n3. The URL is correct`;
+		} else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('CORS')) {
+			userFriendlyError = 'Network error: Cannot reach the upload server. This could be due to:\n1. CORS configuration issues\n2. Server being down\n3. Network connectivity problems\n\nPlease check if https://rif-ii.org/upload.php is accessible in your browser.';
 		} else if (errorMessage.includes('status')) {
-			userFriendlyError = `External server returned an error. ${errorMessage}`;
+			userFriendlyError = `External server returned an error: ${errorMessage}`;
+		} else if (errorMessage.includes('fetch')) {
+			userFriendlyError = 'Failed to connect to external upload server. Please ensure upload.php is configured on rif-ii.org server.';
 		}
 		
 		return {
