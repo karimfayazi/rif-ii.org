@@ -203,31 +203,31 @@ export async function uploadFile(
 	console.log(`[FileUpload] Environment detection: isVercel=${isVercelEnv}, uploadType=${uploadType}, fileName=${fileName}`);
 	
 	if (isVercelEnv) {
-		// On Vercel/production, we can't write to filesystem
-		// Files must be committed to git to be accessible via GitHub raw URLs
-		// Calculate the path that would be used
-		let relativePath = `uploads/${uploadType}`;
+		// On Vercel/production, upload to external server (rif-ii.org)
+		console.log(`[FileUpload] Production mode - Uploading to external server`);
+		
+		// Build subpath for external server: uploads/{type}/{subPath}
+		let externalSubPath = `uploads/${uploadType}`;
 		if (subPath) {
-			relativePath += `/${subPath.replace(/\\/g, '/')}`;
+			externalSubPath += `/${subPath.replace(/\\/g, '/')}`;
 		}
-		relativePath += `/${fileName}`;
 		
-		// Return success with GitHub raw URL
-		// Note: File must be committed to git repository for this URL to work
-		const githubRawUrl = getGitHubRawUrl(relativePath);
+		// Upload to external server
+		const result = await uploadToExternalServer(file, fileName, externalSubPath);
 		
-		console.log(`[FileUpload] Production mode - Using GitHub raw URL: ${githubRawUrl}`);
-		console.log(`[FileUpload] IMPORTANT: File must be committed to git repository for this URL to work`);
-		console.log(`[FileUpload] File path in repo: public/${relativePath}`);
-		
-		// Store file data temporarily (in memory) - this won't persist on Vercel
-		// The file needs to be committed to git manually or via CI/CD
-		return {
-			success: true,
-			filePath: relativePath,
-			fileUrl: githubRawUrl,
-			fileName: fileName
-		};
+		if (result.success) {
+			// External server returns the path, use it as-is
+			// The path might be like "uploads/documents/filename.pdf" or full URL
+			console.log(`[FileUpload] Successfully uploaded to external server`);
+			console.log(`[FileUpload] File path: ${result.filePath}`);
+			console.log(`[FileUpload] File URL: ${result.fileUrl}`);
+			
+			return result;
+		} else {
+			// If external upload fails, return error
+			console.error(`[FileUpload] External upload failed: ${result.error}`);
+			return result;
+		}
 	} else {
 		// On local server, save to public/uploads/
 		console.log(`[FileUpload] Using local file system for upload`);
@@ -310,3 +310,5 @@ export function getFileUrl(filePath: string | null, baseUrl?: string): string {
 	// Default fallback
 	return `/${normalizedPath}`;
 }
+
+
