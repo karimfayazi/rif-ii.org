@@ -1,13 +1,14 @@
 /**
  * File Upload Helper
  * Handles file uploads for both local server and Vercel deployment
- * On Vercel: Uses external server (rif-ii.org/upload.php)
+ * On Vercel: Uses Vercel Blob Storage
  * On local: Saves to public/uploads/ folder
  */
 
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { put } from "@vercel/blob";
 
 export type UploadResult = {
 	success: boolean;
@@ -22,11 +23,46 @@ export type UploadResult = {
  * Also checks for localhost/local IP to ensure we don't try external upload on local server
  */
 export function isVercel(): boolean {
-	// Always use local upload - files will be saved to public/uploads/
-	// Note: On Vercel, files need to be committed to git to be accessible
-	// For runtime uploads on Vercel, consider using Vercel Blob Storage or similar
-	console.log('[FileUpload] Using local file system (public/uploads/) for all uploads');
-	return false;
+	// Manual override: If USE_LOCAL_UPLOAD is set, always use local upload
+	if (process.env.USE_LOCAL_UPLOAD === '1' || process.env.USE_LOCAL_UPLOAD === 'true') {
+		console.log('[FileUpload] USE_LOCAL_UPLOAD override detected, using local file system');
+		return false;
+	}
+	
+	// Check if we're on Vercel by checking environment variables
+	const hasVercelEnv = process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_VERCEL === '1';
+	
+	// If no Vercel env vars, definitely not Vercel
+	if (!hasVercelEnv) {
+		return false;
+	}
+	
+	// Check if we're in development mode
+	const nodeEnv = process.env.NODE_ENV || '';
+	if (nodeEnv === 'development') {
+		console.log('[FileUpload] NODE_ENV=development detected, using local file system');
+		return false;
+	}
+	
+	// Check various environment variables that might indicate localhost
+	const hostname = process.env.HOSTNAME || process.env.VERCEL_URL || process.env.NEXT_PUBLIC_URL || '';
+	
+	// Check if we're on localhost or local IP (common local server patterns)
+	const isLocalhost = hostname.includes('localhost') || 
+	                   hostname.includes('127.0.0.1') || 
+	                   hostname.includes('192.168.') ||
+	                   hostname.includes('10.') ||
+	                   /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
+	
+	// If we're on localhost, don't use Vercel mode even if env vars are set
+	if (isLocalhost) {
+		console.log('[FileUpload] Detected localhost/local IP, using local file system');
+		return false;
+	}
+	
+	// If we have Vercel env vars and we're not on localhost, we're on Vercel
+	console.log('[FileUpload] Detected Vercel environment, using Vercel Blob Storage');
+	return true;
 }
 
 /**
@@ -214,7 +250,60 @@ async function uploadToLocal(
 }
 
 /**
- * Main upload function - automatically chooses local or external based on environment
+ * Upload file to Vercel Blob Storage
+ */
+async function uploadToVercelBlob(
+	file: File,
+	fileName: string,
+	uploadType: 'documents' | 'reports' | 'pictures',
+	subPath?: string
+): Promise<UploadResult> {
+	try {
+		// Build blob path: uploads/{type}/{subPath}/{fileName}
+		let blobPath = `uploads/${uploadType}`;
+		if (subPath) {
+			blobPath += `/${subPath.replace(/\\/g, '/')}`;
+		}
+		blobPath += `/${fileName}`;
+		
+		console.log(`[FileUpload] Uploading to Vercel Blob Storage: ${blobPath}`);
+		
+		// Convert file to buffer
+		const bytes = await file.arrayBuffer();
+		const buffer = Buffer.from(bytes);
+		
+		// Upload to Vercel Blob Storage
+		const blob = await put(blobPath, buffer, {
+			access: 'public',
+			contentType: file.type || 'application/octet-stream',
+		});
+		
+		console.log(`[FileUpload] Successfully uploaded to Vercel Blob: ${blob.url}`);
+		
+		// Store the blob URL in database
+		// For database, we'll store the blob URL as filePath
+		return {
+			success: true,
+			filePath: blob.url, // Store full Blob URL in database
+			fileUrl: blob.url, // Full Blob URL for accessing
+			fileName: fileName
+		};
+	} catch (error) {
+		console.error('[FileUpload] Error uploading to Vercel Blob:', error);
+		const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+		
+		return {
+			success: false,
+			filePath: '',
+			fileUrl: '',
+			fileName: fileName,
+			error: `Vercel Blob upload failed: ${errorMessage}`
+		};
+	}
+}
+
+/**
+ * Main upload function - automatically chooses local or Vercel Blob based on environment
  */
 export async function uploadFile(
 	file: File,
@@ -222,9 +311,19 @@ export async function uploadFile(
 	uploadType: 'documents' | 'reports' | 'pictures',
 	subPath?: string
 ): Promise<UploadResult> {
-	// Always use local file system - save to public/uploads/
-	console.log(`[FileUpload] Uploading to local file system: uploadType=${uploadType}, fileName=${fileName}`);
-	return await uploadToLocal(file, fileName, uploadType, subPath);
+	const isVercelEnv = isVercel();
+	
+	console.log(`[FileUpload] Environment detection: isVercel=${isVercelEnv}, uploadType=${uploadType}, fileName=${fileName}`);
+	
+	if (isVercelEnv) {
+		// On Vercel, use Blob Storage
+		console.log(`[FileUpload] Using Vercel Blob Storage for upload`);
+		return await uploadToVercelBlob(file, fileName, uploadType, subPath);
+	} else {
+		// On local server, save to public/uploads/
+		console.log(`[FileUpload] Using local file system for upload`);
+		return await uploadToLocal(file, fileName, uploadType, subPath);
+	}
 }
 
 /**
