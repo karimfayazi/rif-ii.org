@@ -189,13 +189,27 @@ export async function POST(request: NextRequest) {
 				const errorMsg = uploadResult.error || 'Unknown error';
 				const isVercel = process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_VERCEL === '1';
 				
+				console.error(`[Documents Upload] File upload failed for ${file.name}:`, {
+					fileName: file.name,
+					fileSize: file.size,
+					fileType: file.type,
+					error: errorMsg,
+					uploadResult: uploadResult,
+					isVercel: isVercel
+				});
+				
 				return NextResponse.json({
 					success: false,
 					message: `Failed to upload file ${file.name}: ${errorMsg}`,
 					error: errorMsg,
 					hint: isVercel 
 						? 'On Vercel, files must be uploaded to external server. Please ensure upload.php is configured on rif-ii.org server.'
-						: 'Please check file permissions and disk space.'
+						: 'Please check file permissions and disk space.',
+					details: {
+						fileName: file.name,
+						fileSize: file.size,
+						fileType: file.type
+					}
 				}, { status: 500 });
 			}
 			

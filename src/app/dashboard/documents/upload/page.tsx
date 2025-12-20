@@ -370,17 +370,36 @@ export default function UploadDocumentsPage() {
 					}
 					setError(errorMessage);
 					setUploadStatus('error');
-					console.error('Upload error details:', result);
+					
+					// Log detailed error information for debugging
+					console.error('Upload error details:', {
+						message: result.message,
+						error: result.error,
+						hint: result.hint,
+						fullResponse: result
+					});
+					console.error('Full error response:', JSON.stringify(result, null, 2));
 				}
 			}
 		} catch (err) {
 			const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+			const errorStack = err instanceof Error ? err.stack : undefined;
+			
 			setError(isEditMode 
 				? `Update failed: ${errorMessage}. Please try again.` 
 				: `Upload failed: ${errorMessage}. Please try again.`
 			);
 			setUploadStatus('error');
-			console.error('Upload error:', err);
+			
+			// Log detailed error information for debugging
+			console.error('Upload exception:', {
+				message: errorMessage,
+				stack: errorStack,
+				error: err
+			});
+			if (err instanceof Error) {
+				console.error('Error stack:', err.stack);
+			}
 		} finally {
 			setUploading(false);
 		}
