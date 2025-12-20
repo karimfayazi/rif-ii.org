@@ -22,47 +22,11 @@ export type UploadResult = {
  * Also checks for localhost/local IP to ensure we don't try external upload on local server
  */
 export function isVercel(): boolean {
-	// Manual override: If USE_LOCAL_UPLOAD is set, always use local upload
-	if (process.env.USE_LOCAL_UPLOAD === '1' || process.env.USE_LOCAL_UPLOAD === 'true') {
-		console.log('[FileUpload] USE_LOCAL_UPLOAD override detected, using local file system');
-		return false;
-	}
-	
-	// Check environment variables
-	const hasVercelEnv = process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_VERCEL === '1';
-	
-	// If no Vercel env vars, definitely not Vercel
-	if (!hasVercelEnv) {
-		return false;
-	}
-	
-	// If VERCEL env vars are set, check if we're actually on localhost
-	// This prevents false positives when env vars might be accidentally set
-	// Check various environment variables that might indicate localhost
-	const hostname = process.env.HOSTNAME || process.env.VERCEL_URL || process.env.NEXT_PUBLIC_URL || '';
-	const nodeEnv = process.env.NODE_ENV || '';
-	
-	// Check if we're in development mode
-	if (nodeEnv === 'development') {
-		console.log('[FileUpload] NODE_ENV=development detected, using local file system');
-		return false;
-	}
-	
-	// Check if we're on localhost or local IP (common local server patterns)
-	const isLocalhost = hostname.includes('localhost') || 
-	                   hostname.includes('127.0.0.1') || 
-	                   hostname.includes('192.168.') ||
-	                   hostname.includes('10.') ||
-	                   /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
-	
-	// If we're on localhost, don't use Vercel mode even if env vars are set
-	if (isLocalhost) {
-		console.log('[FileUpload] Detected localhost/local IP, using local file system');
-		return false;
-	}
-	
-	// If we have Vercel env vars and we're not on localhost, we're on Vercel
-	return true;
+	// Always use local upload - files will be saved to public/uploads/
+	// Note: On Vercel, files need to be committed to git to be accessible
+	// For runtime uploads on Vercel, consider using Vercel Blob Storage or similar
+	console.log('[FileUpload] Using local file system (public/uploads/) for all uploads');
+	return false;
 }
 
 /**
@@ -258,61 +222,9 @@ export async function uploadFile(
 	uploadType: 'documents' | 'reports' | 'pictures',
 	subPath?: string
 ): Promise<UploadResult> {
-	const isVercelEnv = isVercel();
-	
-	console.log(`[FileUpload] Environment detection: isVercel=${isVercelEnv}, uploadType=${uploadType}, fileName=${fileName}`);
-	
-	if (isVercelEnv) {
-		// On Vercel/production, upload to external server (rif-ii.org)
-		console.log(`[FileUpload] Production mode - Uploading to external server`);
-		
-		// First, verify the upload endpoint is accessible
-		const uploadEndpoint = process.env.EXTERNAL_UPLOAD_ENDPOINT || 'https://rif-ii.org/upload.php';
-		try {
-			console.log(`[FileUpload] Verifying upload endpoint accessibility...`);
-			const testResponse = await fetch(uploadEndpoint, {
-				method: 'GET',
-				signal: AbortSignal.timeout(5000), // 5 second timeout for test
-			});
-			
-			if (!testResponse.ok && testResponse.status !== 405) { // 405 is OK (method not allowed means endpoint exists)
-				console.warn(`[FileUpload] Upload endpoint returned status ${testResponse.status}, but continuing...`);
-			} else {
-				console.log(`[FileUpload] Upload endpoint is accessible`);
-			}
-		} catch (testError) {
-			console.warn(`[FileUpload] Could not verify upload endpoint accessibility:`, testError);
-			// Continue anyway - the actual upload might still work
-		}
-		
-		// Build subpath for external server: {type}/{subPath}
-		// Note: PHP script already has /uploads as base, so we only pass the subdirectory
-		let externalSubPath = uploadType;
-		if (subPath) {
-			externalSubPath += `/${subPath.replace(/\\/g, '/')}`;
-		}
-		
-		// Upload to external server
-		const result = await uploadToExternalServer(file, fileName, externalSubPath);
-		
-		if (result.success) {
-			// External server returns the path, use it as-is
-			// The path might be like "uploads/documents/filename.pdf" or full URL
-			console.log(`[FileUpload] Successfully uploaded to external server`);
-			console.log(`[FileUpload] File path: ${result.filePath}`);
-			console.log(`[FileUpload] File URL: ${result.fileUrl}`);
-			
-			return result;
-		} else {
-			// If external upload fails, return error
-			console.error(`[FileUpload] External upload failed: ${result.error}`);
-			return result;
-		}
-	} else {
-		// On local server, save to public/uploads/
-		console.log(`[FileUpload] Using local file system for upload`);
-		return await uploadToLocal(file, fileName, uploadType, subPath);
-	}
+	// Always use local file system - save to public/uploads/
+	console.log(`[FileUpload] Uploading to local file system: uploadType=${uploadType}, fileName=${fileName}`);
+	return await uploadToLocal(file, fileName, uploadType, subPath);
 }
 
 /**

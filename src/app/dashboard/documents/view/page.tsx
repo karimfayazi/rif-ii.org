@@ -66,21 +66,10 @@ function DocumentViewContent() {
 			normalizedPath = normalizedPath.substring(1);
 		}
 		
-		// Check if we're on production (Vercel) or local
+		// Always use current origin - files are in public/uploads/ directory
+		// Next.js serves files from public/ folder at the root URL
 		if (typeof window !== 'undefined') {
 			const origin = window.location.origin;
-			const isProduction = origin.includes('vercel.app') || origin.includes('rif-ii.org');
-			
-			// If path looks like it's from external server (starts with uploads/), check if we should use external URL
-			// On production, if file was uploaded to external server, it might be accessible via rif-ii.org
-			if (isProduction && normalizedPath.startsWith('uploads/')) {
-				// Try external server URL first
-				const externalUrl = `https://rif-ii.org/${normalizedPath}`;
-				// Also try current origin as fallback
-				return externalUrl;
-			}
-			
-			// On local server, use current origin
 			// Files in public/uploads/ are accessible at /uploads/
 			return `${origin}/${normalizedPath}`;
 		}
