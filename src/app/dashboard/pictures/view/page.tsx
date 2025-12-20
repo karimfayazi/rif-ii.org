@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Calendar, Folder, Image as ImageIcon, Download, User, FileText, Clock, Edit, Trash2, AlertCircle, Loader2, Upload } from "lucide-react";
+import { ArrowLeft, Calendar, Folder, Image as ImageIcon, Download, User, Clock, Edit, Trash2, AlertCircle, Loader2, Upload } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
@@ -223,11 +223,6 @@ function PictureViewContent() {
 		}
 	};
 
-	const formatFileSize = (sizeKB: number | null) => {
-		if (!sizeKB) return "Unknown";
-		if (sizeKB < 1024) return `${sizeKB} KB`;
-		return `${(sizeKB / 1024).toFixed(1)} MB`;
-	};
 
 	const handleDelete = async () => {
 		if (!picture?.PictureID) return;
@@ -558,15 +553,6 @@ function PictureViewContent() {
 								<p className="text-sm font-bold text-gray-900 leading-tight break-words">{formatDate(picture.UploadDate)}</p>
 							</div>
 						)}
-
-						{/* File Size */}
-						<div className="flex flex-col items-center text-center p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 flex-1 min-w-[140px]">
-							<div className="p-2 bg-gray-500 rounded-lg mb-2">
-								<FileText className="h-4 w-4 text-white" />
-							</div>
-							<p className="text-xs font-semibold text-gray-600 mb-1">File Size</p>
-							<p className="text-sm font-bold text-gray-900 leading-tight break-words">{formatFileSize(picture.FileSizeKB)}</p>
-						</div>
 					</div>
 				</div>
 			</div>
