@@ -58,20 +58,12 @@ export default function ReportViewPage() {
 			normalizedPath = normalizedPath.substring(1);
 		}
 		
-		// Check if we're on production (Vercel) or local
+		// For both local and production, use the current origin
+		// Next.js automatically serves files from public/ folder at the root URL
 		if (typeof window !== 'undefined') {
 			const origin = window.location.origin;
-			const isProduction = origin.includes('vercel.app') || origin.includes('rif-ii.org');
-			
-			if (isProduction) {
-				// Use GitHub raw URL for production
-				// GitHub raw URLs need the path relative to repo root, so we add 'public/' prefix
-				const githubRepo = 'karimfayazi/rif-ii.org';
-				const githubBranch = 'main';
-				return `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/${normalizedPath}`;
-			}
-			
-			// On local server, use current origin with leading slash
+			// Use current origin (works for both local and Vercel)
+			// Files in public/uploads/ are accessible at /uploads/
 			return `${origin}/${normalizedPath}`;
 		}
 		
