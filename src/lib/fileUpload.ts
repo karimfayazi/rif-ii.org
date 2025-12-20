@@ -98,9 +98,18 @@ async function uploadToExternalServer(
 		const result = await response.json();
 
 		if (result.success) {
-			// External server returns the URL and path
-			const fileUrl = result.url || `https://rif-ii.org/${result.path || subPath}/${result.filename || fileName}`;
-			const relativePath = result.path || `${subPath}/${result.filename || fileName}`;
+			// PHP script returns path as "documents/filename.pdf" (without uploads/ prefix)
+			// But file is actually saved to /uploads/documents/filename.pdf on server
+			// We need to add "uploads/" prefix to both path and URL
+			let relativePath = result.path || `${subPath}/${result.filename || fileName}`;
+			
+			// If path doesn't start with "uploads/", add it
+			if (!relativePath.startsWith('uploads/')) {
+				relativePath = `uploads/${relativePath}`;
+			}
+			
+			// Construct URL with uploads/ prefix (PHP script returns URL without it)
+			const fileUrl = `https://rif-ii.org/${relativePath}`;
 			
 			return {
 				success: true,
@@ -206,8 +215,9 @@ export async function uploadFile(
 		// On Vercel/production, upload to external server (rif-ii.org)
 		console.log(`[FileUpload] Production mode - Uploading to external server`);
 		
-		// Build subpath for external server: uploads/{type}/{subPath}
-		let externalSubPath = `uploads/${uploadType}`;
+		// Build subpath for external server: {type}/{subPath}
+		// Note: PHP script already has /uploads as base, so we only pass the subdirectory
+		let externalSubPath = uploadType;
 		if (subPath) {
 			externalSubPath += `/${subPath.replace(/\\/g, '/')}`;
 		}
