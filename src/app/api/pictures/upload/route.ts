@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getUserIdFromRequest } from "@/lib/auth";
-import { uploadFile, isVercel } from "@/lib/fileUpload";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { uploadFile } from "@/lib/fileUpload";
 
 // Helper function to check if user has Upload_Pictures permission or is Admin
 async function checkUploadPicturesAccess(userId: string | null): Promise<{ canUpload: boolean; message?: string }> {
@@ -167,15 +164,24 @@ export async function POST(request: NextRequest) {
 			
 			if (!uploadResult.success) {
 				const errorMsg = uploadResult.error || 'Unknown error';
-				const isVercelEnv = process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_VERCEL === '1';
+				
+				console.error(`[Pictures Upload] File upload failed for ${file.name}:`, {
+					fileName: file.name,
+					fileSize: file.size,
+					fileType: file.type,
+					error: errorMsg,
+					uploadResult: uploadResult
+				});
 				
 				return NextResponse.json({
 					success: false,
 					message: `Failed to upload file ${file.name}: ${errorMsg}`,
 					error: errorMsg,
-					hint: isVercelEnv 
-						? 'On Vercel, files must be uploaded to external server. Please ensure upload.php is configured on rif-ii.org server.'
-						: 'Please check file permissions and disk space.'
+					details: {
+						fileName: file.name,
+						fileSize: file.size,
+						fileType: file.type
+					}
 				}, { status: 500 });
 			}
 			
@@ -234,7 +240,7 @@ export async function POST(request: NextRequest) {
 		
 		let userMessage = "Failed to upload pictures";
 		if (isFilesystemError) {
-			userMessage = "File upload failed: The server filesystem is read-only. This may be a deployment limitation. Please contact the administrator.";
+			userMessage = "File upload failed: The server filesystem is read-only. Please ensure Vercel Blob Storage is configured with BLOB_READ_WRITE_TOKEN.";
 		}
 		
 		return NextResponse.json(
@@ -242,10 +248,7 @@ export async function POST(request: NextRequest) {
 				success: false,
 				message: userMessage,
 				error: errorMessage,
-				...(process.env.NODE_ENV === 'development' && { stack: errorStack }),
-				...(isFilesystemError && { 
-					hint: "For Vercel deployments, consider using cloud storage (Vercel Blob, S3, or Cloudinary) instead of local filesystem."
-				})
+				...(process.env.NODE_ENV === 'development' && { stack: errorStack })
 			},
 			{ status: 500 }
 		);

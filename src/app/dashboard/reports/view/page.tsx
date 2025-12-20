@@ -26,7 +26,7 @@ function ReportViewContent() {
 	const getReportUrl = (filePath: string | null) => {
 		if (!filePath) return '';
 		
-		// If already a full URL, return as-is
+		// If already a full URL (from Blob Storage or external server), return as-is
 		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
 			return filePath;
 		}
@@ -53,16 +53,15 @@ function ReportViewContent() {
 			}
 		}
 		
-		// Remove leading slash if present (we'll add it back for local, or use in GitHub URL)
+		// Remove leading slash if present (we'll add it back for local)
 		if (normalizedPath.startsWith('/')) {
 			normalizedPath = normalizedPath.substring(1);
 		}
 		
-		// For both local and production, use the current origin
-		// Next.js automatically serves files from public/ folder at the root URL
+		// Always use current origin - files are in public/uploads/ directory
+		// Next.js serves files from public/ folder at the root URL
 		if (typeof window !== 'undefined') {
 			const origin = window.location.origin;
-			// Use current origin (works for both local and Vercel)
 			// Files in public/uploads/ are accessible at /uploads/
 			return `${origin}/${normalizedPath}`;
 		}

@@ -41,13 +41,13 @@ function PictureViewContent() {
 	const getImageUrl = (filePath: string | null) => {
 		if (!filePath) return '';
 		
+		// If already a full URL (from Blob Storage or external server), return as-is
+		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
+			return filePath;
+		}
+		
 		// Normalize backslashes to forward slashes
 		let normalizedPath = filePath.replace(/\\/g, '/');
-		
-		// If already a full URL, return as-is
-		if (normalizedPath.startsWith('https://') || normalizedPath.startsWith('http://')) {
-			return normalizedPath;
-		}
 		
 		// Handle ~/ prefix (remove it)
 		if (normalizedPath.startsWith('~/')) {
