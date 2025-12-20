@@ -266,6 +266,25 @@ export async function uploadFile(
 		// On Vercel/production, upload to external server (rif-ii.org)
 		console.log(`[FileUpload] Production mode - Uploading to external server`);
 		
+		// First, verify the upload endpoint is accessible
+		const uploadEndpoint = process.env.EXTERNAL_UPLOAD_ENDPOINT || 'https://rif-ii.org/upload.php';
+		try {
+			console.log(`[FileUpload] Verifying upload endpoint accessibility...`);
+			const testResponse = await fetch(uploadEndpoint, {
+				method: 'GET',
+				signal: AbortSignal.timeout(5000), // 5 second timeout for test
+			});
+			
+			if (!testResponse.ok && testResponse.status !== 405) { // 405 is OK (method not allowed means endpoint exists)
+				console.warn(`[FileUpload] Upload endpoint returned status ${testResponse.status}, but continuing...`);
+			} else {
+				console.log(`[FileUpload] Upload endpoint is accessible`);
+			}
+		} catch (testError) {
+			console.warn(`[FileUpload] Could not verify upload endpoint accessibility:`, testError);
+			// Continue anyway - the actual upload might still work
+		}
+		
 		// Build subpath for external server: {type}/{subPath}
 		// Note: PHP script already has /uploads as base, so we only pass the subdirectory
 		let externalSubPath = uploadType;
