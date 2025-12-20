@@ -29,40 +29,43 @@ export function isVercel(): boolean {
 		return false;
 	}
 	
-	// Check if we're on Vercel by checking environment variables
-	const hasVercelEnv = process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_VERCEL === '1';
+	// Primary check: VERCEL environment variable (most reliable)
+	const hasVercelEnv = process.env.VERCEL === '1';
 	
-	// If no Vercel env vars, definitely not Vercel
-	if (!hasVercelEnv) {
-		return false;
-	}
+	// Secondary check: Check if we're in a Vercel serverless environment
+	// Vercel serverless functions run in /var/task/ directory
+	const cwd = process.cwd();
+	const isVercelPath = cwd.includes('/var/task');
 	
-	// Check if we're in development mode
+	// Check VERCEL_URL (set by Vercel)
+	const vercelUrl = process.env.VERCEL_URL;
+	const hasVercelUrl = !!vercelUrl && vercelUrl.includes('.vercel.app');
+	
+	// Check if we're in development mode (local development)
 	const nodeEnv = process.env.NODE_ENV || '';
-	if (nodeEnv === 'development') {
-		console.log('[FileUpload] NODE_ENV=development detected, using local file system');
-		return false;
+	const isDevelopment = nodeEnv === 'development';
+	
+	// If we have VERCEL=1, we're definitely on Vercel (unless manual override)
+	if (hasVercelEnv) {
+		console.log('[FileUpload] VERCEL=1 detected, using Vercel Blob Storage');
+		return true;
 	}
 	
-	// Check various environment variables that might indicate localhost
-	const hostname = process.env.HOSTNAME || process.env.VERCEL_URL || process.env.NEXT_PUBLIC_URL || '';
-	
-	// Check if we're on localhost or local IP (common local server patterns)
-	const isLocalhost = hostname.includes('localhost') || 
-	                   hostname.includes('127.0.0.1') || 
-	                   hostname.includes('192.168.') ||
-	                   hostname.includes('10.') ||
-	                   /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
-	
-	// If we're on localhost, don't use Vercel mode even if env vars are set
-	if (isLocalhost) {
-		console.log('[FileUpload] Detected localhost/local IP, using local file system');
-		return false;
+	// If we're in /var/task/, we're definitely on Vercel serverless
+	if (isVercelPath) {
+		console.log('[FileUpload] Vercel serverless path detected (/var/task), using Vercel Blob Storage');
+		return true;
 	}
 	
-	// If we have Vercel env vars and we're not on localhost, we're on Vercel
-	console.log('[FileUpload] Detected Vercel environment, using Vercel Blob Storage');
-	return true;
+	// If we have VERCEL_URL and not in development, likely Vercel
+	if (hasVercelUrl && !isDevelopment) {
+		console.log('[FileUpload] VERCEL_URL detected, using Vercel Blob Storage');
+		return true;
+	}
+	
+	// Otherwise, we're on local development
+	console.log('[FileUpload] Local development detected, using local file system');
+	return false;
 }
 
 /**
@@ -341,21 +344,26 @@ export async function uploadFile(
 	const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN;
 	
 	console.log(`[FileUpload] Environment detection: isVercel=${isVercelEnv}, hasBlobToken=${hasBlobToken}, uploadType=${uploadType}, fileName=${fileName}`);
+	console.log(`[FileUpload] VERCEL env: ${process.env.VERCEL}, NODE_ENV: ${process.env.NODE_ENV}`);
 	
-	if (isVercelEnv && hasBlobToken) {
-		// On Vercel with Blob token, use Blob Storage
-		console.log(`[FileUpload] Using Vercel Blob Storage for upload`);
-		const result = await uploadToVercelBlob(file, fileName, uploadType, subPath);
-		
-		// If Blob upload fails due to token issues, fall back to local
-		if (!result.success && result.error?.includes('BLOB_READ_WRITE_TOKEN')) {
-			console.warn(`[FileUpload] Blob upload failed, falling back to local upload`);
-			return await uploadToLocal(file, fileName, uploadType, subPath);
+	if (isVercelEnv) {
+		// On Vercel, we MUST use Blob Storage (filesystem is read-only)
+		if (!hasBlobToken) {
+			console.error(`[FileUpload] On Vercel but BLOB_READ_WRITE_TOKEN is not set!`);
+			return {
+				success: false,
+				filePath: '',
+				fileUrl: '',
+				fileName: fileName,
+				error: `Vercel Blob Storage is not configured. Please add BLOB_READ_WRITE_TOKEN environment variable in your Vercel project settings.\n\nSteps:\n1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables\n2. Add: BLOB_READ_WRITE_TOKEN\n3. Get the token from: https://vercel.com/karimfayazis-projects/~/stores/blob/store_nxSwT3jgqihXbAVy/browser\n4. Redeploy your project\n\nNote: Vercel filesystem is read-only, so local file uploads are not possible.`
+			};
 		}
 		
-		return result;
+		// On Vercel with Blob token, use Blob Storage
+		console.log(`[FileUpload] Using Vercel Blob Storage for upload`);
+		return await uploadToVercelBlob(file, fileName, uploadType, subPath);
 	} else {
-		// On local server or Vercel without token, save to public/uploads/
+		// On local server, save to public/uploads/
 		console.log(`[FileUpload] Using local file system for upload`);
 		return await uploadToLocal(file, fileName, uploadType, subPath);
 	}
