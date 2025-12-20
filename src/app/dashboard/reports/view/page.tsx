@@ -31,46 +31,51 @@ export default function ReportViewPage() {
 			return filePath;
 		}
 		
-		// Normalize path
+		// Normalize path (convert backslashes to forward slashes)
 		let normalizedPath = filePath.replace(/\\/g, '/');
 		
-		// Handle ~/ prefix
+		// Handle ~/ prefix (remove it)
 		if (normalizedPath.startsWith('~/')) {
 			normalizedPath = normalizedPath.replace('~/', '');
 		}
 		
-		// Handle legacy formats
+		// Handle legacy formats (convert to lowercase)
 		if (normalizedPath.startsWith('Uploads/Reports/')) {
 			normalizedPath = normalizedPath.replace('Uploads/Reports/', 'uploads/reports/');
 		}
 		
-		// Ensure path starts with uploads/reports/
+		// If path doesn't start with uploads/reports/, add it (for backward compatibility)
+		// But don't add if it already starts with uploads/reports/
 		if (!normalizedPath.startsWith('uploads/reports/') && !normalizedPath.startsWith('/uploads/reports/')) {
-			normalizedPath = `uploads/reports/${normalizedPath}`;
+			// Only add prefix if it's not already a full path
+			if (!normalizedPath.includes('/')) {
+				normalizedPath = `uploads/reports/${normalizedPath}`;
+			}
 		}
 		
-		// Remove leading slash if present
+		// Remove leading slash if present (we'll add it back for local, or use in GitHub URL)
 		if (normalizedPath.startsWith('/')) {
 			normalizedPath = normalizedPath.substring(1);
 		}
 		
-		// Check if we're on production (Vercel)
+		// Check if we're on production (Vercel) or local
 		if (typeof window !== 'undefined') {
 			const origin = window.location.origin;
 			const isProduction = origin.includes('vercel.app') || origin.includes('rif-ii.org');
 			
 			if (isProduction) {
 				// Use GitHub raw URL for production
+				// GitHub raw URLs need the path relative to repo root, so we add 'public/' prefix
 				const githubRepo = 'karimfayazi/rif-ii.org';
 				const githubBranch = 'main';
 				return `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/${normalizedPath}`;
 			}
 			
-			// On local server, use current origin
+			// On local server, use current origin with leading slash
 			return `${origin}/${normalizedPath}`;
 		}
 		
-		// For server-side, use relative path
+		// For server-side, use relative path with leading slash
 		return `/${normalizedPath}`;
 	};
 

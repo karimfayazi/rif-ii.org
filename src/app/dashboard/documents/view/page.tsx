@@ -34,52 +34,56 @@ export default function DocumentViewPage() {
 	const getDocumentUrl = (filePath: string | null) => {
 		if (!filePath) return '';
 		
-		// Import the helper function (we'll use it directly)
 		// If already a full URL, return as-is
 		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
 			return filePath;
 		}
 		
-		// Normalize path
+		// Normalize path (convert backslashes to forward slashes)
 		let normalizedPath = filePath.replace(/\\/g, '/');
 		
-		// Handle ~/ prefix
+		// Handle ~/ prefix (remove it)
 		if (normalizedPath.startsWith('~/')) {
 			normalizedPath = normalizedPath.replace('~/', '');
 		}
 		
-		// Handle legacy formats
+		// Handle legacy formats (convert to lowercase)
 		if (normalizedPath.startsWith('Uploads/Documents/')) {
 			normalizedPath = normalizedPath.replace('Uploads/Documents/', 'uploads/documents/');
 		}
 		
-		// Ensure path starts with uploads/documents/
+		// If path doesn't start with uploads/documents/, add it (for backward compatibility)
+		// But don't add if it already starts with uploads/documents/
 		if (!normalizedPath.startsWith('uploads/documents/') && !normalizedPath.startsWith('/uploads/documents/')) {
-			normalizedPath = `uploads/documents/${normalizedPath}`;
+			// Only add prefix if it's not already a full path
+			if (!normalizedPath.includes('/')) {
+				normalizedPath = `uploads/documents/${normalizedPath}`;
+			}
 		}
 		
-		// Remove leading slash if present
+		// Remove leading slash if present (we'll add it back for local, or use in GitHub URL)
 		if (normalizedPath.startsWith('/')) {
 			normalizedPath = normalizedPath.substring(1);
 		}
 		
-		// Check if we're on production (Vercel)
+		// Check if we're on production (Vercel) or local
 		if (typeof window !== 'undefined') {
 			const origin = window.location.origin;
 			const isProduction = origin.includes('vercel.app') || origin.includes('rif-ii.org');
 			
 			if (isProduction) {
 				// Use GitHub raw URL for production
+				// GitHub raw URLs need the path relative to repo root, so we add 'public/' prefix
 				const githubRepo = 'karimfayazi/rif-ii.org';
 				const githubBranch = 'main';
 				return `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/${normalizedPath}`;
 			}
 			
-			// On local server, use current origin
+			// On local server, use current origin with leading slash
 			return `${origin}/${normalizedPath}`;
 		}
 		
-		// For server-side, use relative path
+		// For server-side, use relative path with leading slash
 		return `/${normalizedPath}`;
 	};
 

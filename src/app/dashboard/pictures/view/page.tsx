@@ -54,33 +54,45 @@ function PictureViewContent() {
 			normalizedPath = normalizedPath.replace('~/', '');
 		}
 		
-		// Ensure path starts with uploads/ for relative paths
-		if (!normalizedPath.startsWith('uploads/') && !normalizedPath.startsWith('/')) {
-			normalizedPath = `uploads/${normalizedPath}`;
+		// Handle legacy formats (convert to lowercase)
+		if (normalizedPath.startsWith('Uploads/Pictures/')) {
+			normalizedPath = normalizedPath.replace('Uploads/Pictures/', 'uploads/pictures/');
 		}
 		
-		// Remove leading slash if present (we'll add it)
+		// Ensure path starts with uploads/ for relative paths
+		// But don't add if it already starts with uploads/
+		if (!normalizedPath.startsWith('uploads/') && !normalizedPath.startsWith('/uploads/')) {
+			// Only add prefix if it's not already a full path
+			if (!normalizedPath.includes('/')) {
+				normalizedPath = `uploads/pictures/${normalizedPath}`;
+			} else {
+				normalizedPath = `uploads/${normalizedPath}`;
+			}
+		}
+		
+		// Remove leading slash if present (we'll add it back for local, or use in GitHub URL)
 		if (normalizedPath.startsWith('/')) {
 			normalizedPath = normalizedPath.substring(1);
 		}
 		
-		// Check if we're on production (Vercel)
+		// Check if we're on production (Vercel) or local
 		if (typeof window !== 'undefined') {
 			const origin = window.location.origin;
 			const isProduction = origin.includes('vercel.app') || origin.includes('rif-ii.org');
 			
 			if (isProduction) {
 				// Use GitHub raw URL for production
+				// GitHub raw URLs need the path relative to repo root, so we add 'public/' prefix
 				const githubRepo = 'karimfayazi/rif-ii.org';
 				const githubBranch = 'main';
 				return `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/${normalizedPath}`;
 			}
 			
-			// On local server, use current origin
+			// On local server, use current origin with leading slash
 			return `${origin}/${normalizedPath}`;
 		}
 		
-		// For server-side or fallback, use relative path
+		// For server-side or fallback, use relative path with leading slash
 		return `/${normalizedPath}`;
 	};
 
