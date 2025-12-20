@@ -259,6 +259,13 @@ async function uploadToVercelBlob(
 	subPath?: string
 ): Promise<UploadResult> {
 	try {
+		// Check if BLOB_READ_WRITE_TOKEN is available
+		const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+		if (!blobToken) {
+			console.warn('[FileUpload] BLOB_READ_WRITE_TOKEN not found. Falling back to local upload.');
+			throw new Error('BLOB_READ_WRITE_TOKEN environment variable is not set. Please configure it in Vercel project settings.');
+		}
+		
 		// Build blob path: uploads/{type}/{subPath}/{fileName}
 		let blobPath = `uploads/${uploadType}`;
 		if (subPath) {
@@ -272,10 +279,11 @@ async function uploadToVercelBlob(
 		const bytes = await file.arrayBuffer();
 		const buffer = Buffer.from(bytes);
 		
-		// Upload to Vercel Blob Storage
+		// Upload to Vercel Blob Storage with explicit token
 		const blob = await put(blobPath, buffer, {
 			access: 'public',
 			contentType: file.type || 'application/octet-stream',
+			token: blobToken,
 		});
 		
 		console.log(`[FileUpload] Successfully uploaded to Vercel Blob: ${blob.url}`);
@@ -291,6 +299,17 @@ async function uploadToVercelBlob(
 	} catch (error) {
 		console.error('[FileUpload] Error uploading to Vercel Blob:', error);
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+		
+		// If token is missing, provide helpful error message
+		if (errorMessage.includes('No token found') || errorMessage.includes('BLOB_READ_WRITE_TOKEN')) {
+			return {
+				success: false,
+				filePath: '',
+				fileUrl: '',
+				fileName: fileName,
+				error: `Vercel Blob Storage is not configured. Please add BLOB_READ_WRITE_TOKEN environment variable in your Vercel project settings. Go to: Project Settings → Environment Variables → Add BLOB_READ_WRITE_TOKEN. You can get the token from your Vercel Blob Storage dashboard.`
+			};
+		}
 		
 		return {
 			success: false,
@@ -312,15 +331,24 @@ export async function uploadFile(
 	subPath?: string
 ): Promise<UploadResult> {
 	const isVercelEnv = isVercel();
+	const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN;
 	
-	console.log(`[FileUpload] Environment detection: isVercel=${isVercelEnv}, uploadType=${uploadType}, fileName=${fileName}`);
+	console.log(`[FileUpload] Environment detection: isVercel=${isVercelEnv}, hasBlobToken=${hasBlobToken}, uploadType=${uploadType}, fileName=${fileName}`);
 	
-	if (isVercelEnv) {
-		// On Vercel, use Blob Storage
+	if (isVercelEnv && hasBlobToken) {
+		// On Vercel with Blob token, use Blob Storage
 		console.log(`[FileUpload] Using Vercel Blob Storage for upload`);
-		return await uploadToVercelBlob(file, fileName, uploadType, subPath);
+		const result = await uploadToVercelBlob(file, fileName, uploadType, subPath);
+		
+		// If Blob upload fails due to token issues, fall back to local
+		if (!result.success && result.error?.includes('BLOB_READ_WRITE_TOKEN')) {
+			console.warn(`[FileUpload] Blob upload failed, falling back to local upload`);
+			return await uploadToLocal(file, fileName, uploadType, subPath);
+		}
+		
+		return result;
 	} else {
-		// On local server, save to public/uploads/
+		// On local server or Vercel without token, save to public/uploads/
 		console.log(`[FileUpload] Using local file system for upload`);
 		return await uploadToLocal(file, fileName, uploadType, subPath);
 	}
