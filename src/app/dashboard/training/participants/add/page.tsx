@@ -134,7 +134,10 @@ export default function AddParticipantPage() {
 	// Fetch tehsils when district changes
 	useEffect(() => {
 		if (formData.district) {
-			fetchTehsils(formData.district);
+			fetchTehsils(formData.district).then(() => {
+				// After tehsils are loaded, if there's a tehsil value in formData, ensure it's preserved
+				// This is especially important when editing - the tehsil value should remain selected
+			});
 		} else {
 			setTehsils([]);
 		}
@@ -151,6 +154,7 @@ export default function AddParticipantPage() {
 				console.log("Fetched participant data:", participant);
 				console.log("Raw start_date:", participant.start_date, "Type:", typeof participant.start_date);
 				console.log("Raw end_date:", participant.end_date, "Type:", typeof participant.end_date);
+				console.log("Raw tehsil:", participant.tehsil, "Raw district:", participant.district);
 				
 				// Format dates - handle null, undefined, and various date formats
 				// SQL Server CONVERT with style 120 returns YYYY-MM-DD format
@@ -182,6 +186,11 @@ export default function AddParticipantPage() {
 				console.log("Formatted start_date:", formattedStartDate);
 				console.log("Formatted end_date:", formattedEndDate);
 				
+				// Store tehsil value before setting district (which will trigger tehsil fetch)
+				const district = participant.district || "";
+				const tehsilValue = participant.tehsil || "";
+				
+				// Set form data with district (this will trigger useEffect to fetch tehsils)
 				setFormData({
 					sn: participant.sn,
 					participant_name: participant.participant_name || "",
@@ -192,8 +201,8 @@ export default function AddParticipantPage() {
 					profession: participant.profession || "",
 					cnic_number: participant.cnic_number || "",
 					contact_number: participant.contact_number || "",
-					tehsil: participant.tehsil || "",
-					district: participant.district || "",
+					tehsil: "", // Will be set after tehsils are loaded
+					district: district,
 					NC_VC: participant.NC_VC || "",
 					workshop_training_name: participant.workshop_training_name || "",
 					workshop_session_conference: participant.workshop_session_conference || "",
@@ -204,6 +213,27 @@ export default function AddParticipantPage() {
 					Venue: participant.Venue || "",
 					Duration_Days: participant.Duration_Days || undefined
 				});
+				
+				// Fetch tehsils for the district, then set the tehsil value
+				if (district) {
+					try {
+						const tehsilRes = await fetch(`/api/training/participants/tehsils?district=${encodeURIComponent(district)}`);
+						const tehsilData = await tehsilRes.json();
+						if (tehsilData.success) {
+							const tehsilList = tehsilData.tehsils || [];
+							setTehsils(tehsilList);
+							// Set tehsil value after tehsils are loaded
+							if (tehsilValue) {
+								// Use setTimeout to ensure state update happens after tehsils are set
+								setTimeout(() => {
+									setFormData(prev => ({ ...prev, tehsil: tehsilValue }));
+								}, 100);
+							}
+						}
+					} catch (e) {
+						console.error("Error fetching tehsils for edit:", e);
+					}
+				}
 			} else {
 				setError("Failed to fetch participant data");
 			}
@@ -233,13 +263,13 @@ export default function AddParticipantPage() {
 	};
 
 	const fetchTehsils = async (district: string) => {
-		if (!district || district === 'ALL') {
+		if (!district || district === 'ALL' || district === '') {
 			setTehsils([]);
 			return;
 		}
 		try {
 			setLoadingTehsils(true);
-			const res = await fetch(`/api/tracking-sheet/tehsils?district=${encodeURIComponent(district)}`);
+			const res = await fetch(`/api/training/participants/tehsils?district=${encodeURIComponent(district)}`);
 			const data = await res.json();
 			if (data.success) {
 				const tehsilList = data.tehsils || [];
@@ -248,6 +278,7 @@ export default function AddParticipantPage() {
 				setTehsils([]);
 			}
 		} catch (e) {
+			console.error("Error fetching tehsils:", e);
 			setTehsils([]);
 		} finally {
 			setLoadingTehsils(false);
