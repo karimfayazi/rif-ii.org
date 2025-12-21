@@ -15,9 +15,7 @@ import {
 	Trash2,
 	FileDown,
 	Eye,
-	X,
-	AlertCircle,
-	Loader2
+	X
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
@@ -34,18 +32,15 @@ type WorkshopParticipant = {
 	contact_number?: string;
 	tehsil?: string;
 	district?: string;
-	NC_VC?: string;
 	workshop_training_name?: string;
 	workshop_session_conference?: string;
 	start_date?: string;
 	end_date?: string;
 	date_entered_by?: string;
 	entry_timestamp?: string;
-	Training_Unit?: string;
-	Venue?: string;
-	Duration_Days?: number;
 };
 
+const DISTRICT_OPTIONS = ["All", "DIK", "Bannu"];
 const GENDER_OPTIONS = ["Male", "Female"];
 
 export default function TrainingParticipantsPage() {
@@ -57,7 +52,6 @@ export default function TrainingParticipantsPage() {
 	const [participants, setParticipants] = useState<WorkshopParticipant[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [districts, setDistricts] = useState<string[]>([]);
 	const [selectedDistrict, setSelectedDistrict] = useState("");
 	const [selectedTehsil, setSelectedTehsil] = useState("");
 	const [selectedGender, setSelectedGender] = useState("");
@@ -67,57 +61,9 @@ export default function TrainingParticipantsPage() {
 	const [cnicNumber, setCnicNumber] = useState("");
 	const [contactNumber, setContactNumber] = useState("");
 	const [tehsils, setTehsils] = useState<string[]>([]);
-	const [loadingTehsils, setLoadingTehsils] = useState(false);
 	const [organizationDepartments, setOrganizationDepartments] = useState<string[]>([]);
 	const [workshopTrainingNames, setWorkshopTrainingNames] = useState<string[]>([]);
 	const [viewingParticipant, setViewingParticipant] = useState<WorkshopParticipant | null>(null);
-	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; participant: WorkshopParticipant | null }>({ show: false, participant: null });
-
-	// Fetch districts on component mount
-	useEffect(() => {
-		const fetchDistricts = async () => {
-			try {
-				const response = await fetch('/api/training/participants/districts');
-				const data = await response.json();
-				if (data.success) {
-					setDistricts(data.districts || []);
-				}
-			} catch (err) {
-				console.error("Error fetching districts:", err);
-			}
-		};
-		fetchDistricts();
-	}, []);
-
-	// Fetch tehsils when district changes
-	useEffect(() => {
-		const fetchTehsilsForDistrict = async () => {
-			if (!selectedDistrict || selectedDistrict === "All" || selectedDistrict === "") {
-				setTehsils([]);
-				setSelectedTehsil(""); // Reset tehsil selection when district is cleared
-				return;
-			}
-
-			try {
-				setLoadingTehsils(true);
-				const response = await fetch(`/api/training/participants/tehsils?district=${encodeURIComponent(selectedDistrict)}`);
-				const data = await response.json();
-				if (data.success) {
-					setTehsils(data.tehsils || []);
-					setSelectedTehsil(""); // Reset tehsil selection when district changes
-				} else {
-					setTehsils([]);
-				}
-			} catch (err) {
-				console.error("Error fetching tehsils:", err);
-				setTehsils([]);
-			} finally {
-				setLoadingTehsils(false);
-			}
-		};
-
-		fetchTehsilsForDistrict();
-	}, [selectedDistrict]);
 
 	const fetchParticipants = useCallback(async () => {
 		try {
@@ -135,20 +81,19 @@ export default function TrainingParticipantsPage() {
 			if (data.success) {
 				setParticipants(data.participants || []);
 				
-				// Extract unique values for filters (but don't override tehsils - they come from district selection)
+				// Extract unique values for filters
+				const uniqueTehsils = [...new Set(data.participants.map((item: WorkshopParticipant) => item.tehsil).filter(Boolean))] as string[];
 				const uniqueOrganizationDepartments = [...new Set(data.participants.map((item: WorkshopParticipant) => item.organization_department).filter(Boolean))] as string[];
 				const uniqueWorkshopTrainingNames = [...new Set(data.participants.map((item: WorkshopParticipant) => item.workshop_training_name).filter(Boolean))] as string[];
 				
+				setTehsils(uniqueTehsils);
 				setOrganizationDepartments(uniqueOrganizationDepartments);
 				setWorkshopTrainingNames(uniqueWorkshopTrainingNames);
 			} else {
-				const errorMsg = data.message || data.error || "Failed to fetch participants data";
-				setError(errorMsg);
-				console.error("API Error:", data);
+				setError(data.message || "Failed to fetch participants data");
 			}
 		} catch (err) {
-			const errorMsg = err instanceof Error ? err.message : "Error fetching participants data";
-			setError(errorMsg);
+			setError("Error fetching participants data");
 			console.error("Error fetching participants data:", err);
 		} finally {
 			setLoading(false);
@@ -186,22 +131,14 @@ export default function TrainingParticipantsPage() {
 			"SO/DO/WO/HO",
 			"Gender",
 			"Organization/Department",
-			"Designation",
-			"Profession",
 			"CNIC Number",
 			"Contact Number",
 			"District",
 			"Tehsil",
-			"NC/VC",
 			"Workshop/Training Name",
 			"Workshop/Session/Conference",
 			"Start Date",
-			"End Date",
-			"Training Unit",
-			"Venue",
-			"Duration Days",
-			"Date Entered By",
-			"Entry Timestamp"
+			"End Date"
 		];
 
 		const csvRows = [
@@ -211,22 +148,14 @@ export default function TrainingParticipantsPage() {
 				`"${(item.so_do_wo_ho || "").replace(/"/g, '""')}"`,
 				`"${(item.gender || "").replace(/"/g, '""')}"`,
 				`"${(item.organization_department || "").replace(/"/g, '""')}"`,
-				`"${(item.designation || "").replace(/"/g, '""')}"`,
-				`"${(item.profession || "").replace(/"/g, '""')}"`,
 				`"${(item.cnic_number || "").replace(/"/g, '""')}"`,
 				`"${(item.contact_number || "").replace(/"/g, '""')}"`,
 				`"${(item.district || "").replace(/"/g, '""')}"`,
 				`"${(item.tehsil || "").replace(/"/g, '""')}"`,
-				`"${(item.NC_VC || "").replace(/"/g, '""')}"`,
 				`"${(item.workshop_training_name || "").replace(/"/g, '""')}"`,
 				`"${(item.workshop_session_conference || "").replace(/"/g, '""')}"`,
 				`"${(item.start_date || "").replace(/"/g, '""')}"`,
-				`"${(item.end_date || "").replace(/"/g, '""')}"`,
-				`"${(item.Training_Unit || "").replace(/"/g, '""')}"`,
-				`"${(item.Venue || "").replace(/"/g, '""')}"`,
-				`"${String(item.Duration_Days || "").replace(/"/g, '""')}"`,
-				`"${(item.date_entered_by || "").replace(/"/g, '""')}"`,
-				`"${(item.entry_timestamp || "").replace(/"/g, '""')}"`
+				`"${(item.end_date || "").replace(/"/g, '""')}"`
 			].join(","))
 		];
 
@@ -245,8 +174,8 @@ export default function TrainingParticipantsPage() {
 
 	// Filter data based on selected filters
 	const filteredData = participants.filter(item => {
-		const matchesDistrict = !selectedDistrict || selectedDistrict === "" || item.district === selectedDistrict;
-		const matchesTehsil = !selectedTehsil || selectedTehsil === "" || item.tehsil === selectedTehsil;
+		const matchesDistrict = !selectedDistrict || selectedDistrict === "All" || item.district === selectedDistrict;
+		const matchesTehsil = !selectedTehsil || item.tehsil === selectedTehsil;
 		const matchesGender = !selectedGender || item.gender === selectedGender;
 		const matchesOrganizationDepartment = !selectedOrganizationDepartment || item.organization_department === selectedOrganizationDepartment;
 		const matchesWorkshopTrainingName = !selectedWorkshopTrainingName || item.workshop_training_name === selectedWorkshopTrainingName;
@@ -362,7 +291,7 @@ export default function TrainingParticipantsPage() {
 					<h2 className="text-lg font-semibold text-gray-900">Filters</h2>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 					{/* District Filter */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
@@ -373,8 +302,8 @@ export default function TrainingParticipantsPage() {
 							onChange={(e) => setSelectedDistrict(e.target.value)}
 							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						>
-							<option value="">All Districts</option>
-							{districts.map((district) => (
+							<option value="">All</option>
+							{DISTRICT_OPTIONS.filter(d => d !== "All").map((district) => (
 								<option key={district} value={district}>
 									{district}
 								</option>
@@ -390,16 +319,9 @@ export default function TrainingParticipantsPage() {
 						<select
 							value={selectedTehsil}
 							onChange={(e) => setSelectedTehsil(e.target.value)}
-							disabled={!selectedDistrict || selectedDistrict === "" || loadingTehsils}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						>
-							<option value="">
-								{!selectedDistrict || selectedDistrict === "" 
-									? "Select District first" 
-									: loadingTehsils 
-									? "Loading tehsils..." 
-									: "All Tehsils"}
-							</option>
+							<option value="">All Tehsils</option>
 							{tehsils.map((tehsil) => (
 								<option key={tehsil} value={tehsil}>
 									{tehsil}
@@ -684,7 +606,24 @@ export default function TrainingParticipantsPage() {
 														)}
 														{accessDelete && (
 															<button
-																onClick={() => setDeleteConfirm({ show: true, participant: item })}
+																onClick={async () => {
+																	if (confirm("Are you sure you want to delete this participant record?")) {
+																		try {
+																			const response = await fetch(`/api/training/participants/delete?sn=${item.sn}`, {
+																				method: 'DELETE'
+																			});
+																			const data = await response.json();
+																			if (data.success) {
+																				fetchParticipants();
+																			} else {
+																				alert(data.message || "Failed to delete record");
+																			}
+																		} catch (err) {
+																			console.error("Error deleting participant:", err);
+																			alert("Error deleting participant record");
+																		}
+																	}
+																}}
 																className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
 																title="Delete"
 															>
@@ -796,13 +735,6 @@ export default function TrainingParticipantsPage() {
 										<label className="text-sm font-medium text-gray-500">Tehsil</label>
 										<p className="text-base text-gray-900 mt-1">{viewingParticipant.tehsil || "N/A"}</p>
 									</div>
-
-									{viewingParticipant.NC_VC && (
-										<div>
-											<label className="text-sm font-medium text-gray-500">NC/VC</label>
-											<p className="text-base text-gray-900 mt-1">{viewingParticipant.NC_VC}</p>
-										</div>
-									)}
 								</div>
 
 								{/* Training Information */}
@@ -832,27 +764,6 @@ export default function TrainingParticipantsPage() {
 										<div>
 											<label className="text-sm font-medium text-gray-500">End Date</label>
 											<p className="text-base text-gray-900 mt-1">{viewingParticipant.end_date}</p>
-										</div>
-									)}
-
-									{viewingParticipant.Training_Unit && (
-										<div>
-											<label className="text-sm font-medium text-gray-500">Training Unit</label>
-											<p className="text-base text-gray-900 mt-1">{viewingParticipant.Training_Unit}</p>
-										</div>
-									)}
-
-									{viewingParticipant.Venue && (
-										<div>
-											<label className="text-sm font-medium text-gray-500">Venue</label>
-											<p className="text-base text-gray-900 mt-1">{viewingParticipant.Venue}</p>
-										</div>
-									)}
-
-									{viewingParticipant.Duration_Days && (
-										<div>
-											<label className="text-sm font-medium text-gray-500">Duration (Days)</label>
-											<p className="text-base text-gray-900 mt-1">{viewingParticipant.Duration_Days}</p>
 										</div>
 									)}
 								</div>
@@ -899,110 +810,6 @@ export default function TrainingParticipantsPage() {
 									Edit
 								</button>
 							)}
-						</div>
-					</div>
-				</div>
-			)}
-
-			{/* Delete Confirmation Modal */}
-			{deleteConfirm.show && deleteConfirm.participant && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-					<div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all">
-						{/* Modal Header */}
-						<div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl">
-							<div className="flex items-center">
-								<div className="p-2 bg-white/20 rounded-lg mr-4">
-									<Trash2 className="h-6 w-6" />
-								</div>
-								<div>
-									<h2 className="text-2xl font-bold">Confirm Delete</h2>
-									<p className="text-red-100 text-sm mt-1">This action cannot be undone</p>
-								</div>
-							</div>
-						</div>
-
-						{/* Modal Content */}
-						<div className="p-6">
-							<div className="mb-4">
-								<p className="text-gray-700 text-base mb-3">
-									Are you sure you want to delete this participant record?
-								</p>
-								<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-									<p className="text-sm font-medium text-gray-500 mb-1">Participant Name:</p>
-									<p className="text-base font-semibold text-gray-900">
-										{deleteConfirm.participant.participant_name || "N/A"}
-									</p>
-									{deleteConfirm.participant.cnic_number && (
-										<>
-											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">CNIC:</p>
-											<p className="text-base text-gray-700">{deleteConfirm.participant.cnic_number}</p>
-										</>
-									)}
-									{deleteConfirm.participant.workshop_training_name && (
-										<>
-											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Workshop:</p>
-											<p className="text-base text-gray-700">{deleteConfirm.participant.workshop_training_name}</p>
-										</>
-									)}
-								</div>
-							</div>
-							<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start">
-								<AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
-								<p className="text-sm text-yellow-800">
-									<strong>Warning:</strong> This will permanently delete this participant record from the database. This action cannot be undone.
-								</p>
-							</div>
-						</div>
-
-						{/* Modal Footer */}
-						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
-							<button
-								onClick={() => setDeleteConfirm({ show: false, participant: null })}
-								className="px-6 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm"
-							>
-								Cancel
-							</button>
-							<button
-								onClick={async () => {
-									if (!deleteConfirm.participant) return;
-									
-									try {
-										setLoading(true);
-										const response = await fetch(`/api/training/participants/delete?sn=${deleteConfirm.participant.sn}`, {
-											method: 'DELETE'
-										});
-										const data = await response.json();
-										
-										if (data.success) {
-											setDeleteConfirm({ show: false, participant: null });
-											fetchParticipants();
-										} else {
-											setError(data.message || "Failed to delete record");
-											setDeleteConfirm({ show: false, participant: null });
-										}
-									} catch (err) {
-										console.error("Error deleting participant:", err);
-										setError("Error deleting participant record");
-										setDeleteConfirm({ show: false, participant: null });
-									} finally {
-										setLoading(false);
-									}
-								}}
-								disabled={loading}
-								className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-							>
-								{loading ? (
-									<>
-										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-										Deleting...
-									</>
-								) : (
-									<>
-										<Trash2 className="h-4 w-4 mr-2" />
-										Yes, Delete
-									</>
-								)}
-							</button>
 						</div>
 					</div>
 				</div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, FileText, Calendar, Folder, User, X } from "lucide-react";
@@ -22,7 +22,7 @@ type DocumentData = {
 	DocumentID: number;
 };
 
-function DocumentViewContent() {
+export default function DocumentViewPage() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const documentId = searchParams.get('id');
@@ -34,48 +34,22 @@ function DocumentViewContent() {
 	const getDocumentUrl = (filePath: string | null) => {
 		if (!filePath) return '';
 		
-		// If already a full URL (from external server), return as-is
-		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
+		// Check if filePath already contains the full path or starts with ~/Uploads/Documents/
+		if (filePath.startsWith('~/Uploads/Documents/')) {
+			// Remove the ~/Uploads/Documents/ prefix and construct the correct URL
+			const fileName = filePath.replace('~/Uploads/Documents/', '');
+			return `https://rif-ii.org/${fileName}`;
+		} else if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
+			// Already a full URL
 			return filePath;
+		} else if (filePath.startsWith('Uploads/Documents/')) {
+			// Remove Uploads/Documents/ prefix and construct the correct URL
+			const fileName = filePath.replace('Uploads/Documents/', '');
+			return `https://rif-ii.org/${fileName}`;
+		} else {
+			// Just a filename, construct the full URL
+			return `https://rif-ii.org/${filePath}`;
 		}
-		
-		// Normalize path (convert backslashes to forward slashes)
-		let normalizedPath = filePath.replace(/\\/g, '/');
-		
-		// Handle ~/ prefix (remove it)
-		if (normalizedPath.startsWith('~/')) {
-			normalizedPath = normalizedPath.replace('~/', '');
-		}
-		
-		// Handle legacy formats (convert to lowercase)
-		if (normalizedPath.startsWith('Uploads/Documents/')) {
-			normalizedPath = normalizedPath.replace('Uploads/Documents/', 'uploads/documents/');
-		}
-		
-		// If path doesn't start with uploads/documents/, add it (for backward compatibility)
-		// But don't add if it already starts with uploads/documents/
-		if (!normalizedPath.startsWith('uploads/documents/') && !normalizedPath.startsWith('/uploads/documents/')) {
-			// Only add prefix if it's not already a full path
-			if (!normalizedPath.includes('/')) {
-				normalizedPath = `uploads/documents/${normalizedPath}`;
-			}
-		}
-		
-		// Remove leading slash if present (we'll add it back for local)
-		if (normalizedPath.startsWith('/')) {
-			normalizedPath = normalizedPath.substring(1);
-		}
-		
-		// Always use current origin - files are in public/uploads/ directory
-		// Next.js serves files from public/ folder at the root URL
-		if (typeof window !== 'undefined') {
-			const origin = window.location.origin;
-			// Files in public/uploads/ are accessible at /uploads/
-			return `${origin}/${normalizedPath}`;
-		}
-		
-		// For server-side, use relative path with leading slash
-		return `/${normalizedPath}`;
 	};
 
 	useEffect(() => {
@@ -286,21 +260,6 @@ function DocumentViewContent() {
 				</div>
 			</div>
 		</div>
-	);
-}
-
-export default function DocumentViewPage() {
-	return (
-		<Suspense fallback={
-			<div className="space-y-6">
-				<div className="flex items-center justify-center py-12">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0b4d2b]"></div>
-					<span className="ml-3 text-gray-600">Loading...</span>
-				</div>
-			</div>
-		}>
-			<DocumentViewContent />
-		</Suspense>
 	);
 }
 

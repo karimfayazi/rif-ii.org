@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
+import { existsSync } from "fs";
 import { getUserIdFromRequest } from "@/lib/auth";
-import { uploadFile } from "@/lib/fileUpload";
 
-// Helper function to check if user has Upload_Documents permission or is Admin
-async function checkUploadDocumentsAccess(userId: string | null): Promise<{ canUpload: boolean; message?: string }> {
+// Helper function to check if user is Admin
+async function checkAdminAccess(userId: string | null): Promise<{ isAdmin: boolean; message?: string }> {
 	if (!userId) {
-		return { canUpload: false, message: "Unauthorized" };
+		return { isAdmin: false, message: "Unauthorized" };
 	}
 
 	try {
 		const pool = await getDb();
 		const accessQuery = `
-			SELECT [access_level], [Upload_Documents]
+			SELECT [access_level]
 			FROM [_rifiiorg_db].[dbo].[tbl_user_access]
 			WHERE [username] = @userId OR [email] = @userId
 		`;
@@ -22,52 +24,38 @@ async function checkUploadDocumentsAccess(userId: string | null): Promise<{ canU
 			.query(accessQuery);
 		
 		if (accessResult.recordset.length === 0) {
-			return { canUpload: false, message: "User not found" };
+			return { isAdmin: false, message: "User not found" };
 		}
 
 		const accessLevel = accessResult.recordset[0].access_level;
-		const uploadDocumentsRaw = accessResult.recordset[0].Upload_Documents;
-		
+		// Check if access_level is exactly 'Admin' (case-sensitive)
 		const isAdmin = accessLevel === 'Admin';
 		
-		// Helper function to check BIT field values
-		const checkBitField = (value: any): boolean => {
-			if (value === null || value === undefined) return false;
-			if (Buffer.isBuffer(value)) return value[0] === 1;
-			if (typeof value === 'boolean') return value === true;
-			if (typeof value === 'number') return value === 1;
-			if (typeof value === 'string') return value === '1' || value.toLowerCase() === 'true';
-			return false;
-		};
-		
-		const uploadDocuments = checkBitField(uploadDocumentsRaw);
-		const canUpload = isAdmin || uploadDocuments;
-		
-		if (!canUpload) {
+		if (!isAdmin) {
 			return { 
-				canUpload: false, 
-				message: "Insufficient Permissions. This action requires Admin access or Upload Documents permission. Please contact your administrator if you believe this is an error." 
+				isAdmin: false, 
+				message: "Insufficient Permissions. This action requires Admin level access. Please contact your administrator if you believe this is an error." 
 			};
 		}
 
-		return { canUpload: true };
+		return { isAdmin: true };
 	} catch (error) {
-		console.error("Error checking upload documents access:", error);
-		return { canUpload: false, message: "Error checking access permissions" };
+		console.error("Error checking admin access:", error);
+		return { isAdmin: false, message: "Error checking access permissions" };
 	}
 }
 
 export async function POST(request: NextRequest) {
 	try {
-		// Check Upload_Documents permission
+		// Check Admin access
 		const userId = getUserIdFromRequest(request);
-		const accessCheck = await checkUploadDocumentsAccess(userId);
+		const accessCheck = await checkAdminAccess(userId);
 		
-		if (!accessCheck.canUpload) {
+		if (!accessCheck.isAdmin) {
 			return NextResponse.json(
 				{
 					success: false,
-					message: accessCheck.message || "Access denied. Upload Documents permission required."
+					message: accessCheck.message || "Access denied. Admin privileges required."
 				},
 				{ status: 403 }
 			);
@@ -140,29 +128,13 @@ export async function POST(request: NextRequest) {
 			}
 		}
 
-		// Helper function to sanitize filename
-		const sanitizeFileName = (str: string): string => {
-			return str
-				.replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
-				.replace(/\s+/g, '_') // Replace spaces with underscores
-				.replace(/_+/g, '_') // Replace multiple underscores with single
-				.trim();
-		};
-
-		// Format document date for filename (YYYY-MM-DD)
-		const formatDateForFilename = (dateString: string): string => {
-			try {
-				const date = new Date(dateString);
-				const year = date.getFullYear();
-				const month = String(date.getMonth() + 1).padStart(2, '0');
-				const day = String(date.getDate()).padStart(2, '0');
-				return `${year}-${month}-${day}`;
-			} catch {
-				// Fallback to current date if parsing fails
-				const now = new Date();
-				return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-			}
-		};
+		// Create upload directory structure
+		const uploadDir = join(process.cwd(), 'public', 'uploads', 'documents', category, subCategory);
+		
+		// Ensure directory exists
+		if (!existsSync(uploadDir)) {
+			await mkdir(uploadDir, { recursive: true });
+		}
 
 		const pool = await getDb();
 		const uploadedFiles = [];
@@ -171,47 +143,13 @@ export async function POST(request: NextRequest) {
 		for (let i = 0; i < files.length; i++) {
 			const file = files[i];
 			const fileExtension = file.name.split('.').pop();
+			const fileName = `${Date.now()}_${i + 1}.${fileExtension}`;
+			const filePath = join(uploadDir, fileName);
+			const relativePath = `uploads/documents/${category}/${subCategory}/${fileName}`;
 			
-			// Create filename: DocumentTitle_Category_DocumentDate.extension
-			const sanitizedTitle = sanitizeFileName(title);
-			const sanitizedCategory = sanitizeFileName(category);
-			const formattedDate = formatDateForFilename(documentDate);
-			
-			// If multiple files, append index to make unique
-			const fileName = files.length > 1 
-				? `${sanitizedTitle}_${sanitizedCategory}_${formattedDate}_${i + 1}.${fileExtension}`
-				: `${sanitizedTitle}_${sanitizedCategory}_${formattedDate}.${fileExtension}`;
-			
-			// Upload file (automatically handles local vs Vercel)
-			const uploadResult = await uploadFile(file, fileName, 'documents');
-			
-			if (!uploadResult.success) {
-				const errorMsg = uploadResult.error || 'Unknown error';
-				const isVercel = process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_VERCEL === '1';
-				
-				console.error(`[Documents Upload] File upload failed for ${file.name}:`, {
-					fileName: file.name,
-					fileSize: file.size,
-					fileType: file.type,
-					error: errorMsg,
-					uploadResult: uploadResult,
-					isVercel: isVercel
-				});
-				
-				return NextResponse.json({
-					success: false,
-					message: `Failed to upload file ${file.name}: ${errorMsg}`,
-					error: errorMsg,
-					hint: isVercel 
-						? 'On Vercel, files must be uploaded to external server. Please ensure upload.php is configured on rif-ii.org server.'
-						: 'Please check file permissions and disk space.',
-					details: {
-						fileName: file.name,
-						fileSize: file.size,
-						fileType: file.type
-					}
-				}, { status: 500 });
-			}
+			// Save file to disk
+			const bytes = await file.arrayBuffer();
+			await writeFile(filePath, Buffer.from(bytes));
 			
 			// Insert into database
 			const insertQuery = `
@@ -225,8 +163,7 @@ export async function POST(request: NextRequest) {
 			const request_obj = pool.request();
 			request_obj.input('title', title);
 			request_obj.input('description', description || '');
-			// Store file path (works for both local and external)
-			request_obj.input('filePath', uploadResult.filePath);
+			request_obj.input('filePath', `~/Uploads/Documents/${fileName}`);
 			request_obj.input('uploadDate', new Date().toISOString());
 			request_obj.input('uploadedBy', uploadedBy);
 			request_obj.input('fileType', fileType || '');
@@ -242,9 +179,8 @@ export async function POST(request: NextRequest) {
 			
 			uploadedFiles.push({
 				originalName: file.name,
-				fileName: uploadResult.fileName,
-				filePath: uploadResult.filePath,
-				fileUrl: uploadResult.fileUrl
+				fileName: fileName,
+				filePath: relativePath
 			});
 		}
 
@@ -256,25 +192,11 @@ export async function POST(request: NextRequest) {
 
 	} catch (error) {
 		console.error("Error uploading documents:", error);
-		const errorMessage = error instanceof Error ? error.message : "Unknown error";
-		
-		// Check if it's a filesystem error (common on Vercel)
-		const isFilesystemError = errorMessage.includes('EACCES') || 
-		                          errorMessage.includes('ENOENT') || 
-		                          errorMessage.includes('EROFS') ||
-		                          errorMessage.includes('read-only') ||
-		                          errorMessage.includes('permission denied');
-		
-		let userMessage = "Failed to upload documents";
-		if (isFilesystemError) {
-			userMessage = "File upload failed: The server filesystem is read-only. On Vercel, files are uploaded to external server (rif-ii.org).";
-		}
-		
 		return NextResponse.json(
 			{
 				success: false,
-				message: userMessage,
-				error: errorMessage
+				message: "Failed to upload documents",
+				error: error instanceof Error ? error.message : "Unknown error"
 			},
 			{ status: 500 }
 		);

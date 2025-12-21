@@ -1,83 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { getUserIdFromRequest } from "@/lib/auth";
-import { uploadFile } from "@/lib/fileUpload";
-
-// Helper function to check if user has Upload_Pictures permission or is Admin
-async function checkUploadPicturesAccess(userId: string | null): Promise<{ canUpload: boolean; message?: string }> {
-	if (!userId) {
-		return { canUpload: false, message: "Unauthorized" };
-	}
-
-	try {
-		const pool = await getDb();
-		const accessQuery = `
-			SELECT [access_level], [Upload_Pictures]
-			FROM [_rifiiorg_db].[dbo].[tbl_user_access]
-			WHERE [username] = @userId OR [email] = @userId
-		`;
-		
-		const accessResult = await pool.request()
-			.input('userId', userId)
-			.query(accessQuery);
-		
-		if (accessResult.recordset.length === 0) {
-			return { canUpload: false, message: "User not found" };
-		}
-
-		const accessLevel = accessResult.recordset[0].access_level;
-		const uploadPicturesRaw = accessResult.recordset[0].Upload_Pictures;
-		
-		// Check if access_level is exactly 'Admin' (case-sensitive as per database requirement)
-		const isAdmin = accessLevel === 'Admin';
-		
-		console.log(`[Upload Pictures Access] User: ${userId}, access_level: "${accessLevel}", isAdmin: ${isAdmin}, Upload_Pictures raw:`, uploadPicturesRaw);
-		
-		// Helper function to check BIT field values
-		const checkBitField = (value: any): boolean => {
-			if (value === null || value === undefined) return false;
-			if (Buffer.isBuffer(value)) return value[0] === 1;
-			if (typeof value === 'boolean') return value === true;
-			if (typeof value === 'number') return value === 1;
-			if (typeof value === 'string') return value === '1' || value.toLowerCase() === 'true';
-			return false;
-		};
-		
-		const uploadPictures = checkBitField(uploadPicturesRaw);
-		const canUpload = isAdmin || uploadPictures;
-		
-		console.log(`[Upload Pictures Access] uploadPictures permission: ${uploadPictures}, canUpload: ${canUpload}`);
-		
-		if (!canUpload) {
-			return { 
-				canUpload: false, 
-				message: "Insufficient Permissions. This action requires Admin access or Upload Pictures permission. Please contact your administrator if you believe this is an error." 
-			};
-		}
-
-		return { canUpload: true };
-	} catch (error) {
-		console.error("Error checking upload pictures access:", error);
-		return { canUpload: false, message: "Error checking access permissions" };
-	}
-}
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
+import { existsSync } from "fs";
 
 export async function POST(request: NextRequest) {
 	try {
-		// Check Upload_Pictures permission
-		const userId = getUserIdFromRequest(request);
-		const accessCheck = await checkUploadPicturesAccess(userId);
-		
-		if (!accessCheck.canUpload) {
-			return NextResponse.json(
-				{
-					success: false,
-					message: accessCheck.message || "Access denied. Upload Pictures permission required."
-				},
-				{ status: 403 }
-			);
-		}
-
 		const formData = await request.formData();
 		
 		// Extract form fields
@@ -122,28 +50,13 @@ export async function POST(request: NextRequest) {
 			}
 		}
 
-		// Format event date for folder name (YYYY-MM-DD format)
-		const formatDateForFolder = (dateString: string) => {
-			try {
-				const date = new Date(dateString);
-				const year = date.getFullYear();
-				const month = String(date.getMonth() + 1).padStart(2, '0');
-				const day = String(date.getDate()).padStart(2, '0');
-				return `${year}-${month}-${day}`;
-			} catch {
-				// Fallback: use date string as-is, sanitize it
-				return dateString.replace(/[^a-zA-Z0-9-]/g, '_');
-			}
-		};
-
-		// Sanitize folder names to avoid filesystem issues
-		const sanitizeFolderName = (name: string) => {
-			return name.replace(/[^a-zA-Z0-9-_]/g, '_').trim();
-		};
-
-		const sanitizedMainCategory = sanitizeFolderName(mainCategory);
-		const sanitizedGroupName = sanitizeFolderName(groupName);
-		const formattedEventDate = formatDateForFolder(eventDate);
+		// Create upload directory structure
+		const uploadDir = join(process.cwd(), 'public', 'uploads', 'pictures', mainCategory, subCategory, groupName);
+		
+		// Ensure directory exists
+		if (!existsSync(uploadDir)) {
+			await mkdir(uploadDir, { recursive: true });
+		}
 
 		const pool = await getDb();
 		const uploadedFiles = [];
@@ -153,37 +66,12 @@ export async function POST(request: NextRequest) {
 			const file = files[i];
 			const fileExtension = file.name.split('.').pop();
 			const fileName = `${Date.now()}_${i + 1}.${fileExtension}`;
+			const filePath = join(uploadDir, fileName);
+			const relativePath = `uploads/pictures/${mainCategory}/${subCategory}/${groupName}/${fileName}`;
 			
-			// Create subpath for pictures: MainCategory/EventName/EventDate
-			const subPath = `${sanitizedMainCategory}/${sanitizedGroupName}/${formattedEventDate}`;
-			
-			// Upload file (automatically handles local vs Vercel)
-			// For local: saves to public/uploads/pictures/MainCategory/EventName/EventDate/
-			// For Vercel: uploads to external server
-			const uploadResult = await uploadFile(file, fileName, 'pictures', subPath);
-			
-			if (!uploadResult.success) {
-				const errorMsg = uploadResult.error || 'Unknown error';
-				
-				console.error(`[Pictures Upload] File upload failed for ${file.name}:`, {
-					fileName: file.name,
-					fileSize: file.size,
-					fileType: file.type,
-					error: errorMsg,
-					uploadResult: uploadResult
-				});
-				
-				return NextResponse.json({
-					success: false,
-					message: `Failed to upload file ${file.name}: ${errorMsg}`,
-					error: errorMsg,
-					details: {
-						fileName: file.name,
-						fileSize: file.size,
-						fileType: file.type
-					}
-				}, { status: 500 });
-			}
+			// Save file to disk
+			const bytes = await file.arrayBuffer();
+			await writeFile(filePath, Buffer.from(bytes));
 			
 			// Calculate file size in KB
 			const fileSizeKB = Math.round(file.size / 1024);
@@ -200,7 +88,7 @@ export async function POST(request: NextRequest) {
 			request_obj.input('mainCategory', mainCategory);
 			request_obj.input('subCategory', subCategory);
 			request_obj.input('fileName', file.name);
-			request_obj.input('filePath', uploadResult.filePath);
+			request_obj.input('filePath', relativePath);
 			request_obj.input('fileSizeKB', fileSizeKB);
 			request_obj.input('uploadedBy', uploadedBy);
 			request_obj.input('uploadDate', new Date().toISOString());
@@ -211,10 +99,9 @@ export async function POST(request: NextRequest) {
 			
 			uploadedFiles.push({
 				originalName: file.name,
-				fileName: uploadResult.fileName,
-				filePath: uploadResult.filePath,
-				fileSizeKB: fileSizeKB,
-				fileUrl: uploadResult.fileUrl
+				fileName: fileName,
+				filePath: relativePath,
+				fileSizeKB: fileSizeKB
 			});
 		}
 
@@ -226,29 +113,11 @@ export async function POST(request: NextRequest) {
 
 	} catch (error) {
 		console.error("Error uploading pictures:", error);
-		
-		// Provide more detailed error information
-		const errorMessage = error instanceof Error ? error.message : "Unknown error";
-		const errorStack = error instanceof Error ? error.stack : undefined;
-		
-		// Check if it's a filesystem error (common on Vercel)
-		const isFilesystemError = errorMessage.includes('EACCES') || 
-		                          errorMessage.includes('ENOENT') || 
-		                          errorMessage.includes('EROFS') ||
-		                          errorMessage.includes('read-only') ||
-		                          errorMessage.includes('permission denied');
-		
-		let userMessage = "Failed to upload pictures";
-		if (isFilesystemError) {
-			userMessage = "File upload failed: The server filesystem is read-only. Please ensure Vercel Blob Storage is configured with BLOB_READ_WRITE_TOKEN.";
-		}
-		
 		return NextResponse.json(
 			{
 				success: false,
-				message: userMessage,
-				error: errorMessage,
-				...(process.env.NODE_ENV === 'development' && { stack: errorStack })
+				message: "Failed to upload pictures",
+				error: error instanceof Error ? error.message : "Unknown error"
 			},
 			{ status: 500 }
 		);

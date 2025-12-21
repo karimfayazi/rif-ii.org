@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, FileText, Calendar, Folder } from "lucide-react";
@@ -15,7 +15,7 @@ type ReportData = {
 	SubCategory: string;
 };
 
-function ReportViewContent() {
+export default function ReportViewPage() {
 	const searchParams = useSearchParams();
 	const reportId = searchParams.get('id');
 
@@ -26,48 +26,29 @@ function ReportViewContent() {
 	const getReportUrl = (filePath: string | null) => {
 		if (!filePath) return '';
 		
-		// If already a full URL (from Blob Storage or external server), return as-is
+		// If already a full URL, return as is
 		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
 			return filePath;
 		}
 		
-		// Normalize path (convert backslashes to forward slashes)
-		let normalizedPath = filePath.replace(/\\/g, '/');
+		// Extract filename from various path formats
+		let fileName = filePath;
 		
-		// Handle ~/ prefix (remove it)
-		if (normalizedPath.startsWith('~/')) {
-			normalizedPath = normalizedPath.replace('~/', '');
+		// Remove ~/Uploads/Reports/ prefix if present
+		if (filePath.startsWith('~/Uploads/Reports/')) {
+			fileName = filePath.replace('~/Uploads/Reports/', '');
+		} 
+		// Remove Uploads/Reports/ prefix if present
+		else if (filePath.startsWith('Uploads/Reports/')) {
+			fileName = filePath.replace('Uploads/Reports/', '');
+		}
+		// Remove uploads/reports/ prefix if present (to avoid duplication)
+		else if (filePath.startsWith('uploads/reports/')) {
+			fileName = filePath.replace('uploads/reports/', '');
 		}
 		
-		// Handle legacy formats (convert to lowercase)
-		if (normalizedPath.startsWith('Uploads/Reports/')) {
-			normalizedPath = normalizedPath.replace('Uploads/Reports/', 'uploads/reports/');
-		}
-		
-		// If path doesn't start with uploads/reports/, add it (for backward compatibility)
-		// But don't add if it already starts with uploads/reports/
-		if (!normalizedPath.startsWith('uploads/reports/') && !normalizedPath.startsWith('/uploads/reports/')) {
-			// Only add prefix if it's not already a full path
-			if (!normalizedPath.includes('/')) {
-				normalizedPath = `uploads/reports/${normalizedPath}`;
-			}
-		}
-		
-		// Remove leading slash if present (we'll add it back for local)
-		if (normalizedPath.startsWith('/')) {
-			normalizedPath = normalizedPath.substring(1);
-		}
-		
-		// Always use current origin - files are in public/uploads/ directory
-		// Next.js serves files from public/ folder at the root URL
-		if (typeof window !== 'undefined') {
-			const origin = window.location.origin;
-			// Files in public/uploads/ are accessible at /uploads/
-			return `${origin}/${normalizedPath}`;
-		}
-		
-		// For server-side, use relative path with leading slash
-		return `/${normalizedPath}`;
+		// Construct URL with uploads/reports/ prefix
+		return `https://rif-ii.org/uploads/reports/${fileName}`;
 	};
 
 	useEffect(() => {
@@ -81,19 +62,6 @@ function ReportViewContent() {
 			try {
 				setLoading(true);
 				const response = await fetch(`/api/reports/${reportId}`);
-				
-				// Check if response is OK and content type is JSON
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`);
-				}
-				
-				const contentType = response.headers.get("content-type");
-				if (!contentType || !contentType.includes("application/json")) {
-					const text = await response.text();
-					console.error("Non-JSON response received:", text.substring(0, 200));
-					throw new Error("Server returned non-JSON response");
-				}
-				
 				const data = await response.json();
 
 				if (data.success && data.report) {
@@ -102,7 +70,7 @@ function ReportViewContent() {
 					setError(data.message || "Report not found");
 				}
 			} catch (err) {
-				setError("Error fetching report. Please try again.");
+				setError("Error fetching report");
 				console.error("Error fetching report:", err);
 			} finally {
 				setLoading(false);
@@ -275,20 +243,5 @@ function ReportViewContent() {
 				</div>
 			</div>
 		</div>
-	);
-}
-
-export default function ReportViewPage() {
-	return (
-		<Suspense fallback={
-			<div className="space-y-6">
-				<div className="flex items-center justify-center py-12">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0b4d2b]"></div>
-					<span className="ml-3 text-gray-600">Loading...</span>
-				</div>
-			</div>
-		}>
-			<ReportViewContent />
-		</Suspense>
 	);
 }

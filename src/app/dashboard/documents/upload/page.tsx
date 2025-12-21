@@ -1,14 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Upload, ArrowLeft, FileText, Calendar, Folder, User, X, Check, Plus } from "lucide-react";
+import { useState } from "react";
+import { Upload, ArrowLeft, FileText, Calendar, Folder, User, X, Check } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import AccessDenied from "@/components/AccessDenied";
 import { useAccess } from "@/hooks/useAccess";
-import { useAuth } from "@/hooks/useAuth";
-import DocumentMainCategoryModal from "@/components/DocumentMainCategoryModal";
-import DocumentSubCategoryModal from "@/components/DocumentSubCategoryModal";
 
 type UploadFormData = {
 	title: string;
@@ -32,17 +29,11 @@ type UploadedFile = {
 
 export default function UploadDocumentsPage() {
 	const router = useRouter();
-	const searchParams = useSearchParams();
-	const documentId = searchParams.get('id');
-	const isEditMode = !!documentId;
 	
-	// Get user ID using useAuth hook (more reliable)
-	const { user, userProfile, getUserId, loading: authLoading } = useAuth();
-	const userId = user?.id || user?.username || getUserId() || null;
+	// For demo purposes, using a hardcoded user ID. In real app, get from auth context
+	const userId = "1"; // Replace with actual user ID from auth context
+	const { canUpload, loading: accessLoading, error: accessError } = useAccess(userId);
 	
-	const { canUploadDocuments, accessEdit, loading: accessLoading, error: accessError } = useAccess(userId);
-	
-	// State declarations
 	const [formData, setFormData] = useState<UploadFormData>({
 		title: "",
 		description: "",
@@ -61,154 +52,13 @@ export default function UploadDocumentsPage() {
 	const [uploadProgress, setUploadProgress] = useState(0);
 	const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
 	const [error, setError] = useState<string | null>(null);
-	const [mainCategories, setMainCategories] = useState<Array<{ MainCategoryID: number; Category: string }>>([]);
-	const [subCategories, setSubCategories] = useState<Array<{ SubCategoryID: number; MainCategoryID: number; SubCategory: string }>>([]);
-	const [selectedMainCategoryID, setSelectedMainCategoryID] = useState<number | null>(null);
-	const [loadingCategories, setLoadingCategories] = useState(false);
-	const [showMainCategoryModal, setShowMainCategoryModal] = useState(false);
-	const [showSubCategoryModal, setShowSubCategoryModal] = useState(false);
-
-	// Fetch main categories
-	const fetchMainCategories = async () => {
-		try {
-			setLoadingCategories(true);
-			const response = await fetch('/api/documents/categories');
-			const data = await response.json();
-			
-			if (data.success) {
-				setMainCategories(data.categories || []);
-			}
-		} catch (err) {
-			console.error("Error fetching main categories:", err);
-		} finally {
-			setLoadingCategories(false);
-		}
-	};
-
-	// Fetch sub categories when main category changes
-	const fetchSubCategories = async (mainCategoryID: number) => {
-		try {
-			setLoadingCategories(true);
-			const response = await fetch(`/api/documents/subcategories?mainCategoryID=${mainCategoryID}`);
-			const data = await response.json();
-			
-			if (data.success) {
-				setSubCategories(data.subCategories || []);
-			} else {
-				setSubCategories([]);
-			}
-		} catch (err) {
-			console.error("Error fetching sub categories:", err);
-			setSubCategories([]);
-		} finally {
-			setLoadingCategories(false);
-		}
-	};
-
-	useEffect(() => {
-		console.log('[Documents Upload Page] Access check result:', { canUploadDocuments, accessLoading, accessError, userId });
-	}, [canUploadDocuments, accessLoading, accessError, userId]);
-
-	// Auto-populate "Uploaded By" with user's full name
-	useEffect(() => {
-		if (userProfile?.full_name || user?.name) {
-			const fullName = userProfile?.full_name || user?.name || '';
-			setFormData(prev => ({
-				...prev,
-				uploadedBy: fullName
-			}));
-		}
-	}, [userProfile, user]);
-
-	// Fetch main categories on component mount
-	useEffect(() => {
-		fetchMainCategories();
-	}, []);
-
-	// Fetch document data when editing (after categories are loaded)
-	useEffect(() => {
-		const fetchDocument = async () => {
-			if (!documentId || !isEditMode) return;
-
-			try {
-				const response = await fetch(`/api/documents/${documentId}`);
-				const data = await response.json();
-
-				if (data.success && data.document) {
-					const doc = data.document;
-					// Format date for input field (YYYY-MM-DD)
-					const formatDateForInput = (dateString: string) => {
-						if (!dateString) return '';
-						try {
-							const date = new Date(dateString);
-							const year = date.getFullYear();
-							const month = String(date.getMonth() + 1).padStart(2, '0');
-							const day = String(date.getDate()).padStart(2, '0');
-							return `${year}-${month}-${day}`;
-						} catch {
-							return dateString;
-						}
-					};
-
-					setFormData({
-						title: doc.Title || '',
-						description: doc.Description || '',
-						category: doc.Category || '',
-						subCategory: doc.SubCategory || '',
-						documentDate: formatDateForInput(doc.document_date) || '',
-						uploadedBy: doc.UploadedBy || '',
-						fileType: doc.FileType || '',
-						documentType: doc.Documentstype || '',
-						allowPriorityUsers: doc.AllowPriorityUsers || false,
-						allowInternalUsers: doc.AllowInternalUsers || false,
-						allowOthersUsers: doc.AllowOthersUsers || false
-					});
-
-					// Find and set the main category ID to load sub categories
-					// Wait for categories to be loaded
-					if (doc.Category && mainCategories.length > 0) {
-						const selectedCategory = mainCategories.find(cat => cat.Category === doc.Category);
-						if (selectedCategory) {
-							setSelectedMainCategoryID(selectedCategory.MainCategoryID);
-							fetchSubCategories(selectedCategory.MainCategoryID);
-						}
-					}
-				}
-			} catch (err) {
-				console.error('Error fetching document:', err);
-				setError('Failed to load document data');
-			}
-		};
-
-		// Only fetch document if categories are loaded
-		if (documentId && isEditMode && mainCategories.length > 0) {
-			fetchDocument();
-		}
-	}, [documentId, isEditMode, mainCategories]);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
 		const { name, value, type } = e.target;
-		
-		// If category changes, fetch sub categories
-		if (name === 'category') {
-			const selectedCategory = mainCategories.find(cat => cat.Category === value);
-			setSelectedMainCategoryID(selectedCategory?.MainCategoryID || null);
-			setSubCategories([]); // Clear sub categories
-			setFormData(prev => ({
-				...prev,
-				category: value,
-				subCategory: "" // Reset sub category
-			}));
-			
-			if (selectedCategory?.MainCategoryID) {
-				fetchSubCategories(selectedCategory.MainCategoryID);
-			}
-		} else {
-			setFormData(prev => ({
-				...prev,
-				[name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-			}));
-		}
+		setFormData(prev => ({
+			...prev,
+			[name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+		}));
 	};
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -270,8 +120,7 @@ export default function UploadDocumentsPage() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		
-		// For new uploads, require at least one file
-		if (!isEditMode && files.length === 0) {
+		if (files.length === 0) {
 			setError("Please select at least one document file to upload");
 			return;
 		}
@@ -286,134 +135,62 @@ export default function UploadDocumentsPage() {
 		setError(null);
 
 		try {
-			if (isEditMode) {
-				// Update existing document
-				const response = await fetch(`/api/documents/${documentId}`, {
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						title: formData.title,
-						description: formData.description,
-						category: formData.category,
-						subCategory: formData.subCategory,
-						documentDate: formData.documentDate,
-						uploadedBy: formData.uploadedBy,
-						fileType: formData.fileType,
-						documentType: formData.documentType,
-						allowPriorityUsers: formData.allowPriorityUsers,
-						allowInternalUsers: formData.allowInternalUsers,
-						allowOthersUsers: formData.allowOthersUsers
-					}),
-				});
+			const formDataToSend = new FormData();
+			
+			// Add form fields
+			formDataToSend.append('title', formData.title);
+			formDataToSend.append('description', formData.description);
+			formDataToSend.append('category', formData.category);
+			formDataToSend.append('subCategory', formData.subCategory);
+			formDataToSend.append('documentDate', formData.documentDate);
+			formDataToSend.append('uploadedBy', formData.uploadedBy);
+			formDataToSend.append('fileType', formData.fileType);
+			formDataToSend.append('documentType', formData.documentType);
+			formDataToSend.append('allowPriorityUsers', formData.allowPriorityUsers.toString());
+			formDataToSend.append('allowInternalUsers', formData.allowInternalUsers.toString());
+			formDataToSend.append('allowOthersUsers', formData.allowOthersUsers.toString());
 
-				const result = await response.json();
+			// Add files
+			files.forEach((fileObj, index) => {
+				formDataToSend.append(`files`, fileObj.file);
+			});
 
-				if (result.success) {
-					setUploadStatus('success');
-					setUploadProgress(100);
-					
-					// Redirect to documents page after 2 seconds
-					setTimeout(() => {
-						router.push('/dashboard/documents');
-					}, 2000);
-				} else {
-					setError(result.message || 'Update failed');
-					setUploadStatus('error');
-				}
-			} else {
-				// Upload new document
-				const formDataToSend = new FormData();
+			const response = await fetch('/api/documents/upload', {
+				method: 'POST',
+				body: formDataToSend,
+			});
+
+			const result = await response.json();
+
+			if (result.success) {
+				setUploadStatus('success');
+				setUploadProgress(100);
 				
-				// Add form fields
-				formDataToSend.append('title', formData.title);
-				formDataToSend.append('description', formData.description);
-				formDataToSend.append('category', formData.category);
-				formDataToSend.append('subCategory', formData.subCategory);
-				formDataToSend.append('documentDate', formData.documentDate);
-				formDataToSend.append('uploadedBy', formData.uploadedBy);
-				formDataToSend.append('fileType', formData.fileType);
-				formDataToSend.append('documentType', formData.documentType);
-				formDataToSend.append('allowPriorityUsers', formData.allowPriorityUsers.toString());
-				formDataToSend.append('allowInternalUsers', formData.allowInternalUsers.toString());
-				formDataToSend.append('allowOthersUsers', formData.allowOthersUsers.toString());
-
-				// Add files
-				files.forEach((fileObj, index) => {
-					formDataToSend.append(`files`, fileObj.file);
-				});
-
-				const response = await fetch('/api/documents/upload', {
-					method: 'POST',
-					body: formDataToSend,
-				});
-
-				const result = await response.json();
-
-				if (result.success) {
-					setUploadStatus('success');
-					setUploadProgress(100);
-					
-					// Redirect to documents page after 2 seconds
-					setTimeout(() => {
-						router.push('/dashboard/documents');
-					}, 2000);
-				} else {
-					// Show detailed error message
-					let errorMessage = result.message || 'Upload failed';
-					if (result.error) {
-						errorMessage += ` (${result.error})`;
-					}
-					if (result.hint) {
-						errorMessage += ` ${result.hint}`;
-					}
-					setError(errorMessage);
-					setUploadStatus('error');
-					
-					// Log detailed error information for debugging
-					console.error('Upload error details:', {
-						message: result.message,
-						error: result.error,
-						hint: result.hint,
-						fullResponse: result
-					});
-					console.error('Full error response:', JSON.stringify(result, null, 2));
-				}
+				// Redirect to documents page after 2 seconds
+				setTimeout(() => {
+					router.push('/dashboard/documents');
+				}, 2000);
+			} else {
+				setError(result.message || 'Upload failed');
+				setUploadStatus('error');
 			}
 		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-			const errorStack = err instanceof Error ? err.stack : undefined;
-			
-			setError(isEditMode 
-				? `Update failed: ${errorMessage}. Please try again.` 
-				: `Upload failed: ${errorMessage}. Please try again.`
-			);
+			setError('Upload failed. Please try again.');
 			setUploadStatus('error');
-			
-			// Log detailed error information for debugging
-			console.error('Upload exception:', {
-				message: errorMessage,
-				stack: errorStack,
-				error: err
-			});
-			if (err instanceof Error) {
-				console.error('Error stack:', err.stack);
-			}
+			console.error('Upload error:', err);
 		} finally {
 			setUploading(false);
 		}
 	};
 
 	const resetForm = () => {
-		const fullName = userProfile?.full_name || user?.name || '';
 		setFormData({
 			title: "",
 			description: "",
 			category: "",
 			subCategory: "",
 			documentDate: "",
-			uploadedBy: fullName, // Preserve user's full name
+			uploadedBy: "",
 			fileType: "",
 			documentType: "",
 			allowPriorityUsers: false,
@@ -426,12 +203,12 @@ export default function UploadDocumentsPage() {
 		setUploadProgress(0);
 	};
 
-	// Show loading state while checking access or loading user data
-	if (accessLoading || authLoading) {
+	// Show loading state while checking access
+	if (accessLoading) {
 		return (
 			<div className="space-y-6">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Document' : 'Upload Documents'}</h1>
+					<h1 className="text-2xl font-bold text-gray-900">Upload Documents</h1>
 					<p className="text-gray-600 mt-2">Checking permissions...</p>
 				</div>
 				<div className="flex items-center justify-center py-12">
@@ -442,15 +219,14 @@ export default function UploadDocumentsPage() {
 		);
 	}
 
-	// Show access denied if user doesn't have upload/edit permission
-	const hasAccess = isEditMode ? accessEdit : canUploadDocuments;
-	if (!hasAccess) {
+	// Show access denied if user doesn't have upload permission
+	if (!canUpload) {
 		return (
 			<div className="space-y-6">
 				<div className="flex items-center justify-between">
 					<div>
-						<h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Document' : 'Upload Documents'}</h1>
-						<p className="text-gray-600 mt-2">{isEditMode ? 'Update document information' : 'Upload new documents to the system'}</p>
+						<h1 className="text-2xl font-bold text-gray-900">Upload Documents</h1>
+						<p className="text-gray-600 mt-2">Upload new documents to the system</p>
 					</div>
 					<Link
 						href="/dashboard/documents"
@@ -460,21 +236,7 @@ export default function UploadDocumentsPage() {
 						Back to Documents
 					</Link>
 				</div>
-				{accessError && (
-					<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-						<p className="text-sm text-yellow-800">
-							<strong>Debug Info:</strong> {accessError}
-							{userId && <span className="block mt-1">User ID: {userId}</span>}
-						</p>
-					</div>
-				)}
-				<AccessDenied 
-					action={isEditMode ? "edit documents" : "upload documents"} 
-					customMessage={isEditMode 
-						? "This action requires Admin access or Edit permission. Please contact your administrator if you believe this is an error."
-						: "This action requires Admin access or Upload Documents permission. Please contact your administrator if you believe this is an error."
-					}
-				/>
+				<AccessDenied action="upload documents" />
 			</div>
 		);
 	}
@@ -484,8 +246,8 @@ export default function UploadDocumentsPage() {
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Document' : 'Upload Documents'}</h1>
-					<p className="text-gray-600 mt-2">{isEditMode ? 'Update document information' : 'Upload new documents to the system'}</p>
+					<h1 className="text-2xl font-bold text-gray-900">Upload Documents</h1>
+					<p className="text-gray-600 mt-2">Upload new documents to the system</p>
 				</div>
 				<Link
 					href="/dashboard/documents"
@@ -535,75 +297,39 @@ export default function UploadDocumentsPage() {
 								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Category <span className="text-red-500">*</span>
 								</label>
-								<div className="flex items-center space-x-2">
-									<select
-										name="category"
-										value={formData.category}
-										onChange={handleInputChange}
-										disabled={loadingCategories}
-										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-										required
-									>
-										<option value="">Select Category</option>
-										{mainCategories.map((category) => (
-											<option key={category.MainCategoryID} value={category.Category}>
-												{category.Category}
-											</option>
-										))}
-									</select>
-									<button
-										type="button"
-										onClick={() => setShowMainCategoryModal(true)}
-										className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors flex items-center justify-center"
-										title="Manage Categories"
-									>
-										<Plus className="h-4 w-4" />
-									</button>
-								</div>
+								<select
+									name="category"
+									value={formData.category}
+									onChange={handleInputChange}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+									required
+								>
+									<option value="">Select Category</option>
+									<option value="Workshop">Workshop</option>
+									<option value="Meeting">Meeting</option>
+									<option value="Training">Training</option>
+									<option value="Event">Event</option>
+									<option value="Conference">Conference</option>
+									<option value="Policy">Policy</option>
+									<option value="Procedure">Procedure</option>
+									<option value="Form">Form</option>
+									<option value="Other">Other</option>
+								</select>
 							</div>
 
 							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Sub Category <span className="text-red-500">*</span>
 								</label>
-								<div className="flex items-center space-x-2">
-									<select
-										name="subCategory"
-										value={formData.subCategory}
-										onChange={handleInputChange}
-										disabled={!formData.category || loadingCategories || subCategories.length === 0}
-										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-										required
-									>
-										<option value="">
-											{!formData.category 
-												? "Select Category first" 
-												: loadingCategories 
-												? "Loading sub categories..." 
-												: subCategories.length === 0 
-												? "No sub categories available" 
-												: "Select Sub Category"}
-										</option>
-										{subCategories.map((subCategory) => (
-											<option key={subCategory.SubCategoryID} value={subCategory.SubCategory}>
-												{subCategory.SubCategory}
-											</option>
-										))}
-									</select>
-									<button
-										type="button"
-										onClick={() => {
-											if (selectedMainCategoryID && formData.category) {
-												setShowSubCategoryModal(true);
-											}
-										}}
-										disabled={!formData.category || !selectedMainCategoryID}
-										className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-										title="Manage Sub Categories"
-									>
-										<Plus className="h-4 w-4" />
-									</button>
-								</div>
+								<input
+									type="text"
+									name="subCategory"
+									value={formData.subCategory}
+									onChange={handleInputChange}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+									placeholder="Enter sub category"
+									required
+								/>
 							</div>
 
 							<div>
@@ -629,10 +355,8 @@ export default function UploadDocumentsPage() {
 									name="uploadedBy"
 									value={formData.uploadedBy}
 									onChange={handleInputChange}
-									disabled
-									readOnly
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed outline-none"
-									placeholder={authLoading ? "Loading..." : "Enter your name"}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+									placeholder="Enter your name"
 									required
 								/>
 							</div>
@@ -727,13 +451,8 @@ export default function UploadDocumentsPage() {
 						{/* File Upload */}
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Select Document Files {!isEditMode && <span className="text-red-500">*</span>}
+								Select Document Files <span className="text-red-500">*</span>
 							</label>
-							{isEditMode && (
-								<p className="text-sm text-gray-500 mb-2">
-									Note: Leave empty to keep the existing file. Upload a new file to replace it.
-								</p>
-							)}
 							<div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#0b4d2b] transition-colors">
 								<input
 									type="file"
@@ -813,7 +532,7 @@ export default function UploadDocumentsPage() {
 								<div className="flex items-center">
 									<Check className="h-5 w-5 text-green-500 mr-2" />
 									<span className="text-sm font-medium text-green-900">
-										{isEditMode ? 'Document updated successfully! Redirecting...' : 'Documents uploaded successfully! Redirecting...'}
+										Documents uploaded successfully! Redirecting...
 									</span>
 								</div>
 							</div>
@@ -840,54 +559,15 @@ export default function UploadDocumentsPage() {
 							</button>
 							<button
 								type="submit"
-								disabled={uploading || (!isEditMode && files.length === 0)}
+								disabled={uploading || files.length === 0}
 								className="px-6 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 							>
-								{uploading ? (isEditMode ? 'Updating...' : 'Uploading...') : (isEditMode ? 'Update Document' : 'Upload Documents')}
+								{uploading ? 'Uploading...' : 'Upload Documents'}
 							</button>
 						</div>
 					</form>
 				</div>
 			</div>
-
-			{/* Main Category Modal */}
-			<DocumentMainCategoryModal
-				isOpen={showMainCategoryModal}
-				onClose={() => setShowMainCategoryModal(false)}
-				onCategorySelect={(category) => {
-					setFormData(prev => ({
-						...prev,
-						category: category
-					}));
-					const selectedCategory = mainCategories.find(cat => cat.Category === category);
-					if (selectedCategory) {
-						setSelectedMainCategoryID(selectedCategory.MainCategoryID);
-						fetchSubCategories(selectedCategory.MainCategoryID);
-					}
-				}}
-				onCategoryChange={() => {
-					fetchMainCategories();
-				}}
-			/>
-
-			{/* Sub Category Modal */}
-			<DocumentSubCategoryModal
-				isOpen={showSubCategoryModal}
-				onClose={() => setShowSubCategoryModal(false)}
-				onSubCategorySelect={(subCategory) => {
-					setFormData(prev => ({
-						...prev,
-						subCategory: subCategory
-					}));
-				}}
-				onSubCategoryChange={() => {
-					if (selectedMainCategoryID) {
-						fetchSubCategories(selectedMainCategoryID);
-					}
-				}}
-				mainCategoryID={selectedMainCategoryID}
-				mainCategoryName={formData.category || ""}
-			/>
 		</div>
 	);
 }
