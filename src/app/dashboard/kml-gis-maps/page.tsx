@@ -19,16 +19,18 @@ function GISMapViewer({ layers, geoJsonData }: { layers: LayerInfo[]; geoJsonDat
 	const [loadingProgress, setLoadingProgress] = useState('Loading map...');
 	const [activeLayers, setActiveLayers] = useState<{ [key: string]: boolean }>({});
 	const [layerBounds, setLayerBounds] = useState<{ [key: string]: any }>({});
-	const [mapType, setMapType] = useState<'standard' | 'satellite'>('standard');
+	const [mapType, setMapType] = useState<'standard' | 'satellite'>('satellite');
 	const baseLayerRef = useRef<any>(null);
 
 	// Initialize all layers as active by default
 	useEffect(() => {
-		const initialActive: { [key: string]: boolean } = {};
-		layers.forEach((layer) => {
-			initialActive[layer.name] = true;
-		});
-		setActiveLayers(initialActive);
+		if (layers.length > 0) {
+			const initialActive: { [key: string]: boolean } = {};
+			layers.forEach((layer) => {
+				initialActive[layer.name] = true;
+			});
+			setActiveLayers(initialActive);
+		}
 	}, [layers]);
 
 	useEffect(() => {
@@ -112,7 +114,7 @@ function GISMapViewer({ layers, geoJsonData }: { layers: LayerInfo[]; geoJsonDat
 						}
 					};
 
-					// Initialize with standard map
+					// Initialize with satellite map (default)
 					updateBaseLayer(mapType);
 
 					const renderLayers = () => {
@@ -146,22 +148,22 @@ function GISMapViewer({ layers, geoJsonData }: { layers: LayerInfo[]; geoJsonDat
 
 							const style: any = {
 								color: color,
-								weight: 2,
-								opacity: 0.8,
+								weight: 3,
+								opacity: 0.9,
 								fillColor: color,
-								fillOpacity: 0.2
+								fillOpacity: 0.25
 							};
 
 							// Style points differently
 							const pointToLayer = (feature: any, latlng: any) => {
-								if (feature.geometry.type === 'Point') {
+								if (feature.geometry && feature.geometry.type === 'Point') {
 									return L.circleMarker(latlng, {
-										radius: 6,
+										radius: 8,
 										fillColor: color,
-										color: color,
+										color: '#ffffff',
 										weight: 2,
-										opacity: 0.8,
-										fillOpacity: 0.6
+										opacity: 1,
+										fillOpacity: 0.8
 									});
 								}
 								return null;
@@ -215,8 +217,11 @@ function GISMapViewer({ layers, geoJsonData }: { layers: LayerInfo[]; geoJsonDat
 
 						// Fit map to show all active layers
 						if (bounds.length > 0) {
-							const group = new (L as any).LatLngBounds(bounds);
-							mapInstanceRef.current.fitBounds(group, { padding: [20, 20] });
+							const group = new L.LatLngBounds(bounds);
+							mapInstanceRef.current.fitBounds(group, { padding: [50, 50], maxZoom: 15 });
+						} else {
+							// Default view if no layers
+							mapInstanceRef.current.setView([34.0, 71.5], 7);
 						}
 
 						if (isMounted) {
@@ -334,95 +339,99 @@ function GISMapViewer({ layers, geoJsonData }: { layers: LayerInfo[]; geoJsonDat
 
 	// Re-render layers when activeLayers changes
 	useEffect(() => {
-		if (mapInstanceRef.current && mapLoaded) {
-			// Re-render all layers
-			const renderLayers = () => {
-				if (!mapInstanceRef.current || !layers) return;
+		if (mapInstanceRef.current && mapLoaded && layers.length > 0) {
+			const L = (window as any).L;
+			if (!L) return;
 
-				// Clear existing layers
-				Object.values(layerRefsRef.current).forEach((layer: any) => {
-					if (layer && mapInstanceRef.current) {
-						mapInstanceRef.current.removeLayer(layer);
-					}
-				});
-				layerRefsRef.current = {};
-				const bounds: any[] = [];
-
-				// Render each layer
-				layers.forEach((layerInfo, index) => {
-					if (!activeLayers[layerInfo.name]) return;
-
-					const layerGeoJson = {
-						type: "FeatureCollection",
-						features: layerInfo.features
-					};
-
-					const colors = [
-						'#0b4d2b', '#2563eb', '#dc2626', '#16a34a', 
-						'#ea580c', '#9333ea', '#0891b2', '#be123c'
-					];
-					const color = colors[index % colors.length];
-
-					const style: any = {
-						color: color,
-						weight: 2,
-						opacity: 0.8,
-						fillColor: color,
-						fillOpacity: 0.2
-					};
-
-					const pointToLayer = (feature: any, latlng: any) => {
-						if (feature.geometry.type === 'Point') {
-							return (window as any).L.circleMarker(latlng, {
-								radius: 6,
-								fillColor: color,
-								color: color,
-								weight: 2,
-								opacity: 0.8,
-								fillOpacity: 0.6
-							});
-						}
-						return null;
-					};
-
-					const layer = (window as any).L.geoJSON(layerGeoJson, {
-						style: style,
-						pointToLayer: pointToLayer,
-						onEachFeature: (feature: any, layer: any) => {
-							if (feature.properties) {
-								const props = feature.properties;
-								let popupContent = `<div style="font-weight: bold; margin-bottom: 5px; font-size: 14px;"><div style="color: ${color}; margin-bottom: 5px;">${layerInfo.name}</div>`;
-								if (props.name) {
-									popupContent += `<div style="font-size: 13px; margin-bottom: 8px;">${props.name}</div>`;
-								}
-								if (props.description) {
-									popupContent += `<div style="margin-bottom: 5px; font-size: 12px; color: #666;">${props.description}</div>`;
-								}
-								Object.keys(props).forEach(key => {
-									if (key !== 'name' && key !== 'description') {
-										popupContent += `<div style="margin-top: 3px; font-size: 11px;"><strong>${key}:</strong> ${props[key]}</div>`;
-									}
-								});
-								popupContent += '</div>';
-								layer.bindPopup(popupContent);
-							}
-						}
-					}).addTo(mapInstanceRef.current);
-
-					layerRefsRef.current[layerInfo.name] = layer;
-
-					if (layer.getBounds && layer.getBounds().isValid()) {
-						bounds.push(layer.getBounds());
-					}
-				});
-
-				if (bounds.length > 0) {
-					const group = new (window as any).L.LatLngBounds(bounds);
-					mapInstanceRef.current.fitBounds(group, { padding: [20, 20] });
+			// Clear existing layers
+			Object.values(layerRefsRef.current).forEach((layer: any) => {
+				if (layer && mapInstanceRef.current) {
+					mapInstanceRef.current.removeLayer(layer);
 				}
-			};
+			});
+			layerRefsRef.current = {};
+			const bounds: any[] = [];
 
-			renderLayers();
+			// Render each layer based on checkbox state
+			layers.forEach((layerInfo, index) => {
+				// Only render if layer is checked
+				if (!activeLayers[layerInfo.name]) {
+					return;
+				}
+
+				const layerGeoJson = {
+					type: "FeatureCollection",
+					features: layerInfo.features
+				};
+
+				const colors = [
+					'#0b4d2b', '#2563eb', '#dc2626', '#16a34a', 
+					'#ea580c', '#9333ea', '#0891b2', '#be123c',
+					'#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'
+				];
+				const color = colors[index % colors.length];
+
+				const style: any = {
+					color: color,
+					weight: 3,
+					opacity: 0.9,
+					fillColor: color,
+					fillOpacity: 0.25
+				};
+
+				const pointToLayer = (feature: any, latlng: any) => {
+					if (feature.geometry && feature.geometry.type === 'Point') {
+						return L.circleMarker(latlng, {
+							radius: 8,
+							fillColor: color,
+							color: '#ffffff',
+							weight: 2,
+							opacity: 1,
+							fillOpacity: 0.8
+						});
+					}
+					return null;
+				};
+
+				const layer = L.geoJSON(layerGeoJson, {
+					style: style,
+					pointToLayer: pointToLayer,
+					onEachFeature: (feature: any, layer: any) => {
+						if (feature.properties) {
+							const props = feature.properties;
+							let popupContent = `<div style="font-weight: bold; margin-bottom: 5px; font-size: 14px;"><div style="color: ${color}; margin-bottom: 5px; font-weight: bold;">${layerInfo.name}</div>`;
+							if (props.name) {
+								popupContent += `<div style="font-size: 13px; margin-bottom: 8px; font-weight: 600;">${props.name}</div>`;
+							}
+							if (props.description) {
+								popupContent += `<div style="margin-bottom: 5px; font-size: 12px; color: #666;">${props.description}</div>`;
+							}
+							Object.keys(props).forEach(key => {
+								if (key !== 'name' && key !== 'description') {
+									popupContent += `<div style="margin-top: 3px; font-size: 11px;"><strong>${key}:</strong> ${props[key]}</div>`;
+								}
+							});
+							popupContent += '</div>';
+							layer.bindPopup(popupContent);
+						}
+					}
+				}).addTo(mapInstanceRef.current);
+
+				layerRefsRef.current[layerInfo.name] = layer;
+
+				if (layer.getBounds && layer.getBounds().isValid()) {
+					bounds.push(layer.getBounds());
+				}
+			});
+
+			// Fit map to show all visible layers
+			if (bounds.length > 0) {
+				const group = new L.LatLngBounds(bounds);
+				mapInstanceRef.current.fitBounds(group, { padding: [50, 50], maxZoom: 15 });
+			} else if (mapInstanceRef.current) {
+				// If no layers visible, keep current view or set default
+				mapInstanceRef.current.setView([34.0, 71.5], 7);
+			}
 		}
 	}, [activeLayers, layers, mapLoaded]);
 
@@ -685,7 +694,14 @@ export default function KMLGISMapsPage() {
 				allLayers = [...(kmzResult.layers || [])];
 				combinedGeoJson = kmzResult.geoJson || combinedGeoJson;
 			} else {
-				setError(kmzResult.message || 'Failed to load KMZ file');
+				let errorMsg = kmzResult.message || 'Failed to load KMZ file';
+				if (kmzResult.hint) {
+					errorMsg += `\n\n${kmzResult.hint}`;
+				}
+				if (kmzResult.searchedPaths && kmzResult.searchedPaths.length > 0) {
+					errorMsg += `\n\nSearched paths:\n${kmzResult.searchedPaths.map((p: string) => `- ${p}`).join('\n')}`;
+				}
+				setError(errorMsg);
 			}
 
 			// Load additional shapefile layers

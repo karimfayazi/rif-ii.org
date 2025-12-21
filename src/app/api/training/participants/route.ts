@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
 		const gender = searchParams.get('gender');
 		const organizationDepartment = searchParams.get('organizationDepartment');
 		const workshopTrainingName = searchParams.get('workshopTrainingName');
+		const workshopSessionConference = searchParams.get('workshopSessionConference');
 
 		const pool = await getDb();
 		let query = `
@@ -80,6 +81,10 @@ export async function GET(request: NextRequest) {
 		if (workshopTrainingName) {
 			query += ` AND [workshop_training_name] = @workshopTrainingName`;
 			request_obj.input('workshopTrainingName', workshopTrainingName);
+		}
+		if (workshopSessionConference) {
+			query += ` AND [workshop_session_conference] = @workshopSessionConference`;
+			request_obj.input('workshopSessionConference', workshopSessionConference);
 		}
 
 		query += ` ORDER BY [entry_timestamp] DESC, [participant_name]`;

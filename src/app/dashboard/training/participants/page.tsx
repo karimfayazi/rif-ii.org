@@ -57,12 +57,14 @@ export default function TrainingParticipantsPage() {
 	const [selectedGender, setSelectedGender] = useState("");
 	const [selectedOrganizationDepartment, setSelectedOrganizationDepartment] = useState("");
 	const [selectedWorkshopTrainingName, setSelectedWorkshopTrainingName] = useState("");
+	const [selectedWorkshopSessionConference, setSelectedWorkshopSessionConference] = useState("");
 	const [participantName, setParticipantName] = useState("");
 	const [cnicNumber, setCnicNumber] = useState("");
 	const [contactNumber, setContactNumber] = useState("");
 	const [tehsils, setTehsils] = useState<string[]>([]);
 	const [organizationDepartments, setOrganizationDepartments] = useState<string[]>([]);
 	const [workshopTrainingNames, setWorkshopTrainingNames] = useState<string[]>([]);
+	const [workshopSessionConferences, setWorkshopSessionConferences] = useState<string[]>([]);
 	const [viewingParticipant, setViewingParticipant] = useState<WorkshopParticipant | null>(null);
 
 	const fetchParticipants = useCallback(async () => {
@@ -74,6 +76,7 @@ export default function TrainingParticipantsPage() {
 			if (selectedGender) params.append('gender', selectedGender);
 			if (selectedOrganizationDepartment) params.append('organizationDepartment', selectedOrganizationDepartment);
 			if (selectedWorkshopTrainingName) params.append('workshopTrainingName', selectedWorkshopTrainingName);
+			if (selectedWorkshopSessionConference) params.append('workshopSessionConference', selectedWorkshopSessionConference);
 
 			const response = await fetch(`/api/training/participants?${params.toString()}`);
 			const data = await response.json();
@@ -85,10 +88,12 @@ export default function TrainingParticipantsPage() {
 				const uniqueTehsils = [...new Set(data.participants.map((item: WorkshopParticipant) => item.tehsil).filter(Boolean))] as string[];
 				const uniqueOrganizationDepartments = [...new Set(data.participants.map((item: WorkshopParticipant) => item.organization_department).filter(Boolean))] as string[];
 				const uniqueWorkshopTrainingNames = [...new Set(data.participants.map((item: WorkshopParticipant) => item.workshop_training_name).filter(Boolean))] as string[];
+				const uniqueWorkshopSessionConferences = [...new Set(data.participants.map((item: WorkshopParticipant) => item.workshop_session_conference).filter(Boolean))] as string[];
 				
 				setTehsils(uniqueTehsils);
 				setOrganizationDepartments(uniqueOrganizationDepartments);
 				setWorkshopTrainingNames(uniqueWorkshopTrainingNames);
+				setWorkshopSessionConferences(uniqueWorkshopSessionConferences);
 			} else {
 				setError(data.message || "Failed to fetch participants data");
 			}
@@ -98,7 +103,7 @@ export default function TrainingParticipantsPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [selectedDistrict, selectedTehsil, selectedGender, selectedOrganizationDepartment, selectedWorkshopTrainingName]);
+	}, [selectedDistrict, selectedTehsil, selectedGender, selectedOrganizationDepartment, selectedWorkshopTrainingName, selectedWorkshopSessionConference]);
 
 	useEffect(() => {
 		fetchParticipants();
@@ -114,6 +119,7 @@ export default function TrainingParticipantsPage() {
 		setSelectedGender("");
 		setSelectedOrganizationDepartment("");
 		setSelectedWorkshopTrainingName("");
+		setSelectedWorkshopSessionConference("");
 		setParticipantName("");
 		setCnicNumber("");
 		setContactNumber("");
@@ -131,6 +137,8 @@ export default function TrainingParticipantsPage() {
 			"SO/DO/WO/HO",
 			"Gender",
 			"Organization/Department",
+			"Designation",
+			"Profession",
 			"CNIC Number",
 			"Contact Number",
 			"District",
@@ -148,6 +156,8 @@ export default function TrainingParticipantsPage() {
 				`"${(item.so_do_wo_ho || "").replace(/"/g, '""')}"`,
 				`"${(item.gender || "").replace(/"/g, '""')}"`,
 				`"${(item.organization_department || "").replace(/"/g, '""')}"`,
+				`"${(item.designation || "").replace(/"/g, '""')}"`,
+				`"${(item.profession || "").replace(/"/g, '""')}"`,
 				`"${(item.cnic_number || "").replace(/"/g, '""')}"`,
 				`"${(item.contact_number || "").replace(/"/g, '""')}"`,
 				`"${(item.district || "").replace(/"/g, '""')}"`,
@@ -179,11 +189,12 @@ export default function TrainingParticipantsPage() {
 		const matchesGender = !selectedGender || item.gender === selectedGender;
 		const matchesOrganizationDepartment = !selectedOrganizationDepartment || item.organization_department === selectedOrganizationDepartment;
 		const matchesWorkshopTrainingName = !selectedWorkshopTrainingName || item.workshop_training_name === selectedWorkshopTrainingName;
+		const matchesWorkshopSessionConference = !selectedWorkshopSessionConference || item.workshop_session_conference === selectedWorkshopSessionConference;
 		const matchesParticipantName = !participantName || (item.participant_name && item.participant_name.toLowerCase().includes(participantName.toLowerCase()));
 		const matchesCnicNumber = !cnicNumber || (item.cnic_number && item.cnic_number.toLowerCase().includes(cnicNumber.toLowerCase()));
 		const matchesContactNumber = !contactNumber || (item.contact_number && item.contact_number.toLowerCase().includes(contactNumber.toLowerCase()));
 		
-		return matchesDistrict && matchesTehsil && matchesGender && matchesOrganizationDepartment && matchesWorkshopTrainingName && matchesParticipantName && matchesCnicNumber && matchesContactNumber;
+		return matchesDistrict && matchesTehsil && matchesGender && matchesOrganizationDepartment && matchesWorkshopTrainingName && matchesWorkshopSessionConference && matchesParticipantName && matchesCnicNumber && matchesContactNumber;
 	});
 
 	// Calculate summary statistics
@@ -371,17 +382,36 @@ export default function TrainingParticipantsPage() {
 					{/* Workshop Training Name Filter */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Workshop/Training Name
+							Training
 						</label>
 						<select
 							value={selectedWorkshopTrainingName}
 							onChange={(e) => setSelectedWorkshopTrainingName(e.target.value)}
 							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						>
-							<option value="">All Workshops</option>
+							<option value="">All Trainings</option>
 							{workshopTrainingNames.map((workshop) => (
 								<option key={workshop} value={workshop}>
 									{workshop}
+								</option>
+							))}
+						</select>
+					</div>
+
+					{/* Workshop/Session/Conference Filter */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Workshop/Session/Conference
+						</label>
+						<select
+							value={selectedWorkshopSessionConference}
+							onChange={(e) => setSelectedWorkshopSessionConference(e.target.value)}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+						>
+							<option value="">All Sessions</option>
+							{workshopSessionConferences.map((session) => (
+								<option key={session} value={session}>
+									{session}
 								</option>
 							))}
 						</select>
@@ -513,7 +543,7 @@ export default function TrainingParticipantsPage() {
 					<BarChart3 className="mx-auto h-12 w-12 text-gray-400 mb-4" />
 					<h3 className="text-lg font-medium text-gray-900 mb-2">No participants found</h3>
 					<p className="text-gray-600">
-						{selectedDistrict || selectedTehsil || selectedGender || selectedOrganizationDepartment || selectedWorkshopTrainingName
+						{selectedDistrict || selectedTehsil || selectedGender || selectedOrganizationDepartment || selectedWorkshopTrainingName || selectedWorkshopSessionConference
 							? "Try adjusting your search criteria" 
 							: "No participants data available"
 						}

@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile, stat } from "fs/promises";
+import path from "path";
 import AdmZip from "adm-zip";
 import { parseStringPromise } from "xml2js";
 
-// KMZ file path
-const KMZ_FILE_PATH = "D:\\PERSONAL\\AHT GROUP\\GIS-Map\\6-Mapping Workshop Data\\6-Mapping Workshop Data\\Mapping Workshop Field Verification\\kmz\\DIK\\Paniala Data.kmz";
+// Get KMZ file path from environment variable or use default
+function getKMZFilePath(): string {
+	// Try environment variable first (for production)
+	const envPath = process.env.KMZ_FILE_PATH;
+	if (envPath) {
+		return envPath;
+	}
+
+	// Try in public folder (if file is uploaded there)
+	const publicPath = path.join(process.cwd(), 'public', 'maps', 'kmz', 'Paniala Data.kmz');
+	
+	// Fallback to development path (Windows)
+	if (process.platform === 'win32') {
+		return "D:\\PERSONAL\\AHT GROUP\\GIS-Map\\6-Mapping Workshop Data\\6-Mapping Workshop Data\\Mapping Workshop Field Verification\\kmz\\DIK\\Paniala Data.kmz";
+	}
+
+	// Linux/Unix fallback
+	return "/var/www/maps/kmz/Paniala Data.kmz";
+}
 
 // Helper function to parse KML XML to extract layers and features
 async function parseKMLToGeoJSON(kmlContent: string): Promise<any> {
@@ -257,58 +275,50 @@ function extractExtendedData(placemark: any): any {
 // GET - Load and parse KMZ file, return all layers
 export async function GET(request: NextRequest) {
 	try {
-		// Check if file exists
+		const KMZ_FILE_PATH = getKMZFilePath();
+		const alternativePaths = [
+			path.join(process.cwd(), 'public', 'maps', 'kmz', 'Paniala Data.kmz'),
+			path.join(process.cwd(), 'public', 'Paniala Data.kmz'),
+			path.join(process.cwd(), 'Paniala Data.kmz'),
+		];
+
+		// Try primary path first
+		let actualPath: string | null = null;
 		try {
 			await stat(KMZ_FILE_PATH);
-		} catch (statError) {
+			actualPath = KMZ_FILE_PATH;
+		} catch {
+			// Try alternative paths
+			for (const altPath of alternativePaths) {
+				try {
+					await stat(altPath);
+					actualPath = altPath;
+					break;
+				} catch {
+					// Continue to next path
+				}
+			}
+		}
+
+		if (!actualPath) {
 			return NextResponse.json(
 				{ 
 					success: false, 
 					message: "KMZ file not found or not accessible",
 					path: KMZ_FILE_PATH,
-					error: statError instanceof Error ? statError.message : "Unknown error"
+					hint: "Please set KMZ_FILE_PATH environment variable or place the file in public/maps/kmz/",
+					searchedPaths: [
+						KMZ_FILE_PATH,
+						...alternativePaths
+					]
 				},
 				{ status: 404 }
 			);
 		}
 
-		// Read KMZ file
-		const kmzBuffer = await readFile(KMZ_FILE_PATH);
-		
-		// Extract KMZ (which is a ZIP file)
-		const zip = new AdmZip(kmzBuffer);
-		const zipEntries = zip.getEntries();
-		
-		// Find KML file in the ZIP
-		const kmlEntry = zipEntries.find(entry => 
-			entry.entryName.toLowerCase().endsWith('.kml')
-		);
-
-		if (!kmlEntry) {
-			return NextResponse.json(
-				{ 
-					success: false, 
-					message: "No KML file found inside the KMZ archive"
-				},
-				{ status: 400 }
-			);
-		}
-
-		// Extract KML content
-		const kmlContent = kmlEntry.getData().toString('utf8');
-
-		// Parse KML to GeoJSON
-		const geoJsonData = await parseKMLToGeoJSON(kmlContent);
-
-		return NextResponse.json({
-			success: true,
-			message: "KMZ file loaded and parsed successfully",
-			layers: geoJsonData.layers,
-			geoJson: geoJsonData,
-			totalFeatures: geoJsonData.features.length,
-			totalLayers: geoJsonData.layers.length
-		});
-
+		// Read and process KMZ file
+		const kmzBuffer = await readFile(actualPath);
+		return await processKMZFile(kmzBuffer);
 	} catch (error) {
 		console.error("Error loading KMZ file:", error);
 		return NextResponse.json(
@@ -320,5 +330,42 @@ export async function GET(request: NextRequest) {
 			{ status: 500 }
 		);
 	}
+}
+
+// Helper function to process KMZ file
+async function processKMZFile(kmzBuffer: Buffer) {
+	// Extract KMZ (which is a ZIP file)
+	const zip = new AdmZip(kmzBuffer);
+	const zipEntries = zip.getEntries();
+	
+	// Find KML file in the ZIP
+	const kmlEntry = zipEntries.find(entry => 
+		entry.entryName.toLowerCase().endsWith('.kml')
+	);
+
+	if (!kmlEntry) {
+		return NextResponse.json(
+			{ 
+				success: false, 
+				message: "No KML file found inside the KMZ archive"
+			},
+			{ status: 400 }
+		);
+	}
+
+	// Extract KML content
+	const kmlContent = kmlEntry.getData().toString('utf8');
+
+	// Parse KML to GeoJSON
+	const geoJsonData = await parseKMLToGeoJSON(kmlContent);
+
+	return NextResponse.json({
+		success: true,
+		message: "KMZ file loaded and parsed successfully",
+		layers: geoJsonData.layers,
+		geoJson: geoJsonData,
+		totalFeatures: geoJsonData.features.length,
+		totalLayers: geoJsonData.layers.length
+	});
 }
 
