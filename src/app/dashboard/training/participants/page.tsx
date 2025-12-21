@@ -46,7 +46,6 @@ type WorkshopParticipant = {
 	Duration_Days?: number;
 };
 
-const DISTRICT_OPTIONS = ["All", "DIK", "Bannu"];
 const GENDER_OPTIONS = ["Male", "Female"];
 
 export default function TrainingParticipantsPage() {
@@ -58,6 +57,7 @@ export default function TrainingParticipantsPage() {
 	const [participants, setParticipants] = useState<WorkshopParticipant[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [districts, setDistricts] = useState<string[]>([]);
 	const [selectedDistrict, setSelectedDistrict] = useState("");
 	const [selectedTehsil, setSelectedTehsil] = useState("");
 	const [selectedGender, setSelectedGender] = useState("");
@@ -67,10 +67,57 @@ export default function TrainingParticipantsPage() {
 	const [cnicNumber, setCnicNumber] = useState("");
 	const [contactNumber, setContactNumber] = useState("");
 	const [tehsils, setTehsils] = useState<string[]>([]);
+	const [loadingTehsils, setLoadingTehsils] = useState(false);
 	const [organizationDepartments, setOrganizationDepartments] = useState<string[]>([]);
 	const [workshopTrainingNames, setWorkshopTrainingNames] = useState<string[]>([]);
 	const [viewingParticipant, setViewingParticipant] = useState<WorkshopParticipant | null>(null);
 	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; participant: WorkshopParticipant | null }>({ show: false, participant: null });
+
+	// Fetch districts on component mount
+	useEffect(() => {
+		const fetchDistricts = async () => {
+			try {
+				const response = await fetch('/api/training/participants/districts');
+				const data = await response.json();
+				if (data.success) {
+					setDistricts(data.districts || []);
+				}
+			} catch (err) {
+				console.error("Error fetching districts:", err);
+			}
+		};
+		fetchDistricts();
+	}, []);
+
+	// Fetch tehsils when district changes
+	useEffect(() => {
+		const fetchTehsilsForDistrict = async () => {
+			if (!selectedDistrict || selectedDistrict === "All" || selectedDistrict === "") {
+				setTehsils([]);
+				setSelectedTehsil(""); // Reset tehsil selection when district is cleared
+				return;
+			}
+
+			try {
+				setLoadingTehsils(true);
+				const response = await fetch(`/api/training/participants/tehsils?district=${encodeURIComponent(selectedDistrict)}`);
+				const data = await response.json();
+				if (data.success) {
+					setTehsils(data.tehsils || []);
+					setSelectedTehsil(""); // Reset tehsil selection when district changes
+				} else {
+					setTehsils([]);
+				}
+			} catch (err) {
+				console.error("Error fetching tehsils:", err);
+				setTehsils([]);
+			} finally {
+				setLoadingTehsils(false);
+			}
+		};
+
+		fetchTehsilsForDistrict();
+	}, [selectedDistrict]);
 
 	const fetchParticipants = useCallback(async () => {
 		try {
@@ -88,12 +135,10 @@ export default function TrainingParticipantsPage() {
 			if (data.success) {
 				setParticipants(data.participants || []);
 				
-				// Extract unique values for filters
-				const uniqueTehsils = [...new Set(data.participants.map((item: WorkshopParticipant) => item.tehsil).filter(Boolean))] as string[];
+				// Extract unique values for filters (but don't override tehsils - they come from district selection)
 				const uniqueOrganizationDepartments = [...new Set(data.participants.map((item: WorkshopParticipant) => item.organization_department).filter(Boolean))] as string[];
 				const uniqueWorkshopTrainingNames = [...new Set(data.participants.map((item: WorkshopParticipant) => item.workshop_training_name).filter(Boolean))] as string[];
 				
-				setTehsils(uniqueTehsils);
 				setOrganizationDepartments(uniqueOrganizationDepartments);
 				setWorkshopTrainingNames(uniqueWorkshopTrainingNames);
 			} else {
@@ -200,8 +245,8 @@ export default function TrainingParticipantsPage() {
 
 	// Filter data based on selected filters
 	const filteredData = participants.filter(item => {
-		const matchesDistrict = !selectedDistrict || selectedDistrict === "All" || item.district === selectedDistrict;
-		const matchesTehsil = !selectedTehsil || item.tehsil === selectedTehsil;
+		const matchesDistrict = !selectedDistrict || selectedDistrict === "" || item.district === selectedDistrict;
+		const matchesTehsil = !selectedTehsil || selectedTehsil === "" || item.tehsil === selectedTehsil;
 		const matchesGender = !selectedGender || item.gender === selectedGender;
 		const matchesOrganizationDepartment = !selectedOrganizationDepartment || item.organization_department === selectedOrganizationDepartment;
 		const matchesWorkshopTrainingName = !selectedWorkshopTrainingName || item.workshop_training_name === selectedWorkshopTrainingName;
@@ -328,8 +373,8 @@ export default function TrainingParticipantsPage() {
 							onChange={(e) => setSelectedDistrict(e.target.value)}
 							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						>
-							<option value="">All</option>
-							{DISTRICT_OPTIONS.filter(d => d !== "All").map((district) => (
+							<option value="">All Districts</option>
+							{districts.map((district) => (
 								<option key={district} value={district}>
 									{district}
 								</option>
@@ -345,9 +390,16 @@ export default function TrainingParticipantsPage() {
 						<select
 							value={selectedTehsil}
 							onChange={(e) => setSelectedTehsil(e.target.value)}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							disabled={!selectedDistrict || selectedDistrict === "" || loadingTehsils}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
 						>
-							<option value="">All Tehsils</option>
+							<option value="">
+								{!selectedDistrict || selectedDistrict === "" 
+									? "Select District first" 
+									: loadingTehsils 
+									? "Loading tehsils..." 
+									: "All Tehsils"}
+							</option>
 							{tehsils.map((tehsil) => (
 								<option key={tehsil} value={tehsil}>
 									{tehsil}
