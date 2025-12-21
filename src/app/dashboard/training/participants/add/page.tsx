@@ -31,9 +31,9 @@ const formatDateForInput = (dateValue: string | Date | null | undefined): string
 	
 	// If it's a string
 	const dateString = String(dateValue).trim();
-	if (!dateString) return "";
+	if (!dateString || dateString === 'null' || dateString === 'undefined') return "";
 	
-	// If already in YYYY-MM-DD format, return as is
+	// If already in YYYY-MM-DD format, return as is (SQL Server format 120)
 	if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
 		return dateString;
 	}
@@ -47,8 +47,11 @@ const formatDateForInput = (dateValue: string | Date | null | undefined): string
 		if (isNaN(date.getTime())) {
 			// Try parsing formats like "Dec 18 2025 12:00AM"
 			// Remove time portion if present
-			const dateOnly = dateString.split(' ')[0] + ' ' + dateString.split(' ')[1] + ' ' + dateString.split(' ')[2];
-			date = new Date(dateOnly);
+			const parts = dateString.split(' ');
+			if (parts.length >= 3) {
+				const dateOnly = parts[0] + ' ' + parts[1] + ' ' + parts[2];
+				date = new Date(dateOnly);
+			}
 		}
 		
 		if (!isNaN(date.getTime())) {
@@ -149,8 +152,32 @@ export default function AddParticipantPage() {
 				console.log("Raw start_date:", participant.start_date, "Type:", typeof participant.start_date);
 				console.log("Raw end_date:", participant.end_date, "Type:", typeof participant.end_date);
 				
-				const formattedStartDate = formatDateForInput(participant.start_date);
-				const formattedEndDate = formatDateForInput(participant.end_date);
+				// Format dates - handle null, undefined, and various date formats
+				// SQL Server CONVERT with style 120 returns YYYY-MM-DD format
+				let formattedStartDate = "";
+				let formattedEndDate = "";
+				
+				if (participant.start_date) {
+					formattedStartDate = formatDateForInput(participant.start_date);
+					// If formatDateForInput returns empty, try direct assignment if already in YYYY-MM-DD format
+					if (!formattedStartDate && typeof participant.start_date === 'string') {
+						const trimmed = participant.start_date.trim();
+						if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+							formattedStartDate = trimmed.substring(0, 10);
+						}
+					}
+				}
+				
+				if (participant.end_date) {
+					formattedEndDate = formatDateForInput(participant.end_date);
+					// If formatDateForInput returns empty, try direct assignment if already in YYYY-MM-DD format
+					if (!formattedEndDate && typeof participant.end_date === 'string') {
+						const trimmed = participant.end_date.trim();
+						if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+							formattedEndDate = trimmed.substring(0, 10);
+						}
+					}
+				}
 				
 				console.log("Formatted start_date:", formattedStartDate);
 				console.log("Formatted end_date:", formattedEndDate);
