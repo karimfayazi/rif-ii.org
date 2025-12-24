@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, ArrowLeft, FileText, Calendar, Folder, User, X, Check } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Upload, ArrowLeft, FileText, Calendar, Folder, User, X, Check, Plus, Edit, Trash2, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AccessDenied from "@/components/AccessDenied";
 import { useAccess } from "@/hooks/useAccess";
+import { useAuth } from "@/hooks/useAuth";
 
 type UploadFormData = {
 	title: string;
@@ -21,6 +22,17 @@ type UploadFormData = {
 	allowOthersUsers: boolean;
 };
 
+type Category = {
+	MainCategoryID: number;
+	Category: string;
+};
+
+type SubCategory = {
+	SubCategoryID: number;
+	MainCategoryID: number;
+	SubCategory: string;
+};
+
 type UploadedFile = {
 	file: File;
 	preview: string;
@@ -29,10 +41,38 @@ type UploadedFile = {
 
 export default function UploadDocumentsPage() {
 	const router = useRouter();
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	const { canUploadDocuments, isAdmin, loading: accessLoading, error: accessError } = useAccess(userId);
 	
-	// For demo purposes, using a hardcoded user ID. In real app, get from auth context
-	const userId = "1"; // Replace with actual user ID from auth context
-	const { canUpload, loading: accessLoading, error: accessError } = useAccess(userId);
+	// Debug logging
+	useEffect(() => {
+		console.log('[Upload Documents Page] Access Status:', {
+			userId,
+			canUploadDocuments,
+			isAdmin,
+			accessLoading,
+			accessError,
+			user: user ? { id: user.id, username: user.username } : null
+		});
+	}, [userId, canUploadDocuments, isAdmin, accessLoading, accessError, user]);
+
+	// Auto-populate "Uploaded By" field with current user's username
+	useEffect(() => {
+		if (user) {
+			const userName = user.name || user.username || user.id || "";
+			if (userName) {
+				setFormData(prev => {
+					// Only update if not already set
+					if (prev.uploadedBy) return prev;
+					return {
+						...prev,
+						uploadedBy: userName
+					};
+				});
+			}
+		}
+	}, [user]);
 	
 	const [formData, setFormData] = useState<UploadFormData>({
 		title: "",
@@ -52,13 +92,97 @@ export default function UploadDocumentsPage() {
 	const [uploadProgress, setUploadProgress] = useState(0);
 	const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
 	const [error, setError] = useState<string | null>(null);
+	
+	// Category and SubCategory management
+	const [categories, setCategories] = useState<Category[]>([]);
+	const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+	const [loadingCategories, setLoadingCategories] = useState(false);
+	const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+	
+	// Category Modal State
+	const [showCategoryModal, setShowCategoryModal] = useState(false);
+	const [categoryModalMode, setCategoryModalMode] = useState<'add' | 'edit'>('add');
+	const [categoryFormData, setCategoryFormData] = useState({ MainCategoryID: 0, Category: "" });
+	const [categoryError, setCategoryError] = useState<string | null>(null);
+	const [savingCategory, setSavingCategory] = useState(false);
+	
+	// SubCategory Modal State
+	const [showSubCategoryModal, setShowSubCategoryModal] = useState(false);
+	const [subCategoryModalMode, setSubCategoryModalMode] = useState<'add' | 'edit'>('add');
+	const [subCategoryFormData, setSubCategoryFormData] = useState({ SubCategoryID: 0, MainCategoryID: 0, SubCategory: "" });
+	const [subCategoryError, setSubCategoryError] = useState<string | null>(null);
+	const [savingSubCategory, setSavingSubCategory] = useState(false);
+
+	// Fetch categories on component mount
+	useEffect(() => {
+		fetchCategories();
+	}, []);
+
+	// Fetch subcategories when category is selected
+	useEffect(() => {
+		if (selectedCategoryId) {
+			fetchSubCategories(parseInt(selectedCategoryId));
+		} else {
+			setSubCategories([]);
+			setFormData(prev => ({ ...prev, subCategory: "" }));
+		}
+	}, [selectedCategoryId]);
+
+	const fetchCategories = async () => {
+		try {
+			setLoadingCategories(true);
+			const response = await fetch('/api/documents/categories');
+			const data = await response.json();
+			
+			if (data.success) {
+				setCategories(data.categories || []);
+			}
+		} catch (err) {
+			console.error("Error fetching categories:", err);
+		} finally {
+			setLoadingCategories(false);
+		}
+	};
+
+	const fetchSubCategories = async (mainCategoryID: number) => {
+		try {
+			const response = await fetch(`/api/documents/subcategories?mainCategoryID=${mainCategoryID}`);
+			const data = await response.json();
+			
+			if (data.success) {
+				setSubCategories(data.subCategories || []);
+			}
+		} catch (err) {
+			console.error("Error fetching subcategories:", err);
+		}
+	};
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
 		const { name, value, type } = e.target;
-		setFormData(prev => ({
-			...prev,
-			[name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-		}));
+		
+		// Handle category change - reset subcategory when category changes
+		if (name === 'category') {
+			const categoryId = value;
+			setSelectedCategoryId(categoryId);
+			const selectedCategory = categories.find(cat => cat.MainCategoryID.toString() === categoryId);
+			setFormData(prev => ({
+				...prev,
+				[name]: selectedCategory ? selectedCategory.Category : "",
+				subCategory: "" // Reset subcategory when category changes
+			}));
+		} else if (name === 'subCategory') {
+			const subCategoryId = value;
+			const selectedSubCategory = subCategories.find(sub => sub.SubCategoryID.toString() === subCategoryId);
+			setFormData(prev => ({
+				...prev,
+				[name]: selectedSubCategory ? selectedSubCategory.SubCategory : ""
+			}));
+		} else {
+			setFormData(prev => ({
+				...prev,
+				[name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+			}));
+		}
 	};
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,6 +325,182 @@ export default function UploadDocumentsPage() {
 		setError(null);
 		setUploadStatus('idle');
 		setUploadProgress(0);
+		setSelectedCategoryId("");
+		setSubCategories([]);
+	};
+
+	// Category Management Functions
+	const openCategoryModal = (mode: 'add' | 'edit', category?: Category) => {
+		setCategoryModalMode(mode);
+		if (mode === 'edit' && category) {
+			setCategoryFormData({ MainCategoryID: category.MainCategoryID, Category: category.Category });
+		} else {
+			setCategoryFormData({ MainCategoryID: 0, Category: "" });
+		}
+		setCategoryError(null);
+		setShowCategoryModal(true);
+	};
+
+	const closeCategoryModal = () => {
+		setShowCategoryModal(false);
+		setCategoryFormData({ MainCategoryID: 0, Category: "" });
+		setCategoryError(null);
+	};
+
+	const saveCategory = async () => {
+		if (!categoryFormData.Category.trim()) {
+			setCategoryError("Category name is required");
+			return;
+		}
+
+		setSavingCategory(true);
+		setCategoryError(null);
+
+		try {
+			const url = '/api/documents/categories';
+			const method = categoryModalMode === 'add' ? 'POST' : 'PUT';
+			const body = categoryModalMode === 'add' 
+				? { category: categoryFormData.Category }
+				: { mainCategoryID: categoryFormData.MainCategoryID, category: categoryFormData.Category };
+
+			const response = await fetch(url, {
+				method,
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body)
+			});
+
+			const data = await response.json();
+
+			if (data.success) {
+				await fetchCategories();
+				closeCategoryModal();
+			} else {
+				setCategoryError(data.message || "Failed to save category");
+			}
+		} catch (err) {
+			setCategoryError("Error saving category");
+			console.error("Error saving category:", err);
+		} finally {
+			setSavingCategory(false);
+		}
+	};
+
+	const deleteCategory = async (mainCategoryID: number) => {
+		if (!confirm("Are you sure you want to delete this category?")) return;
+
+		try {
+			const response = await fetch(`/api/documents/categories?mainCategoryID=${mainCategoryID}`, {
+				method: 'DELETE'
+			});
+
+			const data = await response.json();
+
+			if (data.success) {
+				await fetchCategories();
+				if (selectedCategoryId === mainCategoryID.toString()) {
+					setSelectedCategoryId("");
+					setFormData(prev => ({ ...prev, category: "", subCategory: "" }));
+				}
+			} else {
+				alert(data.message || "Failed to delete category");
+			}
+		} catch (err) {
+			alert("Error deleting category");
+			console.error("Error deleting category:", err);
+		}
+	};
+
+	// SubCategory Management Functions
+	const openSubCategoryModal = (mode: 'add' | 'edit', subCategory?: SubCategory) => {
+		setSubCategoryModalMode(mode);
+		if (mode === 'edit' && subCategory) {
+			setSubCategoryFormData({ 
+				SubCategoryID: subCategory.SubCategoryID, 
+				MainCategoryID: subCategory.MainCategoryID, 
+				SubCategory: subCategory.SubCategory 
+			});
+		} else {
+			setSubCategoryFormData({ 
+				SubCategoryID: 0, 
+				MainCategoryID: selectedCategoryId ? parseInt(selectedCategoryId) : 0, 
+				SubCategory: "" 
+			});
+		}
+		setSubCategoryError(null);
+		setShowSubCategoryModal(true);
+	};
+
+	const closeSubCategoryModal = () => {
+		setShowSubCategoryModal(false);
+		setSubCategoryFormData({ SubCategoryID: 0, MainCategoryID: 0, SubCategory: "" });
+		setSubCategoryError(null);
+	};
+
+	const saveSubCategory = async () => {
+		if (!subCategoryFormData.SubCategory.trim()) {
+			setSubCategoryError("Sub Category name is required");
+			return;
+		}
+
+		if (!subCategoryFormData.MainCategoryID) {
+			setSubCategoryError("Please select a category first");
+			return;
+		}
+
+		setSavingSubCategory(true);
+		setSubCategoryError(null);
+
+		try {
+			const url = '/api/documents/subcategories';
+			const method = subCategoryModalMode === 'add' ? 'POST' : 'PUT';
+			const body = subCategoryModalMode === 'add' 
+				? { mainCategoryID: subCategoryFormData.MainCategoryID, subCategory: subCategoryFormData.SubCategory }
+				: { subCategoryID: subCategoryFormData.SubCategoryID, subCategory: subCategoryFormData.SubCategory };
+
+			const response = await fetch(url, {
+				method,
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body)
+			});
+
+			const data = await response.json();
+
+			if (data.success) {
+				await fetchSubCategories(subCategoryFormData.MainCategoryID);
+				closeSubCategoryModal();
+			} else {
+				setSubCategoryError(data.message || "Failed to save sub category");
+			}
+		} catch (err) {
+			setSubCategoryError("Error saving sub category");
+			console.error("Error saving sub category:", err);
+		} finally {
+			setSavingSubCategory(false);
+		}
+	};
+
+	const deleteSubCategory = async (subCategoryID: number, mainCategoryID: number) => {
+		if (!confirm("Are you sure you want to delete this sub category?")) return;
+
+		try {
+			const response = await fetch(`/api/documents/subcategories?subCategoryID=${subCategoryID}`, {
+				method: 'DELETE'
+			});
+
+			const data = await response.json();
+
+			if (data.success) {
+				await fetchSubCategories(mainCategoryID);
+				if (formData.subCategory === subCategoryID.toString()) {
+					setFormData(prev => ({ ...prev, subCategory: "" }));
+				}
+			} else {
+				alert(data.message || "Failed to delete sub category");
+			}
+		} catch (err) {
+			alert("Error deleting sub category");
+			console.error("Error deleting sub category:", err);
+		}
 	};
 
 	// Show loading state while checking access
@@ -220,7 +520,10 @@ export default function UploadDocumentsPage() {
 	}
 
 	// Show access denied if user doesn't have upload permission
-	if (!canUpload) {
+	// Allow access if user is admin OR has canUploadDocuments permission
+	const hasAccess = isAdmin || canUploadDocuments;
+	
+	if (!hasAccess) {
 		return (
 			<div className="space-y-6">
 				<div className="flex items-center justify-between">
@@ -297,39 +600,69 @@ export default function UploadDocumentsPage() {
 								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Category <span className="text-red-500">*</span>
 								</label>
-								<select
-									name="category"
-									value={formData.category}
-									onChange={handleInputChange}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-									required
-								>
-									<option value="">Select Category</option>
-									<option value="Workshop">Workshop</option>
-									<option value="Meeting">Meeting</option>
-									<option value="Training">Training</option>
-									<option value="Event">Event</option>
-									<option value="Conference">Conference</option>
-									<option value="Policy">Policy</option>
-									<option value="Procedure">Procedure</option>
-									<option value="Form">Form</option>
-									<option value="Other">Other</option>
-								</select>
+								<div className="flex gap-2">
+									<select
+										name="category"
+										value={selectedCategoryId}
+										onChange={handleInputChange}
+										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+										required
+										disabled={loadingCategories}
+									>
+										<option value="">Select Category</option>
+										{categories.map((cat) => (
+											<option key={cat.MainCategoryID} value={cat.MainCategoryID}>
+												{cat.Category}
+											</option>
+										))}
+									</select>
+									<button
+										type="button"
+										onClick={() => openCategoryModal('add')}
+										className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors flex items-center justify-center"
+										title="Add Category"
+									>
+										<Plus className="h-4 w-4" />
+									</button>
+								</div>
 							</div>
 
 							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Sub Category <span className="text-red-500">*</span>
 								</label>
-								<input
-									type="text"
-									name="subCategory"
-									value={formData.subCategory}
-									onChange={handleInputChange}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-									placeholder="Enter sub category"
-									required
-								/>
+								<div className="flex gap-2">
+									<select
+										name="subCategory"
+										value={subCategories.find(sc => sc.SubCategory === formData.subCategory)?.SubCategoryID || ""}
+										onChange={handleInputChange}
+										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+										required
+										disabled={!selectedCategoryId || subCategories.length === 0}
+									>
+										<option value="">
+											{!selectedCategoryId 
+												? "Select Category first" 
+												: subCategories.length === 0 
+													? "No sub categories available" 
+													: "Select Sub Category"}
+										</option>
+										{subCategories.map((subCat) => (
+											<option key={subCat.SubCategoryID} value={subCat.SubCategoryID}>
+												{subCat.SubCategory}
+											</option>
+										))}
+									</select>
+									<button
+										type="button"
+										onClick={() => openSubCategoryModal('add')}
+										className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+										title="Add Sub Category"
+										disabled={!selectedCategoryId}
+									>
+										<Plus className="h-4 w-4" />
+									</button>
+								</div>
 							</div>
 
 							<div>
@@ -354,9 +687,9 @@ export default function UploadDocumentsPage() {
 									type="text"
 									name="uploadedBy"
 									value={formData.uploadedBy}
-									onChange={handleInputChange}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-									placeholder="Enter your name"
+									readOnly
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed outline-none"
+									placeholder="Loading user..."
 									required
 								/>
 							</div>
@@ -568,6 +901,238 @@ export default function UploadDocumentsPage() {
 					</form>
 				</div>
 			</div>
+
+			{/* Category Management Modal */}
+			{showCategoryModal && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+					<div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+						<div className="p-6 border-b border-gray-200">
+							<div className="flex items-center justify-between">
+								<h2 className="text-xl font-bold text-gray-900">
+									{categoryModalMode === 'add' ? 'Add Category' : 'Edit Category'}
+								</h2>
+								<button
+									onClick={closeCategoryModal}
+									className="text-gray-400 hover:text-gray-600 transition-colors"
+								>
+									<X className="h-5 w-5" />
+								</button>
+							</div>
+						</div>
+
+						<div className="p-6">
+							<div className="mb-4">
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Category Name <span className="text-red-500">*</span>
+								</label>
+								<input
+									type="text"
+									value={categoryFormData.Category}
+									onChange={(e) => setCategoryFormData(prev => ({ ...prev, Category: e.target.value }))}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+									placeholder="Enter category name"
+								/>
+							</div>
+
+							{categoryError && (
+								<div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+									<p className="text-sm text-red-600">{categoryError}</p>
+								</div>
+							)}
+
+							{/* Categories List */}
+							<div className="mb-4">
+								<h3 className="text-sm font-medium text-gray-700 mb-2">Existing Categories</h3>
+								<div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
+									{categories.length === 0 ? (
+										<p className="p-3 text-sm text-gray-500 text-center">No categories found</p>
+									) : (
+										<div className="divide-y divide-gray-200">
+											{categories.map((cat) => (
+												<div key={cat.MainCategoryID} className="p-3 flex items-center justify-between hover:bg-gray-50">
+													<span className="text-sm text-gray-900">{cat.Category}</span>
+													<div className="flex items-center space-x-2">
+														<button
+															onClick={() => {
+																openCategoryModal('edit', cat);
+															}}
+															className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+															title="Edit"
+														>
+															<Edit className="h-4 w-4" />
+														</button>
+														<button
+															onClick={() => deleteCategory(cat.MainCategoryID)}
+															className="p-1 text-red-600 hover:text-red-800 transition-colors"
+															title="Delete"
+														>
+															<Trash2 className="h-4 w-4" />
+														</button>
+													</div>
+												</div>
+											))}
+										</div>
+									)}
+								</div>
+							</div>
+
+							<div className="flex items-center justify-end space-x-3">
+								<button
+									onClick={closeCategoryModal}
+									className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+								>
+									Cancel
+								</button>
+								<button
+									onClick={saveCategory}
+									disabled={savingCategory}
+									className="px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+								>
+									{savingCategory ? (
+										<>
+											<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+											Saving...
+										</>
+									) : (
+										<>
+											<Save className="h-4 w-4 mr-2" />
+											Save
+										</>
+									)}
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* SubCategory Management Modal */}
+			{showSubCategoryModal && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+					<div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+						<div className="p-6 border-b border-gray-200">
+							<div className="flex items-center justify-between">
+								<h2 className="text-xl font-bold text-gray-900">
+									{subCategoryModalMode === 'add' ? 'Add Sub Category' : 'Edit Sub Category'}
+								</h2>
+								<button
+									onClick={closeSubCategoryModal}
+									className="text-gray-400 hover:text-gray-600 transition-colors"
+								>
+									<X className="h-5 w-5" />
+								</button>
+							</div>
+						</div>
+
+						<div className="p-6">
+							<div className="mb-4">
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Category <span className="text-red-500">*</span>
+								</label>
+								<select
+									value={subCategoryFormData.MainCategoryID}
+									onChange={(e) => setSubCategoryFormData(prev => ({ ...prev, MainCategoryID: parseInt(e.target.value) }))}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+									disabled={subCategoryModalMode === 'edit'}
+								>
+									<option value="0">Select Category</option>
+									{categories.map((cat) => (
+										<option key={cat.MainCategoryID} value={cat.MainCategoryID}>
+											{cat.Category}
+										</option>
+									))}
+								</select>
+							</div>
+
+							<div className="mb-4">
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Sub Category Name <span className="text-red-500">*</span>
+								</label>
+								<input
+									type="text"
+									value={subCategoryFormData.SubCategory}
+									onChange={(e) => setSubCategoryFormData(prev => ({ ...prev, SubCategory: e.target.value }))}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+									placeholder="Enter sub category name"
+								/>
+							</div>
+
+							{subCategoryError && (
+								<div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+									<p className="text-sm text-red-600">{subCategoryError}</p>
+								</div>
+							)}
+
+							{/* SubCategories List */}
+							{subCategoryFormData.MainCategoryID > 0 && (
+								<div className="mb-4">
+									<h3 className="text-sm font-medium text-gray-700 mb-2">Existing Sub Categories</h3>
+									<div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
+										{(() => {
+											const filteredSubCats = subCategories.filter(sc => sc.MainCategoryID === subCategoryFormData.MainCategoryID);
+											return filteredSubCats.length === 0 ? (
+												<p className="p-3 text-sm text-gray-500 text-center">No sub categories found</p>
+											) : (
+												<div className="divide-y divide-gray-200">
+													{filteredSubCats.map((subCat) => (
+														<div key={subCat.SubCategoryID} className="p-3 flex items-center justify-between hover:bg-gray-50">
+															<span className="text-sm text-gray-900">{subCat.SubCategory}</span>
+															<div className="flex items-center space-x-2">
+																<button
+																	onClick={() => {
+																		openSubCategoryModal('edit', subCat);
+																	}}
+																	className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+																	title="Edit"
+																>
+																	<Edit className="h-4 w-4" />
+																</button>
+																<button
+																	onClick={() => deleteSubCategory(subCat.SubCategoryID, subCat.MainCategoryID)}
+																	className="p-1 text-red-600 hover:text-red-800 transition-colors"
+																	title="Delete"
+																>
+																	<Trash2 className="h-4 w-4" />
+																</button>
+															</div>
+														</div>
+													))}
+												</div>
+											);
+										})()}
+									</div>
+								</div>
+							)}
+
+							<div className="flex items-center justify-end space-x-3">
+								<button
+									onClick={closeSubCategoryModal}
+									className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+								>
+									Cancel
+								</button>
+								<button
+									onClick={saveSubCategory}
+									disabled={savingSubCategory}
+									className="px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+								>
+									{savingSubCategory ? (
+										<>
+											<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+											Saving...
+										</>
+									) : (
+										<>
+											<Save className="h-4 w-4 mr-2" />
+											Save
+										</>
+									)}
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

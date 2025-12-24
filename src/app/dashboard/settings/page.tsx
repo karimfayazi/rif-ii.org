@@ -18,7 +18,9 @@ import {
 	RefreshCw,
 	Plus,
 	MoreVertical,
-	AlertCircle
+	AlertCircle,
+	Grid3x3,
+	Table
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -48,6 +50,7 @@ export default function SettingsPage() {
 	const [showPasswords, setShowPasswords] = useState(false);
 	const [departments, setDepartments] = useState<string[]>([]);
 	const [accessLevels, setAccessLevels] = useState<string[]>([]);
+	const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
 	useEffect(() => {
 		checkAdminAccess();
@@ -244,6 +247,29 @@ export default function SettingsPage() {
 					<p className="text-gray-600 mt-2">Manage system users and their access levels</p>
 				</div>
 				<div className="flex items-center space-x-3">
+					{/* View Mode Toggle */}
+					<div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+						<button
+							onClick={() => setViewMode('grid')}
+							className={`inline-flex items-center px-3 py-2 text-sm font-medium transition-colors ${
+								viewMode === 'grid'
+									? 'bg-[#0b4d2b] text-white'
+									: 'bg-white text-gray-600 hover:bg-gray-50'
+							}`}
+						>
+							<Grid3x3 className="h-4 w-4" />
+						</button>
+						<button
+							onClick={() => setViewMode('table')}
+							className={`inline-flex items-center px-3 py-2 text-sm font-medium transition-colors ${
+								viewMode === 'table'
+									? 'bg-[#0b4d2b] text-white'
+									: 'bg-white text-gray-600 hover:bg-gray-50'
+							}`}
+						>
+							<Table className="h-4 w-4" />
+						</button>
+					</div>
 					<button
 						onClick={() => setShowPasswords(!showPasswords)}
 						className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
@@ -341,7 +367,7 @@ export default function SettingsPage() {
 				</div>
 			</div>
 
-			{/* Users Grid */}
+			{/* Users Grid/Table */}
 			{filteredUsers.length === 0 ? (
 				<div className="bg-gray-50 rounded-lg border border-gray-200 p-12 text-center">
 					<Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -353,7 +379,97 @@ export default function SettingsPage() {
 						}
 					</p>
 				</div>
+			) : viewMode === 'table' ? (
+				// Table View
+				<div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+					<div className="overflow-x-auto">
+						<table className="w-full">
+							<thead className="bg-gray-50 border-b border-gray-200">
+								<tr>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Access Level</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Password</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+								</tr>
+							</thead>
+							<tbody className="bg-white divide-y divide-gray-200">
+								{filteredUsers.map((user, index) => (
+									<tr key={index} className="hover:bg-gray-50 transition-colors">
+										<td className="px-6 py-4 whitespace-nowrap">
+											<div className="flex items-center">
+												<div className="w-10 h-10 bg-gradient-to-br from-[#0b4d2b] to-[#0a3d24] rounded-full flex items-center justify-center mr-3">
+													<User className="h-5 w-5 text-white" />
+												</div>
+												<div>
+													<div className="text-sm font-medium text-gray-900">
+														{user.full_name || user.username || "N/A"}
+													</div>
+													<div className="text-sm text-gray-500">@{user.username}</div>
+												</div>
+											</div>
+										</td>
+										<td className="px-6 py-4 whitespace-nowrap">
+											<div className="flex items-center text-sm text-gray-900">
+												<Mail className="h-4 w-4 mr-2 text-gray-400" />
+												{user.email || "N/A"}
+											</div>
+										</td>
+										<td className="px-6 py-4 whitespace-nowrap">
+											<div className="flex items-center text-sm text-gray-900">
+												<Phone className="h-4 w-4 mr-2 text-gray-400" />
+												{user.contact_no ? formatPhoneNumber(user.contact_no) : "N/A"}
+											</div>
+										</td>
+										<td className="px-6 py-4 whitespace-nowrap">
+											<div className="flex items-center text-sm text-gray-900">
+												<Building className="h-4 w-4 mr-2 text-gray-400" />
+												{user.department || "N/A"}
+											</div>
+										</td>
+										<td className="px-6 py-4 whitespace-nowrap">
+											<div className="flex items-center text-sm text-gray-900">
+												<MapPin className="h-4 w-4 mr-2 text-gray-400" />
+												{user.region || "N/A"}
+											</div>
+										</td>
+										<td className="px-6 py-4 whitespace-nowrap">
+											{user.access_level && (
+												<span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getAccessLevelColor(user.access_level)}`}>
+													<Shield className="h-3 w-3 mr-1" />
+													{user.access_level}
+												</span>
+											)}
+										</td>
+										<td className="px-6 py-4 whitespace-nowrap">
+											<span className="text-sm font-mono text-gray-700">
+												{user.password ? maskPassword(user.password) : "N/A"}
+											</span>
+										</td>
+										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+											<div className="flex items-center space-x-2">
+												<button className="p-2 text-gray-400 hover:text-blue-600 transition-colors" title="View">
+													<Eye className="h-4 w-4" />
+												</button>
+												<button className="p-2 text-gray-400 hover:text-green-600 transition-colors" title="Edit">
+													<Edit className="h-4 w-4" />
+												</button>
+												<button className="p-2 text-gray-400 hover:text-red-600 transition-colors" title="Delete">
+													<Trash2 className="h-4 w-4" />
+												</button>
+											</div>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				</div>
 			) : (
+				// Grid View (Card-based)
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{filteredUsers.map((user, index) => (
 						<div

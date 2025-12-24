@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
 		const gender = searchParams.get('gender');
 		const organizationDepartment = searchParams.get('organizationDepartment');
 		const workshopTrainingName = searchParams.get('workshopTrainingName');
-		const workshopSessionConference = searchParams.get('workshopSessionConference');
 
 		const pool = await getDb();
 		let query = `
@@ -26,23 +25,13 @@ export async function GET(request: NextRequest) {
 				[contact_number],
 				[tehsil],
 				[district],
-				[NC_VC],
 				[workshop_training_name],
 				[workshop_session_conference],
-				CASE 
-					WHEN [start_date] IS NULL THEN NULL
-					ELSE CONVERT(VARCHAR(10), [start_date], 120)
-				END AS [start_date],
-				CASE 
-					WHEN [end_date] IS NULL THEN NULL
-					ELSE CONVERT(VARCHAR(10), [end_date], 120)
-				END AS [end_date],
+				CONVERT(VARCHAR(10), [start_date], 105) AS [start_date],
+				CONVERT(VARCHAR(10), [end_date], 105) AS [end_date],
 				[date_entered_by],
-				CONVERT(VARCHAR(10), [entry_timestamp], 105) AS [entry_timestamp],
-				[Training_Unit],
-				[Venue],
-				[Duration_Days]
-			FROM [_rifiiorg_db].[dbo].[workshop_participants]
+				CONVERT(VARCHAR(10), [entry_timestamp], 105) AS [entry_timestamp]
+			FROM [_rifiiorg_db].[rifiiorg].[workshop_participants]
 			WHERE 1=1
 		`;
 
@@ -82,10 +71,6 @@ export async function GET(request: NextRequest) {
 			query += ` AND [workshop_training_name] = @workshopTrainingName`;
 			request_obj.input('workshopTrainingName', workshopTrainingName);
 		}
-		if (workshopSessionConference) {
-			query += ` AND [workshop_session_conference] = @workshopSessionConference`;
-			request_obj.input('workshopSessionConference', workshopSessionConference);
-		}
 
 		query += ` ORDER BY [entry_timestamp] DESC, [participant_name]`;
 
@@ -98,16 +83,11 @@ export async function GET(request: NextRequest) {
 		});
 	} catch (error) {
 		console.error("Error fetching workshop participants data:", error);
-		const errorMessage = error instanceof Error ? error.message : "Unknown error";
-		const errorStack = error instanceof Error ? error.stack : undefined;
-		console.error("Error details:", { errorMessage, errorStack });
-		
 		return NextResponse.json(
 			{
 				success: false,
 				message: "Failed to fetch workshop participants data",
-				error: errorMessage,
-				details: process.env.NODE_ENV === 'development' ? errorStack : undefined
+				error: error instanceof Error ? error.message : "Unknown error"
 			},
 			{ status: 500 }
 		);
