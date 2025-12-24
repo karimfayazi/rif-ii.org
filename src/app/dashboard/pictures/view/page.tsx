@@ -34,6 +34,7 @@ function PictureViewContent() {
 
 	const getImageUrl = (filePath: string | null) => {
 		if (!filePath) return '';
+		// Handle Vercel Blob URLs and other absolute URLs
 		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
 			return filePath;
 		} else if (filePath.startsWith('~/')) {
@@ -50,28 +51,34 @@ function PictureViewContent() {
 			try {
 				setLoading(true);
 				setError(null);
-				const params = new URLSearchParams();
-				if (groupName) params.append('groupName', groupName);
-				if (mainCategory) params.append('mainCategory', mainCategory);
-				if (subCategory) params.append('subCategory', subCategory);
+				
+				// If pictureId is provided, fetch directly by ID
+				if (pictureId) {
+					const response = await fetch(`/api/pictures/${pictureId}`);
+					const data = await response.json();
 
-				const response = await fetch(`/api/pictures/details?${params.toString()}`);
-				const data = await response.json();
-
-				if (data.success && data.pictures && data.pictures.length > 0) {
-					// If pictureId is provided, find that specific picture
-					if (pictureId) {
-						const found = data.pictures.find((p: PictureData) => p.PictureID?.toString() === pictureId);
-						if (found) {
-							setPicture(found);
-						} else {
-							setPicture(data.pictures[0]);
-						}
+					if (data.success && data.picture) {
+						setPicture(data.picture);
 					} else {
+						setError(data.message || "Picture not found");
+					}
+				} else if (groupName || mainCategory || subCategory) {
+					// Otherwise, use the details endpoint with filters
+					const params = new URLSearchParams();
+					if (groupName) params.append('groupName', groupName);
+					if (mainCategory) params.append('mainCategory', mainCategory);
+					if (subCategory) params.append('subCategory', subCategory);
+
+					const response = await fetch(`/api/pictures/details?${params.toString()}`);
+					const data = await response.json();
+
+					if (data.success && data.pictures && data.pictures.length > 0) {
 						setPicture(data.pictures[0]);
+					} else {
+						setError("Picture not found");
 					}
 				} else {
-					setError("Picture not found");
+					setError("No picture parameters provided");
 				}
 			} catch (err) {
 				setError("Error fetching picture");
@@ -81,12 +88,7 @@ function PictureViewContent() {
 			}
 		};
 
-		if (groupName || mainCategory || subCategory) {
-			fetchPicture();
-		} else {
-			setError("No picture parameters provided");
-			setLoading(false);
-		}
+		fetchPicture();
 	}, [pictureId, groupName, mainCategory, subCategory]);
 
 	const handleDownload = () => {
