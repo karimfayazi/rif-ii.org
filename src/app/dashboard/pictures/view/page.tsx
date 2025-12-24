@@ -282,14 +282,6 @@ function PictureViewContent() {
 							</div>
 						)}
 
-						{/* File Size */}
-						<div className="flex flex-col items-center text-center p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200">
-							<div className="p-2 bg-gray-500 rounded-lg mb-2">
-								<FileText className="h-5 w-5 text-white" />
-							</div>
-							<p className="text-xs font-medium text-gray-600 mb-1">File Size</p>
-							<p className="text-sm font-semibold text-gray-900">{formatFileSize(picture.FileSizeKB)}</p>
-						</div>
 					</div>
 				</div>
 			</div>
