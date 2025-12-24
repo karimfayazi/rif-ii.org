@@ -4,17 +4,18 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 import { getUserIdFromRequest } from "@/lib/auth";
+import { put } from "@vercel/blob";
 
-// Helper function to check if user is Admin
-async function checkAdminAccess(userId: string | null): Promise<{ isAdmin: boolean; message?: string }> {
+// Helper function to check if user can upload reports
+async function checkUploadAccess(userId: string | null): Promise<{ canUpload: boolean; message?: string }> {
 	if (!userId) {
-		return { isAdmin: false, message: "Unauthorized" };
+		return { canUpload: false, message: "Unauthorized" };
 	}
 
 	try {
 		const pool = await getDb();
 		const accessQuery = `
-			SELECT [access_level]
+			SELECT [access_level], [Upload_Report]
 			FROM [_rifiiorg_db].[dbo].[tbl_user_access]
 			WHERE [username] = @userId OR [email] = @userId
 		`;
@@ -24,38 +25,52 @@ async function checkAdminAccess(userId: string | null): Promise<{ isAdmin: boole
 			.query(accessQuery);
 		
 		if (accessResult.recordset.length === 0) {
-			return { isAdmin: false, message: "User not found" };
+			return { canUpload: false, message: "User not found" };
 		}
 
-		const accessLevel = accessResult.recordset[0].access_level;
-		// Check if access_level is exactly 'Admin' (case-sensitive)
+		const userAccess = accessResult.recordset[0];
+		const accessLevel = userAccess.access_level;
 		const isAdmin = accessLevel === 'Admin';
 		
-		if (!isAdmin) {
+		// Check Upload_Report permission
+		const uploadReportRaw = userAccess.Upload_Report;
+		const checkBitField = (value: any): boolean => {
+			if (value === null || value === undefined) return false;
+			if (Buffer.isBuffer(value)) return value[0] === 1;
+			if (typeof value === 'boolean') return value === true;
+			if (typeof value === 'number') return value === 1;
+			if (typeof value === 'string') return value === '1' || value.toLowerCase() === 'true';
+			return false;
+		};
+		
+		const uploadReport = checkBitField(uploadReportRaw);
+		const canUploadReports = isAdmin || uploadReport;
+		
+		if (!canUploadReports) {
 			return { 
-				isAdmin: false, 
-				message: "Insufficient Permissions. This action requires Admin level access. Please contact your administrator if you believe this is an error." 
+				canUpload: false, 
+				message: "Insufficient Permissions. This action requires Admin level access or Upload_Report permission. Please contact your administrator if you believe this is an error." 
 			};
 		}
 
-		return { isAdmin: true };
+		return { canUpload: true };
 	} catch (error) {
-		console.error("Error checking admin access:", error);
-		return { isAdmin: false, message: "Error checking access permissions" };
+		console.error("Error checking upload access:", error);
+		return { canUpload: false, message: "Error checking access permissions" };
 	}
 }
 
 export async function POST(request: NextRequest) {
 	try {
-		// Check Admin access
+		// Check upload access (Admin or Upload_Report permission)
 		const userId = getUserIdFromRequest(request);
-		const accessCheck = await checkAdminAccess(userId);
+		const accessCheck = await checkUploadAccess(userId);
 		
-		if (!accessCheck.isAdmin) {
+		if (!accessCheck.canUpload) {
 			return NextResponse.json(
 				{
 					success: false,
-					message: accessCheck.message || "Access denied. Admin privileges required."
+					message: accessCheck.message || "Access denied. Upload privileges required."
 				},
 				{ status: 403 }
 			);
@@ -120,12 +135,27 @@ export async function POST(request: NextRequest) {
 			}
 		}
 
-		// Create upload directory structure
-		const uploadDir = join(process.cwd(), 'public', 'uploads', 'reports', mainCategory, subCategory);
+		// Check if we're on Vercel (read-only filesystem)
+		const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+		const useBlobStorage = isVercel && process.env.BLOB_READ_WRITE_TOKEN;
 		
-		// Ensure directory exists
-		if (!existsSync(uploadDir)) {
-			await mkdir(uploadDir, { recursive: true });
+		// Create upload directory structure (only for non-Vercel or when not using blob)
+		let uploadDir: string | null = null;
+		if (!useBlobStorage) {
+			uploadDir = join(process.cwd(), 'public', 'uploads', 'reports', mainCategory, subCategory);
+			
+			// Ensure directory exists
+			try {
+				if (!existsSync(uploadDir)) {
+					await mkdir(uploadDir, { recursive: true });
+				}
+			} catch (dirError) {
+				console.error("Error creating upload directory:", dirError);
+				return NextResponse.json({
+					success: false,
+					message: `Failed to create upload directory: ${dirError instanceof Error ? dirError.message : 'Unknown error'}`
+				}, { status: 500 });
+			}
 		}
 
 		const pool = await getDb();
@@ -136,12 +166,44 @@ export async function POST(request: NextRequest) {
 			const file = files[i];
 			const fileExtension = file.name.split('.').pop();
 			const fileName = `${Date.now()}_${i + 1}.${fileExtension}`;
-			const filePath = join(uploadDir, fileName);
-			const relativePath = `uploads/reports/${mainCategory}/${subCategory}/${fileName}`;
+			let filePath: string;
+			let relativePath: string;
 			
-			// Save file to disk
-			const bytes = await file.arrayBuffer();
-			await writeFile(filePath, Buffer.from(bytes));
+			// Save file to Vercel Blob or filesystem
+			try {
+				const bytes = await file.arrayBuffer();
+				const buffer = Buffer.from(bytes);
+				
+				if (useBlobStorage) {
+					// Use Vercel Blob storage
+					const blobPath = `reports/${mainCategory}/${subCategory}/${fileName}`;
+					const blob = await put(blobPath, buffer, {
+						access: 'public',
+						contentType: file.type || 'application/octet-stream',
+					});
+					
+					filePath = blob.url;
+					relativePath = blob.url;
+					console.log(`File uploaded to Vercel Blob: ${blob.url}`);
+				} else {
+					// Use filesystem
+					if (!uploadDir) {
+						throw new Error("Upload directory not initialized");
+					}
+					filePath = join(uploadDir, fileName);
+					relativePath = `uploads/reports/${mainCategory}/${subCategory}/${fileName}`;
+					await writeFile(filePath, buffer);
+					console.log(`File saved to filesystem: ${filePath}`);
+				}
+			} catch (writeError) {
+				console.error("Error saving file:", writeError);
+				return NextResponse.json({
+					success: false,
+					message: `Failed to save file: ${writeError instanceof Error ? writeError.message : 'Unknown error'}`,
+					file: file.name,
+					error: writeError instanceof Error ? writeError.stack : undefined
+				}, { status: 500 });
+			}
 			
 			// Insert into database
 			const insertQuery = `
@@ -153,7 +215,9 @@ export async function POST(request: NextRequest) {
 			const request_obj = pool.request();
 			request_obj.input('reportTitle', reportTitle);
 			request_obj.input('description', description || '');
-			request_obj.input('filePath', `~/Uploads/Reports/${fileName}`);
+			// Use blob URL if using blob storage, otherwise use relative path
+			const dbFilePath = useBlobStorage ? filePath : `~/Uploads/Reports/${fileName}`;
+			request_obj.input('filePath', dbFilePath);
 			request_obj.input('eventDate', eventDate);
 			request_obj.input('mainCategory', mainCategory);
 			request_obj.input('subCategory', subCategory);
