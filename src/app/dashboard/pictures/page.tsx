@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, Folder, FileImage, RotateCcw, ArrowLeft, Eye, Upload, RefreshCw, Download, Trash2, AlertCircle, Loader2 } from "lucide-react";
+import { Calendar, Folder, FileImage, RotateCcw, ArrowLeft, Eye, Upload, RefreshCw, Download, Trash2, AlertCircle, Loader2, CheckCircle, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAccess } from "@/hooks/useAccess";
@@ -56,6 +56,7 @@ export default function PicturesPage() {
 	}>({ show: false, type: null, name: null });
 	const [deleting, setDeleting] = useState(false);
 	const [deletingFolder, setDeletingFolder] = useState(false);
+	const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
 	useEffect(() => {
 		fetchMainCategories();
@@ -315,6 +316,38 @@ export default function PicturesPage() {
 
 	return (
 		<div className="space-y-6">
+			{/* Success Message */}
+			{successMessage && (
+				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top-5">
+					<div className="flex items-center">
+						<CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+						<p className="text-green-800 font-medium">{successMessage}</p>
+					</div>
+					<button
+						onClick={() => setSuccessMessage(null)}
+						className="text-green-600 hover:text-green-800 transition-colors"
+					>
+						<X className="h-5 w-5" />
+					</button>
+				</div>
+			)}
+
+			{/* Error Message */}
+			{error && (
+				<div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top-5">
+					<div className="flex items-center">
+						<AlertCircle className="h-5 w-5 text-red-600 mr-3" />
+						<p className="text-red-800 font-medium">{error}</p>
+					</div>
+					<button
+						onClick={() => setError(null)}
+						className="text-red-600 hover:text-red-800 transition-colors"
+					>
+						<X className="h-5 w-5" />
+					</button>
+				</div>
+			)}
+
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">Important Pictures</h1>
@@ -477,32 +510,40 @@ export default function PicturesPage() {
 														{category.TotalPictures} Total Pictures
 													</span>
 												</div>
-												<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-													Click to view
-												</span>
+											</div>
+											{/* Action Buttons */}
+											<div className="flex items-center gap-2 pt-3 mt-3 border-t border-gray-100">
+												<button
+													onClick={(e) => {
+														e.stopPropagation();
+														handleMainCategoryClick(category.MainCategory);
+													}}
+													className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors"
+												>
+													<Eye className="h-3 w-3 mr-1" />
+													View
+												</button>
+												{(isAdmin || accessDelete) && (
+													<button
+														onClick={(e) => {
+															e.stopPropagation();
+															setDeleteFolderConfirm({ 
+																show: true, 
+																type: 'mainCategory', 
+																name: category.MainCategory,
+																mainCategory: category.MainCategory
+															});
+														}}
+														className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+														title="Delete Category"
+													>
+														<Trash2 className="h-3 w-3 mr-1" />
+														Delete
+													</button>
+												)}
 											</div>
 										</div>
 									</div>
-									{/* Delete Button - Only show for Admin */}
-									{isAdmin && accessLevel === 'Admin' && (
-										<div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-											<button
-												onClick={(e) => {
-													e.stopPropagation();
-													setDeleteFolderConfirm({ 
-														show: true, 
-														type: 'mainCategory', 
-														name: category.MainCategory,
-														mainCategory: category.MainCategory
-													});
-												}}
-												className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-lg"
-												title="Delete Category"
-											>
-												<Trash2 className="h-4 w-4" />
-											</button>
-										</div>
-									)}
 								</div>
 							))}
 						</div>
@@ -599,33 +640,41 @@ export default function PicturesPage() {
 														{event.TotalPictures} Total Pictures
 													</span>
 												</div>
-												<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-													Click to view
-												</span>
+											</div>
+											{/* Action Buttons */}
+											<div className="flex items-center gap-2 pt-3 mt-3 border-t border-gray-100">
+												<button
+													onClick={(e) => {
+														e.stopPropagation();
+														handleEventNameClick(event.EventName);
+													}}
+													className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors"
+												>
+													<Eye className="h-3 w-3 mr-1" />
+													View
+												</button>
+												{(isAdmin || accessDelete) && (
+													<button
+														onClick={(e) => {
+															e.stopPropagation();
+															setDeleteFolderConfirm({ 
+																show: true, 
+																type: 'eventName', 
+																name: event.EventName,
+																mainCategory: selectedMainCategory,
+																eventName: event.EventName
+															});
+														}}
+														className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+														title="Delete Event"
+													>
+														<Trash2 className="h-3 w-3 mr-1" />
+														Delete
+													</button>
+												)}
 											</div>
 										</div>
 									</div>
-									{/* Delete Button - Only show for Admin */}
-									{isAdmin && accessLevel === 'Admin' && (
-										<div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-											<button
-												onClick={(e) => {
-													e.stopPropagation();
-													setDeleteFolderConfirm({ 
-														show: true, 
-														type: 'eventName', 
-														name: event.EventName,
-														mainCategory: selectedMainCategory,
-														eventName: event.EventName
-													});
-												}}
-												className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-lg"
-												title="Delete Event"
-											>
-												<Trash2 className="h-4 w-4" />
-											</button>
-										</div>
-									)}
 								</div>
 							))}
 						</div>
@@ -714,34 +763,42 @@ export default function PicturesPage() {
 														{eventDate.TotalPictures} Total Pictures
 													</span>
 												</div>
-												<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-													Click to view
-												</span>
+											</div>
+											{/* Action Buttons */}
+											<div className="flex items-center gap-2 pt-3 mt-3 border-t border-gray-100">
+												<button
+													onClick={(e) => {
+														e.stopPropagation();
+														handleEventDateClick(eventDate.EventDate);
+													}}
+													className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors"
+												>
+													<Eye className="h-3 w-3 mr-1" />
+													View
+												</button>
+												{(isAdmin || accessDelete) && (
+													<button
+														onClick={(e) => {
+															e.stopPropagation();
+															setDeleteFolderConfirm({ 
+																show: true, 
+																type: 'eventDate', 
+																name: formatDate(eventDate.EventDate),
+																mainCategory: selectedMainCategory,
+																eventName: selectedEventName,
+																eventDate: eventDate.EventDate
+															});
+														}}
+														className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+														title="Delete Event Date"
+													>
+														<Trash2 className="h-3 w-3 mr-1" />
+														Delete
+													</button>
+												)}
 											</div>
 										</div>
 									</div>
-									{/* Delete Button - Only show for Admin */}
-									{isAdmin && accessLevel === 'Admin' && (
-										<div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-											<button
-												onClick={(e) => {
-													e.stopPropagation();
-													setDeleteFolderConfirm({ 
-														show: true, 
-														type: 'eventDate', 
-														name: formatDate(eventDate.EventDate),
-														mainCategory: selectedMainCategory,
-														eventName: selectedEventName,
-														eventDate: eventDate.EventDate
-													});
-												}}
-												className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-lg"
-												title="Delete Event Date"
-											>
-												<Trash2 className="h-4 w-4" />
-											</button>
-										</div>
-									)}
 								</div>
 							))}
 						</div>
@@ -831,7 +888,7 @@ export default function PicturesPage() {
 												className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors"
 											>
 												<Eye className="h-3 w-3 mr-1" />
-												Click to view
+												View
 											</Link>
 											{(isAdmin || accessDelete) && (
 												<button
@@ -843,7 +900,8 @@ export default function PicturesPage() {
 													className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
 													title="Delete Picture"
 												>
-													<Trash2 className="h-3 w-3" />
+													<Trash2 className="h-3 w-3 mr-1" />
+													Delete
 												</button>
 											)}
 										</div>
@@ -883,8 +941,11 @@ export default function PicturesPage() {
 						{/* Modal Content */}
 						<div className="p-6">
 							<div className="mb-4">
-								<p className="text-gray-700 text-base mb-3">
+								<p className="text-gray-700 text-base mb-3 font-semibold">
 									Are you sure you want to delete this picture?
+								</p>
+								<p className="text-gray-600 text-sm mb-4">
+									This action will permanently remove the picture from the system.
 								</p>
 								<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
 									{deleteConfirm.picture.FilePath && (
@@ -947,6 +1008,8 @@ export default function PicturesPage() {
 										
 										if (data.success) {
 											setDeleteConfirm({ show: false, picture: null });
+											setSuccessMessage("Picture deleted successfully!");
+											setTimeout(() => setSuccessMessage(null), 5000);
 											// Refresh the pictures
 											if (selectedMainCategory && selectedEventName && selectedEventDate) {
 												fetchPictures(selectedMainCategory, selectedEventName, selectedEventDate);
@@ -1083,6 +1146,8 @@ export default function PicturesPage() {
 										
 										if (data.success) {
 											setDeleteFolderConfirm({ show: false, type: null, name: null });
+											setSuccessMessage(`${deleteFolderConfirm.type === 'mainCategory' ? 'Category' : deleteFolderConfirm.type === 'eventName' ? 'Event' : 'Event Date'} deleted successfully!`);
+											setTimeout(() => setSuccessMessage(null), 5000);
 											// Refresh the current view
 											if (deleteFolderConfirm.type === 'eventDate' && selectedMainCategory && selectedEventName) {
 												fetchEventDates(selectedMainCategory, selectedEventName);
