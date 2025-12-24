@@ -214,95 +214,81 @@ function PictureViewContent() {
 						<div className="h-1 w-20 bg-gradient-to-r from-[#0b4d2b] to-[#0a3d24] rounded-full"></div>
 					</div>
 
-					{/* Information Grid */}
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+					{/* Information Grid - Single Row */}
+					<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
 						{/* Group Name */}
 						{picture.GroupName && (
-							<div className="flex items-start space-x-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-								<div className="p-2 bg-blue-500 rounded-lg">
+							<div className="flex flex-col items-center text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+								<div className="p-2 bg-blue-500 rounded-lg mb-2">
 									<Folder className="h-5 w-5 text-white" />
 								</div>
-								<div className="flex-1">
-									<p className="text-sm font-medium text-gray-600 mb-1">Group / Event</p>
-									<p className="text-lg font-semibold text-gray-900">{picture.GroupName}</p>
-								</div>
+								<p className="text-xs font-medium text-gray-600 mb-1">Group / Event</p>
+								<p className="text-sm font-semibold text-gray-900 truncate w-full">{picture.GroupName}</p>
 							</div>
 						)}
 
 						{/* Main Category */}
 						{picture.MainCategory && (
-							<div className="flex items-start space-x-3 p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
-								<div className="p-2 bg-green-500 rounded-lg">
+							<div className="flex flex-col items-center text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
+								<div className="p-2 bg-green-500 rounded-lg mb-2">
 									<Folder className="h-5 w-5 text-white" />
 								</div>
-								<div className="flex-1">
-									<p className="text-sm font-medium text-gray-600 mb-1">Main Category</p>
-									<p className="text-lg font-semibold text-gray-900">{picture.MainCategory}</p>
-								</div>
+								<p className="text-xs font-medium text-gray-600 mb-1">Main Category</p>
+								<p className="text-sm font-semibold text-gray-900 truncate w-full">{picture.MainCategory}</p>
 							</div>
 						)}
 
 						{/* Sub Category */}
 						{picture.SubCategory && (
-							<div className="flex items-start space-x-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
-								<div className="p-2 bg-purple-500 rounded-lg">
+							<div className="flex flex-col items-center text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+								<div className="p-2 bg-purple-500 rounded-lg mb-2">
 									<Folder className="h-5 w-5 text-white" />
 								</div>
-								<div className="flex-1">
-									<p className="text-sm font-medium text-gray-600 mb-1">Sub Category</p>
-									<p className="text-lg font-semibold text-gray-900">{picture.SubCategory}</p>
-								</div>
+								<p className="text-xs font-medium text-gray-600 mb-1">Sub Category</p>
+								<p className="text-sm font-semibold text-gray-900 truncate w-full">{picture.SubCategory}</p>
 							</div>
 						)}
 
 						{/* Event Date */}
 						{picture.EventDate && (
-							<div className="flex items-start space-x-3 p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border border-orange-200">
-								<div className="p-2 bg-orange-500 rounded-lg">
+							<div className="flex flex-col items-center text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border border-orange-200">
+								<div className="p-2 bg-orange-500 rounded-lg mb-2">
 									<Calendar className="h-5 w-5 text-white" />
 								</div>
-								<div className="flex-1">
-									<p className="text-sm font-medium text-gray-600 mb-1">Event Date</p>
-									<p className="text-lg font-semibold text-gray-900">{formatDate(picture.EventDate)}</p>
-								</div>
+								<p className="text-xs font-medium text-gray-600 mb-1">Event Date</p>
+								<p className="text-sm font-semibold text-gray-900">{formatDate(picture.EventDate)}</p>
 							</div>
 						)}
 
 						{/* Uploaded By */}
 						{picture.UploadedBy && (
-							<div className="flex items-start space-x-3 p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg border border-indigo-200">
-								<div className="p-2 bg-indigo-500 rounded-lg">
+							<div className="flex flex-col items-center text-center p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg border border-indigo-200">
+								<div className="p-2 bg-indigo-500 rounded-lg mb-2">
 									<User className="h-5 w-5 text-white" />
 								</div>
-								<div className="flex-1">
-									<p className="text-sm font-medium text-gray-600 mb-1">Uploaded By</p>
-									<p className="text-lg font-semibold text-gray-900">{picture.UploadedBy}</p>
-								</div>
+								<p className="text-xs font-medium text-gray-600 mb-1">Uploaded By</p>
+								<p className="text-sm font-semibold text-gray-900 truncate w-full">{picture.UploadedBy}</p>
 							</div>
 						)}
 
 						{/* Upload Date */}
 						{picture.UploadDate && (
-							<div className="flex items-start space-x-3 p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg border border-pink-200">
-								<div className="p-2 bg-pink-500 rounded-lg">
+							<div className="flex flex-col items-center text-center p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg border border-pink-200">
+								<div className="p-2 bg-pink-500 rounded-lg mb-2">
 									<Clock className="h-5 w-5 text-white" />
 								</div>
-								<div className="flex-1">
-									<p className="text-sm font-medium text-gray-600 mb-1">Upload Date</p>
-									<p className="text-lg font-semibold text-gray-900">{formatDate(picture.UploadDate)}</p>
-								</div>
+								<p className="text-xs font-medium text-gray-600 mb-1">Upload Date</p>
+								<p className="text-sm font-semibold text-gray-900">{formatDate(picture.UploadDate)}</p>
 							</div>
 						)}
 
 						{/* File Size */}
-						<div className="flex items-start space-x-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200">
-							<div className="p-2 bg-gray-500 rounded-lg">
+						<div className="flex flex-col items-center text-center p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200">
+							<div className="p-2 bg-gray-500 rounded-lg mb-2">
 								<FileText className="h-5 w-5 text-white" />
 							</div>
-							<div className="flex-1">
-								<p className="text-sm font-medium text-gray-600 mb-1">File Size</p>
-								<p className="text-lg font-semibold text-gray-900">{formatFileSize(picture.FileSizeKB)}</p>
-							</div>
+							<p className="text-xs font-medium text-gray-600 mb-1">File Size</p>
+							<p className="text-sm font-semibold text-gray-900">{formatFileSize(picture.FileSizeKB)}</p>
 						</div>
 					</div>
 				</div>
