@@ -24,6 +24,11 @@ import {
     X,
     Layers,
     Shield,
+    TrendingUp,
+    MapPin,
+    Monitor,
+    MoreHorizontal,
+    Youtube,
 } from "lucide-react";
 
 type SidebarProps = {
@@ -57,34 +62,10 @@ const GROUPS: NavGroup[] = [
 		divider: true,
 		items: [
 			{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-			{ label: "Tracking-Dashboard", href: "/dashboard/dashboard_v1", icon: LayoutDashboard },
+			{ label: "Reports", href: "/dashboard/reports", icon: BarChart3 },
+			{ label: "Progress Tracking", href: "/dashboard/tracking-sheet", icon: TrendingUp },
 			{ 
-				label: "GIS Maps", 
-				icon: Map,
-				subMenus: [
-					{
-						label: "Online Maps",
-						items: [
-							{ label: "Maps Master", href: "/dashboard/maps" },
-							{ label: "Shapefile Maps", href: "/dashboard/maps/shapefiles" },
-							{ label: "KPK-DIK & Bannu Maps", href: "/dashboard/maps/kpk-dik-bannu" },
-							{ label: "Bannu Maps", href: "/dashboard/maps/bannu" },
-							{ label: "DIK Maps", href: "/dashboard/maps/dik" },
-						]
-					},
-					{
-						label: "Maps Images",
-						items: [
-							{ label: "View Maps Images", href: "/dashboard/maps/images" },
-							{ label: "Manage GIS Maps", href: "/dashboard/maps/manage" },
-							{ label: "GIS Maps Records", href: "/dashboard/maps/records" },
-						]
-					}
-				]
-			},
-			{ label: "Tracking Sheet", href: "/dashboard/tracking-sheet", icon: ClipboardList },
-			{ 
-				label: "Training, Capacity Building & Awareness", 
+				label: "Training-Workshops", 
 				href: "/dashboard/training/dashboard",
 				icon: GraduationCap,
 				subItems: [
@@ -92,31 +73,20 @@ const GROUPS: NavGroup[] = [
 					{ label: "Participants", href: "/dashboard/training/participants" },
 				]
 			},
-		],
-	},
-	{
-		divider: true,
-		items: [
 			{ label: "Important Documents", href: "/dashboard/documents", icon: FileText },
-			{ label: "Reports", href: "/dashboard/reports", icon: BarChart3 },
-			{ label: "Pictures", href: "/dashboard/pictures", icon: ImagePlus },
-			{ label: "Links", href: "/dashboard/links", icon: Link2 },
-			{ 
-				label: "Security Updates", 
-				href: "/dashboard/security-updates",
-				icon: Shield,
-				subItems: [
-					{ label: "All Security Updates", href: "/dashboard/security-updates" },
-					{ label: "Add Security Update", href: "/dashboard/security-updates/add" },
-				]
-			},
+			{ label: "Important links", href: "/dashboard/links", icon: Link2 },
+			{ label: "Tehsil Wise Progress", href: "/dashboard/tehsil-wise-progress", icon: MapPin },
+			{ label: "Photo Gallary", href: "/dashboard/pictures", icon: ImagePlus },
+			{ label: "Maps", href: "/dashboard/maps", icon: Map },
+			{ label: "Security Update", href: "/dashboard/security-updates", icon: Shield },
+			{ label: "Remote Monitoring", href: "/dashboard/remote-monitoring", icon: Monitor },
+			{ label: "More ...", href: "/dashboard/more", icon: MoreHorizontal },
 		],
 	},
 	{
 		divider: true,
 		items: [
 			{ label: "Setting", href: "/dashboard/settings", icon: Settings },
-			{ label: "KML GIS Maps", href: "/dashboard/kml-gis-maps", icon: Layers },
 			{ label: "Logout", href: "/logout", icon: LogOut },
 		],
 	},
@@ -161,12 +131,12 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 			{GROUPS.map((group, groupIdx) => {
 				// Filter items based on permissions
 				const filteredItems = group.items.filter((item) => {
-					// Hide Tracking Sheet and Tracking-Dashboard if trackingSection is false
-					if ((item.label === "Tracking Sheet" || item.label === "Tracking-Dashboard") && !trackingSection) {
+					// Hide Progress Tracking if trackingSection is false
+					if (item.label === "Progress Tracking" && !trackingSection) {
 						return false;
 					}
-					// Hide Training section if trainingSection is false
-					if (item.label === "Training, Capacity Building & Awareness" && !trainingSection) {
+					// Hide Training-Workshops if trainingSection is false
+					if (item.label === "Training-Workshops" && !trainingSection) {
 						return false;
 					}
 					return true;
@@ -375,6 +345,67 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 				</div>
 				);
 			})}
+			
+			{/* Social Media Icons */}
+			{!collapsed && (
+				<div className="mt-4 pt-4 border-t border-gray-300">
+					<div className="grid grid-cols-2 gap-2">
+						<a
+							href="https://www.youtube.com"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors group"
+							title="YouTube"
+						>
+							<Youtube className="h-5 w-5 text-red-600" />
+						</a>
+						<a
+							href="https://www.facebook.com"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors group"
+							title="Facebook"
+						>
+							<svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+								<path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
+							</svg>
+						</a>
+					</div>
+				</div>
+			)}
+			
+			{collapsed && (
+				<div className="mt-4 pt-4 border-t border-gray-300">
+					<div className="flex flex-col gap-2">
+						<a
+							href="https://www.youtube.com"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors relative group"
+							title="YouTube"
+						>
+							<Youtube className="h-5 w-5 text-red-600" />
+							<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+								YouTube
+							</span>
+						</a>
+						<a
+							href="https://www.facebook.com"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors relative group"
+							title="Facebook"
+						>
+							<svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+								<path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
+							</svg>
+							<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+								Facebook
+							</span>
+						</a>
+					</div>
+				</div>
+			)}
         </nav>
 	);
 }

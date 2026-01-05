@@ -23,6 +23,14 @@ export default function Footer() {
 						>
 							Home
 						</Link>
+						<a
+							href="http://172.16.171.62:3000/login"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-white hover:text-gray-300 transition-colors"
+						>
+							Login
+						</a>
 					</div>
 				</div>
 			</div>

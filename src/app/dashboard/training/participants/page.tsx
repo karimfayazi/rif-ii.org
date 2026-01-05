@@ -32,12 +32,16 @@ type WorkshopParticipant = {
 	contact_number?: string;
 	tehsil?: string;
 	district?: string;
+	NC_VC?: string;
 	workshop_training_name?: string;
 	workshop_session_conference?: string;
 	start_date?: string;
 	end_date?: string;
 	date_entered_by?: string;
 	entry_timestamp?: string;
+	Training_Unit?: string;
+	Venue?: string;
+	Duration_Days?: number;
 };
 
 const DISTRICT_OPTIONS = ["All", "DIK", "Bannu"];
@@ -650,10 +654,10 @@ export default function TrainingParticipantsPage() {
 
 			{/* View Participant Modal */}
 			{viewingParticipant && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-					<div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+				<div className="fixed inset-0 bg-black bg-opacity-50 z-[50] flex items-center justify-center" style={{ top: '64px', bottom: '0' }}>
+					<div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 my-4 flex flex-col" style={{ maxHeight: 'calc(100vh - 64px - 80px)', height: 'calc(100vh - 64px - 80px)' }}>
 						{/* Modal Header */}
-						<div className="sticky top-0 bg-gradient-to-r from-[#0b4d2b] to-[#0a3d24] text-white p-6 rounded-t-xl flex items-center justify-between">
+						<div className="bg-gradient-to-r from-[#0b4d2b] to-[#0a3d24] text-white p-6 rounded-t-xl flex items-center justify-between flex-shrink-0">
 							<h2 className="text-2xl font-bold">Participant Details</h2>
 							<button
 								onClick={() => setViewingParticipant(null)}
@@ -664,7 +668,7 @@ export default function TrainingParticipantsPage() {
 						</div>
 
 						{/* Modal Content */}
-						<div className="p-6">
+						<div className="p-6 overflow-y-auto flex-1">
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 								{/* Personal Information */}
 								<div className="space-y-4">
@@ -792,7 +796,7 @@ export default function TrainingParticipantsPage() {
 						</div>
 
 						{/* Modal Footer */}
-						<div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
+						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200 flex-shrink-0">
 							<button
 								onClick={() => setViewingParticipant(null)}
 								className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"

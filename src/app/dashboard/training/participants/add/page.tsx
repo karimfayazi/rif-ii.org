@@ -71,6 +71,85 @@ export default function AddParticipantPage() {
 		}
 	}, [formData.district]);
 
+	// Convert various date formats to YYYY-MM-DD for HTML date input
+	const convertDateFormat = (dateString: string | null | undefined): string => {
+		if (!dateString) return "";
+		
+		// Check if already in YYYY-MM-DD format
+		if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+			return dateString;
+		}
+		
+		// Remove any extra whitespace
+		dateString = dateString.trim();
+		
+		// Handle DD-MM-YYYY or DD/M/YYYY or DD/MM/YYYY format
+		// Try splitting by both - and /
+		let parts: string[] = [];
+		if (dateString.includes('-')) {
+			parts = dateString.split('-');
+		} else if (dateString.includes('/')) {
+			parts = dateString.split('/');
+		}
+		
+		if (parts.length === 3) {
+			const day = parts[0].padStart(2, '0');
+			const month = parts[1].padStart(2, '0');
+			const year = parts[2];
+			
+			// Validate the parts are numbers
+			if (!isNaN(Number(day)) && !isNaN(Number(month)) && !isNaN(Number(year))) {
+				// Check if it's DD-MM-YYYY or MM-DD-YYYY by checking if month > 12
+				if (Number(month) > 12 && Number(day) <= 12) {
+					// Likely MM-DD-YYYY format, swap day and month
+					return `${year}-${day}-${month}`;
+				} else {
+					// DD-MM-YYYY format
+					return `${year}-${month}-${day}`;
+				}
+			}
+		}
+		
+		// Try to parse as Date and format (handles various formats)
+		try {
+			// Try parsing with different formats
+			let date: Date | null = null;
+			
+			// Try direct Date parsing
+			date = new Date(dateString);
+			if (!isNaN(date.getTime())) {
+				const year = date.getFullYear();
+				const month = String(date.getMonth() + 1).padStart(2, '0');
+				const day = String(date.getDate()).padStart(2, '0');
+				return `${year}-${month}-${day}`;
+			}
+			
+			// Try parsing DD/MM/YYYY or DD/M/YYYY manually
+			if (dateString.includes('/')) {
+				const slashParts = dateString.split('/');
+				if (slashParts.length === 3) {
+					const d = parseInt(slashParts[0], 10);
+					const m = parseInt(slashParts[1], 10);
+					const y = parseInt(slashParts[2], 10);
+					
+					if (!isNaN(d) && !isNaN(m) && !isNaN(y) && d > 0 && d <= 31 && m > 0 && m <= 12) {
+						date = new Date(y, m - 1, d);
+						if (!isNaN(date.getTime())) {
+							const year = date.getFullYear();
+							const month = String(date.getMonth() + 1).padStart(2, '0');
+							const day = String(date.getDate()).padStart(2, '0');
+							return `${year}-${month}-${day}`;
+						}
+					}
+				}
+			}
+		} catch (e) {
+			console.error("Error parsing date:", e, "Original:", dateString);
+		}
+		
+		return "";
+	};
+
 	const fetchParticipantData = async () => {
 		try {
 			setFetching(true);
@@ -93,8 +172,8 @@ export default function AddParticipantPage() {
 					district: participant.district || "",
 					workshop_training_name: participant.workshop_training_name || "",
 					workshop_session_conference: participant.workshop_session_conference || "",
-					start_date: participant.start_date || "",
-					end_date: participant.end_date || "",
+					start_date: convertDateFormat(participant.start_date),
+					end_date: convertDateFormat(participant.end_date),
 					date_entered_by: participant.date_entered_by || ""
 				});
 			} else {
