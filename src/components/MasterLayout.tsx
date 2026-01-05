@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import Sidebar from "@/components/Sidebar";
 
@@ -11,9 +11,13 @@ export default function MasterLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, userProfile, loading } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Check if this is a public page (GIS maps)
+  const isPublicPage = pathname === '/dashboard/kml-gis-maps';
 
   const handleLogout = async () => {
     try {
@@ -27,12 +31,12 @@ export default function MasterLayout({
 
   // Get user display name
   const getUserDisplayName = () => {
-    if (loading) return "Loading...";
+    if (loading && !isPublicPage) return "Loading...";
     if (user?.name) return user.name;
     if (userProfile?.full_name) return userProfile.full_name;
     if (user?.username) return user.username;
     if (userProfile?.username) return userProfile.username;
-    return "User";
+    return "Guest";
   };
 
   // Get user designation/department
@@ -42,7 +46,8 @@ export default function MasterLayout({
     return "";
   };
 
-  if (loading) {
+  // For public pages, don't show loading spinner
+  if (loading && !isPublicPage) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
@@ -88,20 +93,31 @@ export default function MasterLayout({
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="text-right leading-tight">
-              <p className="text-sm font-semibold">
-                {getUserDisplayName()}
-              </p>
-              <p className="text-xs text-white/80">
-                {getUserDesignation() || "Admin"}
-              </p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm font-medium text-[#0b4d2b] bg-white rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              Logout
-            </button>
+            {!isPublicPage && (
+              <div className="text-right leading-tight">
+                <p className="text-sm font-semibold">
+                  {getUserDisplayName()}
+                </p>
+                <p className="text-xs text-white/80">
+                  {getUserDesignation() || "Admin"}
+                </p>
+              </div>
+            )}
+            {isPublicPage ? (
+              <a
+                href="/login"
+                className="px-4 py-2 text-sm font-medium text-[#0b4d2b] bg-white rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                Login
+              </a>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 text-sm font-medium text-[#0b4d2b] bg-white rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                Logout
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -110,40 +126,46 @@ export default function MasterLayout({
       <div className="h-16"></div>
 
       <div className="flex">
-        {/* Sidebar */}
-        <aside
-          className={`${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } fixed lg:static inset-y-0 left-0 z-30 bg-gray-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-gray-200`}
-          style={{ 
-            top: "64px", 
-            width: sidebarCollapsed ? "64px" : "256px", 
-            minWidth: sidebarCollapsed ? "64px" : "256px", 
-            maxWidth: sidebarCollapsed ? "64px" : "256px",
-            flexShrink: 0,
-            transition: "width 0.3s ease-in-out"
-          }}
-        >
-          <div className="p-4 h-full overflow-y-auto" style={{ width: "100%" }}>
-            <Sidebar
-              collapsed={sidebarCollapsed}
-              setCollapsed={setSidebarCollapsed}
-            />
-          </div>
-        </aside>
+        {/* Sidebar - Hide for public pages */}
+        {!isPublicPage && (
+          <>
+            <aside
+              className={`${
+                sidebarOpen ? "translate-x-0" : "-translate-x-full"
+              } fixed lg:static inset-y-0 left-0 z-30 bg-gray-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-gray-200`}
+              style={{ 
+                top: "64px", 
+                width: sidebarCollapsed ? "64px" : "256px", 
+                minWidth: sidebarCollapsed ? "64px" : "256px", 
+                maxWidth: sidebarCollapsed ? "64px" : "256px",
+                flexShrink: 0,
+                transition: "width 0.3s ease-in-out"
+              }}
+            >
+              <div className="p-4 h-full overflow-y-auto" style={{ width: "100%" }}>
+                <Sidebar
+                  collapsed={sidebarCollapsed}
+                  setCollapsed={setSidebarCollapsed}
+                />
+              </div>
+            </aside>
 
-        {/* Overlay for mobile */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
-            style={{ top: "64px" }}
-            onClick={() => setSidebarOpen(false)}
-          />
+            {/* Overlay for mobile */}
+            {sidebarOpen && (
+              <div
+                className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+                style={{ top: "64px" }}
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
+          </>
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
-          <div className="max-w-7xl mx-auto">{children}</div>
+        <main className={isPublicPage ? "w-full" : "flex-1"} style={{ marginLeft: isPublicPage ? 0 : undefined }}>
+          <div className={isPublicPage ? "w-full" : "max-w-7xl mx-auto"} style={{ padding: isPublicPage ? "1.5rem" : undefined }}>
+            {children}
+          </div>
         </main>
       </div>
     </div>
