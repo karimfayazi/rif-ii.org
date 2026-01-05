@@ -2567,7 +2567,6 @@ export default function DashboardPage() {
 				<p className="text-gray-600 mt-2">Welcome to the RIF-II MIS Dashboard</p>
 			</div>
 
-<<<<<<< HEAD
 			{/* GIS Maps Section */}
 			<div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
 				<div className="p-6 border-b border-gray-200">
