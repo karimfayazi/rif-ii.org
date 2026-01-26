@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Plus, Edit2, Trash2, Save, AlertCircle } from "lucide-react";
 import { useAccess } from "@/hooks/useAccess";
+import { useAuth } from "@/hooks/useAuth";
 
 type SubCategory = {
 	SubCategoryID: number;
@@ -17,6 +18,7 @@ type SubCategoryModalProps = {
 	onSubCategorySelect: (subCategory: string) => void;
 	mainCategoryID: number | null;
 	mainCategoryName: string;
+	onDataChange?: () => void; // Callback to refresh parent component
 };
 
 export default function SubCategoryModal({ 
@@ -24,11 +26,15 @@ export default function SubCategoryModal({
 	onClose, 
 	onSubCategorySelect, 
 	mainCategoryID, 
-	mainCategoryName 
+	mainCategoryName,
+	onDataChange
 }: SubCategoryModalProps) {
-	// For demo purposes, using a hardcoded user ID. In real app, get from auth context
-	const userId = "1"; // Replace with actual user ID from auth context
-	const { canManageSubCategories, loading: accessLoading } = useAccess(userId);
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	const { canManageSubCategories, isAdmin, loading: accessLoading } = useAccess(userId);
+	
+	// Allow managing subcategories if user is admin or has explicit permission
+	const hasManagePermission = canManageSubCategories || isAdmin;
 	
 	const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -37,7 +43,6 @@ export default function SubCategoryModal({
 	const [editingId, setEditingId] = useState<number | null>(null);
 	const [editValue, setEditValue] = useState("");
 	const [newSubCategory, setNewSubCategory] = useState("");
-	const [showAddForm, setShowAddForm] = useState(false);
 
 	useEffect(() => {
 		if (isOpen && mainCategoryID) {
@@ -54,7 +59,14 @@ export default function SubCategoryModal({
 			const data = await response.json();
 			
 			if (data.success) {
-				setSubCategories(data.subCategories || []);
+				// Ensure IDs are parsed as numbers
+				const subCategoriesWithNumericIds = (data.subCategories || []).map((subCat: any) => ({
+					SubCategoryID: Number(subCat.SubCategoryID),
+					MainCategoryID: Number(subCat.MainCategoryID),
+					SubCategory: subCat.SubCategory,
+					MainCategoryName: subCat.MainCategoryName || mainCategoryName
+				}));
+				setSubCategories(subCategoriesWithNumericIds);
 			} else {
 				setError(data.message || "Failed to fetch sub categories");
 			}
@@ -94,12 +106,21 @@ export default function SubCategoryModal({
 
 			const data = await response.json();
 			
-			if (data.success) {
-				setSubCategories(prev => [...prev, data.subCategory]);
+			if (response.ok && data.SubCategoryID) {
+				// Parse IDs as numbers and add to list
+				const newSubCat = {
+					SubCategoryID: Number(data.SubCategoryID),
+					MainCategoryID: Number(data.MainCategoryID),
+					SubCategory: data.SubCategory,
+					MainCategoryName: mainCategoryName
+				};
+				setSubCategories(prev => [...prev, newSubCat]);
 				setNewSubCategory("");
-				setShowAddForm(false);
 				setSuccess("Sub Category added successfully");
 				setTimeout(() => setSuccess(null), 3000);
+				// Refresh list and notify parent
+				fetchSubCategories();
+				onDataChange?.();
 			} else {
 				setError(data.message || "Failed to add sub category");
 			}
@@ -121,13 +142,13 @@ export default function SubCategoryModal({
 			setLoading(true);
 			setError(null);
 			
-			const response = await fetch('/api/pictures/subcategories', {
+			// Use URL parameter for ID as per requirements
+			const response = await fetch(`/api/pictures/subcategories?id=${id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({ 
-					subCategoryID: id, 
 					subCategory: editValue.trim() 
 				}),
 			});
@@ -135,17 +156,14 @@ export default function SubCategoryModal({
 			const data = await response.json();
 			
 			if (data.success) {
-				setSubCategories(prev => 
-					prev.map(subCat => 
-						subCat.SubCategoryID === id 
-							? { ...subCat, SubCategory: editValue.trim() }
-							: subCat
-					)
-				);
+				// Refresh list from server to ensure consistency
+				await fetchSubCategories();
 				setEditingId(null);
 				setEditValue("");
 				setSuccess("Sub Category updated successfully");
 				setTimeout(() => setSuccess(null), 3000);
+				// Notify parent to refresh
+				onDataChange?.();
 			} else {
 				setError(data.message || "Failed to update sub category");
 			}
@@ -176,8 +194,16 @@ export default function SubCategoryModal({
 				setSubCategories(prev => prev.filter(subCat => subCat.SubCategoryID !== id));
 				setSuccess("Sub Category deleted successfully");
 				setTimeout(() => setSuccess(null), 3000);
+				// Refresh list and notify parent
+				fetchSubCategories();
+				onDataChange?.();
 			} else {
-				setError(data.message || "Failed to delete sub category");
+				// Handle 409 conflict
+				if (response.status === 409) {
+					setError(data.message || "Cannot delete sub category because it is being used");
+				} else {
+					setError(data.message || "Failed to delete sub category");
+				}
 			}
 		} catch (err) {
 			setError("Error deleting sub category");
@@ -241,46 +267,37 @@ export default function SubCategoryModal({
 					)}
 
 					{/* Add New Sub Category */}
-					{canManageSubCategories && (
+					{hasManagePermission && (
 						<div className="mb-6">
-							{!showAddForm ? (
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Sub Category Name
+							</label>
+							<div className="flex items-center space-x-2">
+								<input
+									type="text"
+									value={newSubCategory}
+									onChange={(e) => setNewSubCategory(e.target.value)}
+									placeholder="Enter sub category name"
+									className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+									onKeyPress={(e) => e.key === 'Enter' && handleAddSubCategory()}
+								/>
 								<button
-									onClick={() => setShowAddForm(true)}
-									className="w-full flex items-center justify-center px-4 py-3 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
+									onClick={handleAddSubCategory}
+									disabled={loading || !newSubCategory.trim()}
+									className="px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
 								>
-									<Plus className="h-4 w-4 mr-2" />
-									Add New Sub Category
+									<Plus className="h-4 w-4 mr-1" />
+									Add
 								</button>
-							) : (
-							<div className="space-y-3">
-								<div className="flex items-center space-x-2">
-									<input
-										type="text"
-										value={newSubCategory}
-										onChange={(e) => setNewSubCategory(e.target.value)}
-										placeholder="Enter sub category name"
-										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-										onKeyPress={(e) => e.key === 'Enter' && handleAddSubCategory()}
-									/>
+								{newSubCategory && (
 									<button
-										onClick={handleAddSubCategory}
-										disabled={loading || !newSubCategory.trim()}
-										className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-									>
-										<Save className="h-4 w-4" />
-									</button>
-									<button
-										onClick={() => {
-											setShowAddForm(false);
-											setNewSubCategory("");
-										}}
+										onClick={() => setNewSubCategory("")}
 										className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
 									>
-										<X className="h-4 w-4" />
+										Cancel
 									</button>
-								</div>
+								)}
 							</div>
-						)}
 						</div>
 					)}
 
@@ -308,21 +325,23 @@ export default function SubCategoryModal({
 												type="text"
 												value={editValue}
 												onChange={(e) => setEditValue(e.target.value)}
-												className="flex-1 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+												className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
 												onKeyPress={(e) => e.key === 'Enter' && handleUpdateSubCategory(subCategory.SubCategoryID)}
 											/>
 											<button
 												onClick={() => handleUpdateSubCategory(subCategory.SubCategoryID)}
-												disabled={loading}
-												className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50"
+												disabled={loading || !editValue.trim()}
+												className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center"
 											>
-												<Save className="h-4 w-4" />
+												<Save className="h-3.5 w-3.5 mr-1" />
+												Update
 											</button>
 											<button
 												onClick={cancelEdit}
-												className="p-1 text-gray-500 hover:text-gray-700"
+												className="px-4 py-2 text-sm text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors flex items-center"
 											>
-												<X className="h-4 w-4" />
+												<X className="h-3.5 w-3.5 mr-1" />
+												Cancel
 											</button>
 										</div>
 									) : (
@@ -335,21 +354,23 @@ export default function SubCategoryModal({
 													{subCategory.SubCategory}
 												</button>
 											</div>
-											{canManageSubCategories && (
-												<div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+											{hasManagePermission && (
+												<div className="flex items-center space-x-2">
 													<button
 														onClick={() => startEdit(subCategory)}
-														className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
+														className="px-3 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors flex items-center"
 														title="Edit sub category"
 													>
-														<Edit2 className="h-4 w-4" />
+														<Edit2 className="h-3.5 w-3.5 mr-1" />
+														Edit
 													</button>
 													<button
 														onClick={() => handleDeleteSubCategory(subCategory.SubCategoryID, subCategory.SubCategory)}
-														className="p-1 text-red-600 hover:text-red-700 transition-colors"
+														className="px-3 py-1.5 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors flex items-center"
 														title="Delete sub category"
 													>
-														<Trash2 className="h-4 w-4" />
+														<Trash2 className="h-3.5 w-3.5 mr-1" />
+														Delete
 													</button>
 												</div>
 											)}

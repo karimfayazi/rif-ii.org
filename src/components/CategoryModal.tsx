@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Plus, Edit2, Trash2, Save, AlertCircle } from "lucide-react";
 import { useAccess } from "@/hooks/useAccess";
+import { useAuth } from "@/hooks/useAuth";
 
 type Category = {
 	MainCategoryID: number;
@@ -13,12 +14,29 @@ type CategoryModalProps = {
 	isOpen: boolean;
 	onClose: () => void;
 	onCategorySelect: (category: string) => void;
+	onDataChange?: () => void; // Callback to refresh parent component
 };
 
-export default function CategoryModal({ isOpen, onClose, onCategorySelect }: CategoryModalProps) {
-	// For demo purposes, using a hardcoded user ID. In real app, get from auth context
-	const userId = "1"; // Replace with actual user ID from auth context
-	const { canManageCategories, loading: accessLoading } = useAccess(userId);
+export default function CategoryModal({ isOpen, onClose, onCategorySelect, onDataChange }: CategoryModalProps) {
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	const { canManageCategories, isAdmin, loading: accessLoading } = useAccess(userId);
+	
+	// Allow managing categories if user is admin or has explicit permission
+	// This handles cases where permission check is still loading
+	const hasManagePermission = canManageCategories || isAdmin;
+	
+	// Debug: Log permission status
+	useEffect(() => {
+		if (isOpen) {
+			console.log('[CategoryModal] User:', user);
+			console.log('[CategoryModal] User ID:', userId);
+			console.log('[CategoryModal] Is Admin:', isAdmin);
+			console.log('[CategoryModal] Can Manage Categories:', canManageCategories);
+			console.log('[CategoryModal] Has Manage Permission:', hasManagePermission);
+			console.log('[CategoryModal] Access Loading:', accessLoading);
+		}
+	}, [isOpen, user, userId, isAdmin, canManageCategories, hasManagePermission, accessLoading]);
 	
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -27,7 +45,6 @@ export default function CategoryModal({ isOpen, onClose, onCategorySelect }: Cat
 	const [editingId, setEditingId] = useState<number | null>(null);
 	const [editValue, setEditValue] = useState("");
 	const [newCategory, setNewCategory] = useState("");
-	const [showAddForm, setShowAddForm] = useState(false);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -42,7 +59,12 @@ export default function CategoryModal({ isOpen, onClose, onCategorySelect }: Cat
 			const data = await response.json();
 			
 			if (data.success) {
-				setCategories(data.categories || []);
+				// Ensure IDs are parsed as numbers
+				const categoriesWithNumericIds = (data.categories || []).map((cat: any) => ({
+					MainCategoryID: Number(cat.MainCategoryID),
+					Category: cat.Category
+				}));
+				setCategories(categoriesWithNumericIds);
 			} else {
 				setError(data.message || "Failed to fetch categories");
 			}
@@ -74,12 +96,19 @@ export default function CategoryModal({ isOpen, onClose, onCategorySelect }: Cat
 
 			const data = await response.json();
 			
-			if (data.success) {
-				setCategories(prev => [...prev, data.category]);
+			if (response.ok && data.MainCategoryID) {
+				// Parse ID as number and add to list
+				const newCat = {
+					MainCategoryID: Number(data.MainCategoryID),
+					Category: data.Category
+				};
+				setCategories(prev => [...prev, newCat]);
 				setNewCategory("");
-				setShowAddForm(false);
 				setSuccess("Category added successfully");
 				setTimeout(() => setSuccess(null), 3000);
+				// Refresh list and notify parent
+				fetchCategories();
+				onDataChange?.();
 			} else {
 				setError(data.message || "Failed to add category");
 			}
@@ -101,13 +130,13 @@ export default function CategoryModal({ isOpen, onClose, onCategorySelect }: Cat
 			setLoading(true);
 			setError(null);
 			
-			const response = await fetch('/api/pictures/categories', {
+			// Use URL parameter for ID as per requirements
+			const response = await fetch(`/api/pictures/categories?id=${id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({ 
-					mainCategoryID: id, 
 					category: editValue.trim() 
 				}),
 			});
@@ -115,17 +144,14 @@ export default function CategoryModal({ isOpen, onClose, onCategorySelect }: Cat
 			const data = await response.json();
 			
 			if (data.success) {
-				setCategories(prev => 
-					prev.map(cat => 
-						cat.MainCategoryID === id 
-							? { ...cat, Category: editValue.trim() }
-							: cat
-					)
-				);
+				// Refresh list from server to ensure consistency
+				await fetchCategories();
 				setEditingId(null);
 				setEditValue("");
 				setSuccess("Category updated successfully");
 				setTimeout(() => setSuccess(null), 3000);
+				// Notify parent to refresh
+				onDataChange?.();
 			} else {
 				setError(data.message || "Failed to update category");
 			}
@@ -156,8 +182,16 @@ export default function CategoryModal({ isOpen, onClose, onCategorySelect }: Cat
 				setCategories(prev => prev.filter(cat => cat.MainCategoryID !== id));
 				setSuccess("Category deleted successfully");
 				setTimeout(() => setSuccess(null), 3000);
+				// Refresh list and notify parent
+				fetchCategories();
+				onDataChange?.();
 			} else {
-				setError(data.message || "Failed to delete category");
+				// Handle 409 conflict (has subcategories)
+				if (response.status === 409) {
+					setError(data.message || "Cannot delete category because it has subcategories");
+				} else {
+					setError(data.message || "Failed to delete category");
+				}
 			}
 		} catch (err) {
 			setError("Error deleting category");
@@ -219,46 +253,37 @@ export default function CategoryModal({ isOpen, onClose, onCategorySelect }: Cat
 					)}
 
 					{/* Add New Category */}
-					{canManageCategories && (
+					{hasManagePermission && (
 						<div className="mb-6">
-							{!showAddForm ? (
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Category Name
+							</label>
+							<div className="flex items-center space-x-2">
+								<input
+									type="text"
+									value={newCategory}
+									onChange={(e) => setNewCategory(e.target.value)}
+									placeholder="Enter category name"
+									className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+									onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
+								/>
 								<button
-									onClick={() => setShowAddForm(true)}
-									className="w-full flex items-center justify-center px-4 py-3 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
+									onClick={handleAddCategory}
+									disabled={loading || !newCategory.trim()}
+									className="px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
 								>
-									<Plus className="h-4 w-4 mr-2" />
-									Add New Category
+									<Plus className="h-4 w-4 mr-1" />
+									Add
 								</button>
-							) : (
-							<div className="space-y-3">
-								<div className="flex items-center space-x-2">
-									<input
-										type="text"
-										value={newCategory}
-										onChange={(e) => setNewCategory(e.target.value)}
-										placeholder="Enter category name"
-										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-										onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
-									/>
+								{newCategory && (
 									<button
-										onClick={handleAddCategory}
-										disabled={loading || !newCategory.trim()}
-										className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-									>
-										<Save className="h-4 w-4" />
-									</button>
-									<button
-										onClick={() => {
-											setShowAddForm(false);
-											setNewCategory("");
-										}}
+										onClick={() => setNewCategory("")}
 										className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
 									>
-										<X className="h-4 w-4" />
+										Cancel
 									</button>
-								</div>
+								)}
 							</div>
-						)}
 						</div>
 					)}
 
@@ -286,21 +311,23 @@ export default function CategoryModal({ isOpen, onClose, onCategorySelect }: Cat
 												type="text"
 												value={editValue}
 												onChange={(e) => setEditValue(e.target.value)}
-												className="flex-1 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+												className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
 												onKeyPress={(e) => e.key === 'Enter' && handleUpdateCategory(category.MainCategoryID)}
 											/>
 											<button
 												onClick={() => handleUpdateCategory(category.MainCategoryID)}
-												disabled={loading}
-												className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50"
+												disabled={loading || !editValue.trim()}
+												className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center"
 											>
-												<Save className="h-4 w-4" />
+												<Save className="h-3.5 w-3.5 mr-1" />
+												Update
 											</button>
 											<button
 												onClick={cancelEdit}
-												className="p-1 text-gray-500 hover:text-gray-700"
+												className="px-4 py-2 text-sm text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors flex items-center"
 											>
-												<X className="h-4 w-4" />
+												<X className="h-3.5 w-3.5 mr-1" />
+												Cancel
 											</button>
 										</div>
 									) : (
@@ -313,21 +340,23 @@ export default function CategoryModal({ isOpen, onClose, onCategorySelect }: Cat
 													{category.Category}
 												</button>
 											</div>
-											{canManageCategories && (
-												<div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+											{hasManagePermission && (
+												<div className="flex items-center space-x-2">
 													<button
 														onClick={() => startEdit(category)}
-														className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
+														className="px-3 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors flex items-center"
 														title="Edit category"
 													>
-														<Edit2 className="h-4 w-4" />
+														<Edit2 className="h-3.5 w-3.5 mr-1" />
+														Edit
 													</button>
 													<button
 														onClick={() => handleDeleteCategory(category.MainCategoryID, category.Category)}
-														className="p-1 text-red-600 hover:text-red-700 transition-colors"
+														className="px-3 py-1.5 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors flex items-center"
 														title="Delete category"
 													>
-														<Trash2 className="h-4 w-4" />
+														<Trash2 className="h-3.5 w-3.5 mr-1" />
+														Delete
 													</button>
 												</div>
 											)}

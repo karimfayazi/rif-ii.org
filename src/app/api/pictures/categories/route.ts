@@ -63,11 +63,14 @@ export async function POST(request: NextRequest) {
 			}, { status: 400 });
 		}
 
-		// Insert new category
+		// Insert new category using SCOPE_IDENTITY for reliability
 		const insertQuery = `
 			INSERT INTO [_rifiiorg_db].[dbo].[tblPictureMainCategory] ([Category])
-			OUTPUT INSERTED.[MainCategoryID], INSERTED.[Category]
-			VALUES (@category)
+			VALUES (@category);
+			
+			SELECT 
+				CAST(SCOPE_IDENTITY() AS INT) AS MainCategoryID,
+				@category AS Category;
 		`;
 		
 		const result = await pool.request()
@@ -76,10 +79,15 @@ export async function POST(request: NextRequest) {
 			
 		const newCategory = result.recordset[0];
 		
+		// Verify we got a valid ID
+		if (!newCategory.MainCategoryID || newCategory.MainCategoryID === null) {
+			throw new Error('Failed to generate MainCategoryID - check database schema');
+		}
+		
+		// Return exact format as required: { "MainCategoryID": <newId>, "Category": "<value>" }
 		return NextResponse.json({
-			success: true,
-			message: "Category created successfully",
-			category: newCategory
+			MainCategoryID: Number(newCategory.MainCategoryID),
+			Category: newCategory.Category
 		});
 	} catch (error) {
 		console.error("Error creating main category:", error);
@@ -97,7 +105,9 @@ export async function POST(request: NextRequest) {
 // PUT - Update main category
 export async function PUT(request: NextRequest) {
 	try {
-		const { mainCategoryID, category } = await request.json();
+		const { searchParams } = new URL(request.url);
+		const mainCategoryID = searchParams.get('id') || searchParams.get('mainCategoryID');
+		const { category } = await request.json();
 		
 		if (!mainCategoryID || !category || category.trim() === '') {
 			return NextResponse.json({
@@ -117,7 +127,7 @@ export async function PUT(request: NextRequest) {
 		
 		const checkResult = await pool.request()
 			.input('category', category.trim())
-			.input('mainCategoryID', mainCategoryID)
+			.input('mainCategoryID', parseInt(mainCategoryID))
 			.query(checkQuery);
 			
 		if (checkResult.recordset.length > 0) {
@@ -127,7 +137,7 @@ export async function PUT(request: NextRequest) {
 			}, { status: 400 });
 		}
 
-		// Update category
+		// Update category - never update identity columns
 		const updateQuery = `
 			UPDATE [_rifiiorg_db].[dbo].[tblPictureMainCategory] 
 			SET [Category] = @category
@@ -137,7 +147,7 @@ export async function PUT(request: NextRequest) {
 		
 		const result = await pool.request()
 			.input('category', category.trim())
-			.input('mainCategoryID', mainCategoryID)
+			.input('mainCategoryID', parseInt(mainCategoryID))
 			.query(updateQuery);
 			
 		if (result.recordset.length === 0) {
@@ -182,6 +192,29 @@ export async function DELETE(request: NextRequest) {
 
 		const pool = await getDb();
 		
+		// Check if category has subcategories using exact pattern from requirements
+		const checkSubCategoriesQuery = `
+			IF EXISTS (SELECT 1 FROM [_rifiiorg_db].[dbo].[tblPictureSubCategory] WHERE [MainCategoryID] = @mainCategoryID)
+			BEGIN
+				SELECT 1 AS HasSubs;
+			END
+			ELSE
+			BEGIN
+				SELECT 0 AS HasSubs;
+			END
+		`;
+		
+		const subCategoriesResult = await pool.request()
+			.input('mainCategoryID', parseInt(mainCategoryID))
+			.query(checkSubCategoriesQuery);
+			
+		if (subCategoriesResult.recordset[0]?.HasSubs === 1) {
+			return NextResponse.json({
+				success: false,
+				message: "Cannot delete because subcategories exist"
+			}, { status: 409 });
+		}
+		
 		// Check if category is being used in pictures
 		const checkUsageQuery = `
 			SELECT COUNT(*) as count
@@ -200,7 +233,7 @@ export async function DELETE(request: NextRequest) {
 			return NextResponse.json({
 				success: false,
 				message: "Cannot delete category that is being used by pictures"
-			}, { status: 400 });
+			}, { status: 409 });
 		}
 
 		// Delete category
@@ -210,7 +243,7 @@ export async function DELETE(request: NextRequest) {
 		`;
 		
 		const result = await pool.request()
-			.input('mainCategoryID', mainCategoryID)
+			.input('mainCategoryID', parseInt(mainCategoryID))
 			.query(deleteQuery);
 			
 		if (result.rowsAffected[0] === 0) {

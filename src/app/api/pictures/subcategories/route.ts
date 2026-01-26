@@ -76,11 +76,15 @@ export async function POST(request: NextRequest) {
 			}, { status: 400 });
 		}
 
-		// Insert new sub category
+		// Insert new sub category using SCOPE_IDENTITY for reliability
 		const insertQuery = `
 			INSERT INTO [_rifiiorg_db].[dbo].[tblPictureSubCategory] ([MainCategoryID], [SubCategory])
-			OUTPUT INSERTED.[SubCategoryID], INSERTED.[MainCategoryID], INSERTED.[SubCategory]
-			VALUES (@mainCategoryID, @subCategory)
+			VALUES (@mainCategoryID, @subCategory);
+			
+			SELECT 
+				CAST(SCOPE_IDENTITY() AS INT) AS SubCategoryID,
+				@mainCategoryID AS MainCategoryID,
+				@subCategory AS SubCategory;
 		`;
 		
 		const result = await pool.request()
@@ -90,10 +94,16 @@ export async function POST(request: NextRequest) {
 			
 		const newSubCategory = result.recordset[0];
 		
+		// Verify we got a valid ID
+		if (!newSubCategory.SubCategoryID || newSubCategory.SubCategoryID === null) {
+			throw new Error('Failed to generate SubCategoryID - check database schema');
+		}
+		
+		// Return exact format as required: { "SubCategoryID": <newId>, "MainCategoryID": <mainId>, "SubCategory": "<value>" }
 		return NextResponse.json({
-			success: true,
-			message: "Sub Category created successfully",
-			subCategory: newSubCategory
+			SubCategoryID: Number(newSubCategory.SubCategoryID),
+			MainCategoryID: Number(newSubCategory.MainCategoryID),
+			SubCategory: newSubCategory.SubCategory
 		});
 	} catch (error) {
 		console.error("Error creating sub category:", error);
@@ -111,7 +121,9 @@ export async function POST(request: NextRequest) {
 // PUT - Update sub category
 export async function PUT(request: NextRequest) {
 	try {
-		const { subCategoryID, subCategory } = await request.json();
+		const { searchParams } = new URL(request.url);
+		const subCategoryID = searchParams.get('id') || searchParams.get('subCategoryID');
+		const { subCategory } = await request.json();
 		
 		if (!subCategoryID || !subCategory || subCategory.trim() === '') {
 			return NextResponse.json({
@@ -130,7 +142,7 @@ export async function PUT(request: NextRequest) {
 		`;
 		
 		const mainCategoryResult = await pool.request()
-			.input('subCategoryID', subCategoryID)
+			.input('subCategoryID', parseInt(subCategoryID))
 			.query(getMainCategoryQuery);
 			
 		if (mainCategoryResult.recordset.length === 0) {
@@ -152,7 +164,7 @@ export async function PUT(request: NextRequest) {
 		const checkResult = await pool.request()
 			.input('mainCategoryID', mainCategoryID)
 			.input('subCategory', subCategory.trim())
-			.input('subCategoryID', subCategoryID)
+			.input('subCategoryID', parseInt(subCategoryID))
 			.query(checkQuery);
 			
 		if (checkResult.recordset.length > 0) {
@@ -162,7 +174,7 @@ export async function PUT(request: NextRequest) {
 			}, { status: 400 });
 		}
 
-		// Update sub category
+		// Update sub category - never update identity columns
 		const updateQuery = `
 			UPDATE [_rifiiorg_db].[dbo].[tblPictureSubCategory] 
 			SET [SubCategory] = @subCategory
@@ -172,7 +184,7 @@ export async function PUT(request: NextRequest) {
 		
 		const result = await pool.request()
 			.input('subCategory', subCategory.trim())
-			.input('subCategoryID', subCategoryID)
+			.input('subCategoryID', parseInt(subCategoryID))
 			.query(updateQuery);
 			
 		if (result.recordset.length === 0) {
@@ -228,14 +240,14 @@ export async function DELETE(request: NextRequest) {
 		`;
 		
 		const usageResult = await pool.request()
-			.input('subCategoryID', subCategoryID)
+			.input('subCategoryID', parseInt(subCategoryID))
 			.query(checkUsageQuery);
 			
 		if (usageResult.recordset[0].count > 0) {
 			return NextResponse.json({
 				success: false,
 				message: "Cannot delete sub category that is being used by pictures"
-			}, { status: 400 });
+			}, { status: 409 });
 		}
 
 		// Delete sub category
@@ -245,7 +257,7 @@ export async function DELETE(request: NextRequest) {
 		`;
 		
 		const result = await pool.request()
-			.input('subCategoryID', subCategoryID)
+			.input('subCategoryID', parseInt(subCategoryID))
 			.query(deleteQuery);
 			
 		if (result.rowsAffected[0] === 0) {
