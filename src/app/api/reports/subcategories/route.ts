@@ -78,11 +78,15 @@ export async function POST(request: NextRequest) {
 			}, { status: 400 });
 		}
 
-		// Insert new sub category
+		// Insert new sub category using SCOPE_IDENTITY for reliability
 		const insertQuery = `
 			INSERT INTO [_rifiiorg_db].[dbo].[tblReportSubCategory] ([MainCategoryID], [SubCategory])
-			OUTPUT INSERTED.[SubCategoryID], INSERTED.[MainCategoryID], INSERTED.[SubCategory]
-			VALUES (@mainCategoryID, @subCategory)
+			VALUES (@mainCategoryID, @subCategory);
+			
+			SELECT 
+				CAST(SCOPE_IDENTITY() AS INT) AS SubCategoryID,
+				@mainCategoryID AS MainCategoryID,
+				@subCategory AS SubCategory;
 		`;
 		
 		const result = await pool.request()
@@ -91,6 +95,11 @@ export async function POST(request: NextRequest) {
 			.query(insertQuery);
 			
 		const newSubCategory = result.recordset[0];
+		
+		// Verify we got a valid ID
+		if (!newSubCategory.SubCategoryID || newSubCategory.SubCategoryID === null) {
+			throw new Error('Failed to generate SubCategoryID - check database schema');
+		}
 		
 		return NextResponse.json({
 			success: true,

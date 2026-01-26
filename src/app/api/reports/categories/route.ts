@@ -63,11 +63,14 @@ export async function POST(request: NextRequest) {
 			}, { status: 400 });
 		}
 
-		// Insert new category
+		// Insert new category using SCOPE_IDENTITY for reliability
 		const insertQuery = `
 			INSERT INTO [_rifiiorg_db].[rifiiorg].[tblReportMainCategory] ([Category])
-			OUTPUT INSERTED.[MainCategoryID], INSERTED.[Category]
-			VALUES (@category)
+			VALUES (@category);
+			
+			SELECT 
+				CAST(SCOPE_IDENTITY() AS INT) AS MainCategoryID,
+				@category AS Category;
 		`;
 		
 		const result = await pool.request()
@@ -75,6 +78,11 @@ export async function POST(request: NextRequest) {
 			.query(insertQuery);
 			
 		const newCategory = result.recordset[0];
+		
+		// Verify we got a valid ID
+		if (!newCategory.MainCategoryID || newCategory.MainCategoryID === null) {
+			throw new Error('Failed to generate MainCategoryID - check database schema');
+		}
 		
 		return NextResponse.json({
 			success: true,
@@ -182,6 +190,24 @@ export async function DELETE(request: NextRequest) {
 
 		const pool = await getDb();
 		
+		// Check if category has subcategories
+		const checkSubCategoriesQuery = `
+			SELECT COUNT(*) as count
+			FROM [_rifiiorg_db].[dbo].[tblReportSubCategory] 
+			WHERE [MainCategoryID] = @mainCategoryID
+		`;
+		
+		const subCategoriesResult = await pool.request()
+			.input('mainCategoryID', parseInt(mainCategoryID))
+			.query(checkSubCategoriesQuery);
+			
+		if (subCategoriesResult.recordset[0].count > 0) {
+			return NextResponse.json({
+				success: false,
+				message: "Cannot delete because subcategories exist"
+			}, { status: 409 });
+		}
+		
 		// Check if category is being used in reports
 		const checkUsageQuery = `
 			SELECT COUNT(*) as count
@@ -200,7 +226,7 @@ export async function DELETE(request: NextRequest) {
 			return NextResponse.json({
 				success: false,
 				message: "Cannot delete category that is being used by reports"
-			}, { status: 400 });
+			}, { status: 409 });
 		}
 
 		// Delete category

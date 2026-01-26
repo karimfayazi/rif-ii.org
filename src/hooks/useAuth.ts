@@ -50,7 +50,10 @@ export function useAuth() {
 		if (!userId) return null;
 
 		try {
-			const res = await fetch(`/api/user-info`);
+			// Safari requires explicit credentials: "include" for cookies
+			const res = await fetch(`/api/user-info`, {
+				credentials: "include",
+			});
 			const data = await res.json();
 			
 			if (data.success) {
@@ -68,7 +71,10 @@ export function useAuth() {
 		if (!userId) return null;
 
 		try {
-			const res = await fetch(`/api/user-profile`);
+			// Safari requires explicit credentials: "include" for cookies
+			const res = await fetch(`/api/user-profile`, {
+				credentials: "include",
+			});
 			const data = await res.json();
 			
 			if (data.success) {

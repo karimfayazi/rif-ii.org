@@ -25,7 +25,10 @@ export default function ReportMainCategoryModal({
 }: ReportMainCategoryModalProps) {
 	const { user, getUserId } = useAuth();
 	const userId = user?.id || user?.username || getUserId() || null;
-	const { canManageCategories, loading: accessLoading } = useAccess(userId);
+	const { canManageCategories, isAdmin, loading: accessLoading } = useAccess(userId);
+	
+	// Allow managing categories if user is admin or has explicit permission
+	const hasManagePermission = canManageCategories || isAdmin;
 	
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -34,7 +37,6 @@ export default function ReportMainCategoryModal({
 	const [editingId, setEditingId] = useState<number | null>(null);
 	const [editValue, setEditValue] = useState("");
 	const [newCategory, setNewCategory] = useState("");
-	const [showAddForm, setShowAddForm] = useState(false);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -84,7 +86,6 @@ export default function ReportMainCategoryModal({
 			if (data.success) {
 				setCategories(prev => [...prev, data.category]);
 				setNewCategory("");
-				setShowAddForm(false);
 				setSuccess("Category added successfully");
 				setTimeout(() => setSuccess(null), 3000);
 				if (onCategoryChange) onCategoryChange();
@@ -231,46 +232,37 @@ export default function ReportMainCategoryModal({
 					)}
 
 					{/* Add New Category */}
-					{canManageCategories && (
+					{hasManagePermission && (
 						<div className="mb-6">
-							{!showAddForm ? (
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Category Name
+							</label>
+							<div className="flex items-center space-x-2">
+								<input
+									type="text"
+									value={newCategory}
+									onChange={(e) => setNewCategory(e.target.value)}
+									placeholder="Enter category name"
+									className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+									onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
+								/>
 								<button
-									onClick={() => setShowAddForm(true)}
-									className="w-full flex items-center justify-center px-4 py-3 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
+									onClick={handleAddCategory}
+									disabled={loading || !newCategory.trim()}
+									className="px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
 								>
-									<Plus className="h-4 w-4 mr-2" />
-									Add New Category
+									<Plus className="h-4 w-4 mr-1" />
+									Add
 								</button>
-							) : (
-							<div className="space-y-3">
-								<div className="flex items-center space-x-2">
-									<input
-										type="text"
-										value={newCategory}
-										onChange={(e) => setNewCategory(e.target.value)}
-										placeholder="Enter category name"
-										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-										onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
-									/>
+								{newCategory && (
 									<button
-										onClick={handleAddCategory}
-										disabled={loading || !newCategory.trim()}
-										className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-									>
-										<Save className="h-4 w-4" />
-									</button>
-									<button
-										onClick={() => {
-											setShowAddForm(false);
-											setNewCategory("");
-										}}
+										onClick={() => setNewCategory("")}
 										className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
 									>
-										<X className="h-4 w-4" />
+										Cancel
 									</button>
-								</div>
+								)}
 							</div>
-						)}
 						</div>
 					)}
 
@@ -298,21 +290,23 @@ export default function ReportMainCategoryModal({
 												type="text"
 												value={editValue}
 												onChange={(e) => setEditValue(e.target.value)}
-												className="flex-1 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+												className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
 												onKeyPress={(e) => e.key === 'Enter' && handleUpdateCategory(category.MainCategoryID)}
 											/>
 											<button
 												onClick={() => handleUpdateCategory(category.MainCategoryID)}
 												disabled={loading}
-												className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50"
+												className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors flex items-center"
 											>
-												<Save className="h-4 w-4" />
+												<Save className="h-3.5 w-3.5 mr-1" />
+												Update
 											</button>
 											<button
 												onClick={cancelEdit}
-												className="p-1 text-gray-500 hover:text-gray-700"
+												className="px-4 py-2 text-sm text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors flex items-center"
 											>
-												<X className="h-4 w-4" />
+												<X className="h-3.5 w-3.5 mr-1" />
+												Cancel
 											</button>
 										</div>
 									) : (
@@ -331,21 +325,23 @@ export default function ReportMainCategoryModal({
 													</span>
 												)}
 											</div>
-											{canManageCategories && (
-												<div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+											{hasManagePermission && (
+												<div className="flex items-center space-x-2">
 													<button
 														onClick={() => startEdit(category)}
-														className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
+														className="px-3 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors flex items-center"
 														title="Edit category"
 													>
-														<Edit2 className="h-4 w-4" />
+														<Edit2 className="h-3.5 w-3.5 mr-1" />
+														Edit
 													</button>
 													<button
 														onClick={() => handleDeleteCategory(category.MainCategoryID, category.Category)}
-														className="p-1 text-red-600 hover:text-red-700 transition-colors"
+														className="px-3 py-1.5 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors flex items-center"
 														title="Delete category"
 													>
-														<Trash2 className="h-4 w-4" />
+														<Trash2 className="h-3.5 w-3.5 mr-1" />
+														Delete
 													</button>
 												</div>
 											)}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, ChevronRight, Building2, Droplet, Trash2, Layers, Map as MapIcon } from 'lucide-react';
 
@@ -128,6 +129,7 @@ const districts: District[] = [
 ];
 
 export default function MapsMasterPage() {
+	const router = useRouter();
 	const [expandedDistricts, setExpandedDistricts] = useState<{ [key: string]: boolean }>({
 		'bannu': true,
 		'dik': true
@@ -156,9 +158,17 @@ export default function MapsMasterPage() {
 	return (
 		<div className="space-y-6">
 			{/* Header */}
-			<div>
-				<h1 className="text-3xl font-bold text-gray-900">GIS Maps Master</h1>
-				<p className="text-gray-600 mt-2">Browse and access all district, tehsil, and NC/VC maps</p>
+			<div className="flex items-center justify-between">
+				<div>
+					<h1 className="text-3xl font-bold text-gray-900">GIS Maps Master</h1>
+					<p className="text-gray-600 mt-2">Browse and access all district, tehsil, and NC/VC maps</p>
+				</div>
+				<button
+					onClick={() => router.push('/dashboard/maps/testing-gis')}
+					className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm hover:shadow-md"
+				>
+					Testing GIS
+				</button>
 			</div>
 
 			{/* Districts */}

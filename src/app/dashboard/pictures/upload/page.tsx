@@ -172,6 +172,18 @@ export default function UploadPicturesPage() {
 		}
 	};
 
+	// Callback to refresh categories after modal operations
+	const handleCategoryDataChange = () => {
+		fetchCategories();
+	};
+
+	// Callback to refresh subcategories after modal operations
+	const handleSubCategoryDataChange = () => {
+		if (selectedMainCategoryID) {
+			fetchSubCategories(selectedMainCategoryID);
+		}
+	};
+
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const selectedFiles = Array.from(e.target.files || []);
 		const imageFiles = selectedFiles.filter(file => file.type.startsWith('image/'));
@@ -429,10 +441,11 @@ export default function UploadPicturesPage() {
 										<button
 											type="button"
 											onClick={() => setShowCategoryModal(true)}
-											className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors flex items-center"
+											className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors flex items-center whitespace-nowrap"
 											title="Manage Categories"
 										>
-											<Plus className="h-4 w-4" />
+											<Plus className="h-4 w-4 mr-1" />
+											<span className="text-sm">Main Category</span>
 										</button>
 									)}
 								</div>
@@ -465,10 +478,11 @@ export default function UploadPicturesPage() {
 											type="button"
 											onClick={() => setShowSubCategoryModal(true)}
 											disabled={!selectedMainCategoryID}
-											className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+											className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center whitespace-nowrap"
 											title="Manage Sub Categories"
 										>
-											<Plus className="h-4 w-4" />
+											<Plus className="h-4 w-4 mr-1" />
+											<span className="text-sm">Sub Category +</span>
 										</button>
 									)}
 								</div>
@@ -632,6 +646,7 @@ export default function UploadPicturesPage() {
 				isOpen={showCategoryModal}
 				onClose={() => setShowCategoryModal(false)}
 				onCategorySelect={handleCategorySelect}
+				onDataChange={handleCategoryDataChange}
 			/>
 
 			{/* Sub Category Management Modal */}
@@ -641,6 +656,7 @@ export default function UploadPicturesPage() {
 				onSubCategorySelect={handleSubCategorySelect}
 				mainCategoryID={selectedMainCategoryID}
 				mainCategoryName={formData.mainCategory}
+				onDataChange={handleSubCategoryDataChange}
 			/>
 		</div>
 	);

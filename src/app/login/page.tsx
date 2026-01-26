@@ -19,9 +19,11 @@ export default function LoginPage() {
 		}
 		setLoading(true);
 		try {
+			// Safari requires explicit credentials: "include" for cookies
 			const res = await fetch("/api/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				credentials: "include", // CRITICAL for Safari cookie handling
 				body: JSON.stringify({ email, password }),
 			});
 			
@@ -34,6 +36,11 @@ export default function LoginPage() {
 			// Store user data in localStorage for fallback
 			if (data.user) {
 				localStorage.setItem('userData', JSON.stringify(data.user));
+			}
+			
+			// Log success for Safari debugging (dev only)
+			if (process.env.NODE_ENV === "development") {
+				console.log("✅ Login successful, redirecting to dashboard");
 			}
 			
 			// Redirect to dashboard immediately after successful login

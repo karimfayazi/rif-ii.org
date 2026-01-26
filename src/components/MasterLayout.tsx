@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import Sidebar from "@/components/Sidebar";
+import { logSafariAuthDebug } from "@/lib/authFetch";
 
 export default function MasterLayout({
   children,
@@ -25,6 +26,11 @@ export default function MasterLayout({
       const saved = localStorage.getItem("sjda_sidebar_collapsed");
       if (saved === "1") {
         setSidebarCollapsed(true);
+      }
+      
+      // Log Safari auth debug info in development only
+      if (process.env.NODE_ENV === "development") {
+        logSafariAuthDebug();
       }
     }
   }, []);

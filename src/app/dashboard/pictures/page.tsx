@@ -1,21 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, Folder, FileImage, RotateCcw, ArrowLeft, Eye, Upload, RefreshCw, Download, Trash2, AlertCircle, Loader2, CheckCircle, X } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { useAccess } from "@/hooks/useAccess";
+import { useSearchParams, useRouter } from "next/navigation";
+import { 
+	Search, Filter, RefreshCw, Eye, X, Calendar, User, FileImage, 
+	ChevronLeft, ChevronRight, ArrowUpDown, CheckCircle, XCircle,
+	ExternalLink, Download, Trash2, AlertCircle, Loader2, Upload
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccess } from "@/hooks/useAccess";
+import Link from "next/link";
 
-type PictureData = {
-	MainCategory: string | null;
-	SubCategory: string | null;
-	EventDate: string | null;
-	TotalPictures: number;
-	PreviewImage: string | null;
-};
-
-type PictureDetail = {
+type PictureRow = {
 	PictureID: number;
 	GroupName: string | null;
 	MainCategory: string | null;
@@ -29,296 +25,503 @@ type PictureDetail = {
 	EventDate: string | null;
 };
 
+type FilterState = {
+	search: string;
+	groupName: string;
+	mainCategory: string;
+	subCategory: string;
+	uploadedBy: string;
+	isActive: 'all' | '1' | '0';
+	uploadFrom: string;
+	uploadTo: string;
+	eventFrom: string;
+	eventTo: string;
+	sortBy: string;
+	sortDir: 'asc' | 'desc';
+	page: number;
+	pageSize: number;
+};
+
 export default function PicturesPage() {
 	const { user, getUserId } = useAuth();
-	const userId = user?.id || user?.username || getUserId() || "1";
-	const { canUploadPictures, isAdmin, loading: accessLoading, accessLevel, accessDelete } = useAccess(userId);
+	const userId = user?.id || user?.username || getUserId() || null;
+	const { isAdmin, accessDelete, canUploadPictures, loading: accessLoading } = useAccess(userId);
+	const router = useRouter();
+	const searchParams = useSearchParams();
 	
-	const [mainCategories, setMainCategories] = useState<Array<{MainCategory: string; TotalPictures: number; PreviewImage: string | null}>>([]);
-	const [eventNames, setEventNames] = useState<Array<{EventName: string; TotalPictures: number; PreviewImage: string | null}>>([]);
-	const [eventDates, setEventDates] = useState<Array<{EventDate: string; TotalPictures: number; PreviewImage: string | null}>>([]);
-	const [pictures, setPictures] = useState<PictureDetail[]>([]);
+	const [pictures, setPictures] = useState<PictureRow[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [searchTerm, setSearchTerm] = useState("");
 	const [error, setError] = useState<string | null>(null);
-	const [viewMode, setViewMode] = useState<'mainCategories' | 'eventNames' | 'eventDates' | 'pictures'>('mainCategories');
-	const [selectedMainCategory, setSelectedMainCategory] = useState<string | null>(null);
-	const [selectedEventName, setSelectedEventName] = useState<string | null>(null);
-	const [selectedEventDate, setSelectedEventDate] = useState<string | null>(null);
-	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; picture: PictureDetail | null }>({ show: false, picture: null });
-	const [deleteFolderConfirm, setDeleteFolderConfirm] = useState<{ 
-		show: boolean; 
-		type: 'mainCategory' | 'eventName' | 'eventDate' | null;
-		name: string | null;
-		mainCategory?: string | null;
-		eventName?: string | null;
-		eventDate?: string | null;
-	}>({ show: false, type: null, name: null });
+	const [total, setTotal] = useState(0);
+	const [viewModal, setViewModal] = useState<PictureRow | null>(null);
+	const [showFilters, setShowFilters] = useState(false);
+	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; picture: PictureRow | null }>({ show: false, picture: null });
 	const [deleting, setDeleting] = useState(false);
-	const [deletingFolder, setDeletingFolder] = useState(false);
 	const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
+	
+	// Filter options (populated from API)
+	const [groupNames, setGroupNames] = useState<string[]>([]);
+	const [mainCategories, setMainCategories] = useState<string[]>([]);
+	const [subCategories, setSubCategories] = useState<string[]>([]);
+	const [uploadedByList, setUploadedByList] = useState<string[]>([]);
+	
+	// Initialize filters from URL or defaults
+	const [filters, setFilters] = useState<FilterState>(() => ({
+		search: searchParams.get('search') || '',
+		groupName: searchParams.get('groupName') || '',
+		mainCategory: searchParams.get('mainCategory') || '',
+		subCategory: searchParams.get('subCategory') || '',
+		uploadedBy: searchParams.get('uploadedBy') || '',
+		isActive: (searchParams.get('isActive') as 'all' | '1' | '0') || 'all',
+		uploadFrom: searchParams.get('uploadFrom') || '',
+		uploadTo: searchParams.get('uploadTo') || '',
+		eventFrom: searchParams.get('eventFrom') || '',
+		eventTo: searchParams.get('eventTo') || '',
+		sortBy: searchParams.get('sortBy') || 'UploadDate',
+		sortDir: (searchParams.get('sortDir') as 'asc' | 'desc') || 'desc',
+		page: parseInt(searchParams.get('page') || '1'),
+		pageSize: parseInt(searchParams.get('pageSize') || '20'),
+	}));
+	
+	// Fetch filter options
 	useEffect(() => {
-		fetchMainCategories();
+		fetchFilterOptions();
 	}, []);
-
-	// Debug: Log admin status
+	
+	// Fetch pictures when filters change
 	useEffect(() => {
-		if (!accessLoading) {
-			console.log('Pictures Page - Access Status:', { 
-				isAdmin, 
-				canUploadPictures, 
-				accessLoading, 
-				accessLevel,
-				userId 
-			});
+		fetchPictures();
+		updateURL();
+	}, [filters]);
+	
+	// Update subcategories when main category changes
+	useEffect(() => {
+		if (filters.mainCategory) {
+			fetchSubCategories(filters.mainCategory);
+		} else {
+			setSubCategories([]);
 		}
-	}, [isAdmin, canUploadPictures, accessLoading, accessLevel, userId]);
-
-	const fetchMainCategories = async () => {
+		if (!filters.mainCategory) {
+			setFilters(prev => ({ ...prev, subCategory: '' }));
+		}
+	}, [filters.mainCategory]);
+	
+	const fetchFilterOptions = async () => {
 		try {
-			setLoading(true);
-			const response = await fetch("/api/pictures/folders");
-			const data = await response.json();
+			// Fetch distinct values for dropdowns
+			const pool = await fetch('/api/pictures?pageSize=1000');
+			const data = await pool.json();
 			
-			if (data.success) {
-				setMainCategories(data.mainCategories || []);
-			} else {
-				setError(data.message || "Failed to fetch main categories");
+			if (data.data) {
+				const uniqueGroups = [...new Set(data.data.map((p: PictureRow) => p.GroupName).filter(Boolean))] as string[];
+				const uniqueMainCats = [...new Set(data.data.map((p: PictureRow) => p.MainCategory).filter(Boolean))] as string[];
+				const uniqueSubCats = [...new Set(data.data.map((p: PictureRow) => p.SubCategory).filter(Boolean))] as string[];
+				const uniqueUploaders = [...new Set(data.data.map((p: PictureRow) => p.UploadedBy).filter(Boolean))] as string[];
+				
+				setGroupNames(uniqueGroups.sort());
+				setMainCategories(uniqueMainCats.sort());
+				setSubCategories(uniqueSubCats.sort());
+				setUploadedByList(uniqueUploaders.sort());
 			}
 		} catch (err) {
-			setError("Error fetching main categories");
-			console.error("Error fetching main categories:", err);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const fetchEventNames = async (mainCategory: string) => {
-		try {
-			setLoading(true);
-			const response = await fetch(`/api/pictures/folders?mainCategory=${encodeURIComponent(mainCategory)}`);
-			const data = await response.json();
-			
-			if (data.success) {
-				setEventNames(data.eventNames || []);
-				setViewMode('eventNames');
-			} else {
-				setError(data.message || "Failed to fetch event names");
-			}
-		} catch (err) {
-			setError("Error fetching event names");
-			console.error("Error fetching event names:", err);
-		} finally {
-			setLoading(false);
+			console.error("Error fetching filter options:", err);
 		}
 	};
-
-	const fetchEventDates = async (mainCategory: string, eventName: string) => {
+	
+	const fetchSubCategories = async (mainCategory: string) => {
 		try {
-			setLoading(true);
-			const response = await fetch(`/api/pictures/folders?mainCategory=${encodeURIComponent(mainCategory)}&eventName=${encodeURIComponent(eventName)}`);
+			const response = await fetch(`/api/pictures?mainCategory=${encodeURIComponent(mainCategory)}&pageSize=1000`);
 			const data = await response.json();
 			
-			if (data.success) {
-				setEventDates(data.eventDates || []);
-				setViewMode('eventDates');
-			} else {
-				setError(data.message || "Failed to fetch event dates");
+			if (data.data) {
+				const uniqueSubCats = [...new Set(data.data.map((p: PictureRow) => p.SubCategory).filter(Boolean))] as string[];
+				setSubCategories(uniqueSubCats.sort());
 			}
 		} catch (err) {
-			setError("Error fetching event dates");
-			console.error("Error fetching event dates:", err);
-		} finally {
-			setLoading(false);
+			console.error("Error fetching subcategories:", err);
 		}
 	};
-
-	const fetchPictures = async (mainCategory: string, eventName: string, eventDate: string) => {
+	
+	const fetchPictures = async () => {
 		try {
 			setLoading(true);
-			const response = await fetch(`/api/pictures/folders?mainCategory=${encodeURIComponent(mainCategory)}&eventName=${encodeURIComponent(eventName)}&eventDate=${encodeURIComponent(eventDate)}`);
+			setError(null);
+			
+			const params = new URLSearchParams();
+			params.append('page', filters.page.toString());
+			params.append('pageSize', filters.pageSize.toString());
+			if (filters.search) params.append('search', filters.search);
+			if (filters.groupName) params.append('groupName', filters.groupName);
+			if (filters.mainCategory) params.append('mainCategory', filters.mainCategory);
+			if (filters.subCategory) params.append('subCategory', filters.subCategory);
+			if (filters.uploadedBy) params.append('uploadedBy', filters.uploadedBy);
+			if (filters.isActive !== 'all') params.append('isActive', filters.isActive);
+			if (filters.uploadFrom) params.append('uploadFrom', filters.uploadFrom);
+			if (filters.uploadTo) params.append('uploadTo', filters.uploadTo);
+			if (filters.eventFrom) params.append('eventFrom', filters.eventFrom);
+			if (filters.eventTo) params.append('eventTo', filters.eventTo);
+			params.append('sortBy', filters.sortBy);
+			params.append('sortDir', filters.sortDir);
+			
+			const response = await fetch(`/api/pictures?${params.toString()}`);
 			const data = await response.json();
 			
-			if (data.success) {
-				setPictures(data.pictures || []);
-				setViewMode('pictures');
-			} else {
-				setError(data.message || "Failed to fetch pictures");
+			if (data.error) {
+				setError(data.message || data.error);
+				return;
 			}
+			
+			setPictures(data.data || []);
+			setTotal(data.total || 0);
 		} catch (err) {
-			setError("Error fetching pictures");
 			console.error("Error fetching pictures:", err);
+			setError("Failed to load pictures. Please try again.");
 		} finally {
 			setLoading(false);
 		}
 	};
-
-	const handleMainCategoryClick = (mainCategory: string) => {
-		setSelectedMainCategory(mainCategory);
-		setSelectedEventName(null);
-		setSelectedEventDate(null);
-		setEventNames([]);
-		setEventDates([]);
-		setPictures([]);
-		fetchEventNames(mainCategory);
+	
+	const updateURL = () => {
+		const params = new URLSearchParams();
+		if (filters.search) params.set('search', filters.search);
+		if (filters.groupName) params.set('groupName', filters.groupName);
+		if (filters.mainCategory) params.set('mainCategory', filters.mainCategory);
+		if (filters.subCategory) params.set('subCategory', filters.subCategory);
+		if (filters.uploadedBy) params.set('uploadedBy', filters.uploadedBy);
+		if (filters.isActive !== 'all') params.set('isActive', filters.isActive);
+		if (filters.uploadFrom) params.set('uploadFrom', filters.uploadFrom);
+		if (filters.uploadTo) params.set('uploadTo', filters.uploadTo);
+		if (filters.eventFrom) params.set('eventFrom', filters.eventFrom);
+		if (filters.eventTo) params.set('eventTo', filters.eventTo);
+		if (filters.sortBy !== 'UploadDate') params.set('sortBy', filters.sortBy);
+		if (filters.sortDir !== 'desc') params.set('sortDir', filters.sortDir);
+		if (filters.page !== 1) params.set('page', filters.page.toString());
+		if (filters.pageSize !== 20) params.set('pageSize', filters.pageSize.toString());
+		
+		router.replace(`/dashboard/pictures?${params.toString()}`, { scroll: false });
 	};
-
-	const handleEventNameClick = (eventName: string) => {
-		if (!selectedMainCategory) return;
-		setSelectedEventName(eventName);
-		setSelectedEventDate(null);
-		setEventDates([]);
-		setPictures([]);
-		fetchEventDates(selectedMainCategory, eventName);
+	
+	const handleFilterChange = (key: keyof FilterState, value: any) => {
+		setFilters(prev => ({ ...prev, [key]: value, page: 1 })); // Reset to page 1 on filter change
 	};
-
-	const handleEventDateClick = (eventDate: string) => {
-		if (!selectedMainCategory || !selectedEventName) return;
-		setSelectedEventDate(eventDate);
-		fetchPictures(selectedMainCategory, selectedEventName, eventDate);
+	
+	const handleSort = (column: string) => {
+		setFilters(prev => ({
+			...prev,
+			sortBy: column,
+			sortDir: prev.sortBy === column && prev.sortDir === 'asc' ? 'desc' : 'asc',
+			page: 1
+		}));
 	};
-
-	const handleBackToMainCategories = () => {
-		setViewMode('mainCategories');
-		setSelectedMainCategory(null);
-		setSelectedEventName(null);
-		setSelectedEventDate(null);
-		setEventNames([]);
-		setEventDates([]);
-		setPictures([]);
+	
+	const resetFilters = () => {
+		setFilters({
+			search: '',
+			groupName: '',
+			mainCategory: '',
+			subCategory: '',
+			uploadedBy: '',
+			isActive: 'all',
+			uploadFrom: '',
+			uploadTo: '',
+			eventFrom: '',
+			eventTo: '',
+			sortBy: 'UploadDate',
+			sortDir: 'desc',
+			page: 1,
+			pageSize: 20,
+		});
+		router.replace('/dashboard/pictures', { scroll: false });
 	};
-
-	const handleBackToEventNames = () => {
-		if (!selectedMainCategory) return;
-		setViewMode('eventNames');
-		setSelectedEventName(null);
-		setSelectedEventDate(null);
-		setEventDates([]);
-		setPictures([]);
-		fetchEventNames(selectedMainCategory);
+	
+	const getImageUrl = (filePath: string | null) => {
+		if (!filePath) return '';
+		
+		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
+			return filePath;
+		}
+		
+		let normalizedPath = filePath.replace(/\\/g, '/');
+		normalizedPath = normalizedPath.replace(/^[A-Za-z]:/, '');
+		
+		if (normalizedPath.startsWith('~/')) {
+			normalizedPath = normalizedPath.substring(2);
+		}
+		
+		normalizedPath = normalizedPath.replace(/^\/+/, '');
+		
+		if (!normalizedPath.startsWith('uploads/')) {
+			if (normalizedPath.includes('pictures/')) {
+				normalizedPath = `uploads/${normalizedPath}`;
+			} else if (!normalizedPath.startsWith('public/')) {
+				normalizedPath = `uploads/pictures/${normalizedPath}`;
+			}
+		}
+		
+		if (normalizedPath.startsWith('public/')) {
+			normalizedPath = normalizedPath.substring(7);
+		}
+		
+		const relativePath = normalizedPath.startsWith('uploads/') 
+			? normalizedPath.substring(8)
+			: normalizedPath;
+		
+		const encodedPath = relativePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
+		return `/api/pictures/file/${encodedPath}`;
 	};
-
-	const handleBackToEventDates = () => {
-		if (!selectedMainCategory || !selectedEventName) return;
-		setViewMode('eventDates');
-		setSelectedEventDate(null);
-		setPictures([]);
-		fetchEventDates(selectedMainCategory, selectedEventName);
-	};
-
-	const filteredMainCategories = mainCategories.filter(cat =>
-		cat.MainCategory?.toLowerCase().includes(searchTerm.toLowerCase())
-	);
-
+	
 	const formatDate = (dateString: string | null) => {
 		if (!dateString) return "N/A";
-		return dateString; // Already formatted by SQL
+		// If date includes time (format: YYYY-MM-DD HH:MI:SS), extract only date part
+		if (dateString.includes(' ')) {
+			return dateString.split(' ')[0];
+		}
+		// If date is in DD-MM-YYYY format, return as is
+		return dateString;
 	};
-
+	
 	const formatFileSize = (sizeKB: number | null) => {
 		if (!sizeKB) return "Unknown";
 		if (sizeKB < 1024) return `${sizeKB} KB`;
 		return `${(sizeKB / 1024).toFixed(1)} MB`;
 	};
-
-	const getImageUrl = (filePath: string | null) => {
-		if (!filePath) return '';
-		
-		// If already a full URL, return as-is
-		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
-			return filePath;
-		}
-		
-		// Normalize backslashes to forward slashes
-		let normalizedPath = filePath.replace(/\\/g, '/');
-		
-		// Handle ~/ prefix (remove it)
-		if (normalizedPath.startsWith('~/')) {
-			normalizedPath = normalizedPath.replace('~/', '');
-		}
-		
-		// Ensure path starts with uploads/ for relative paths
-		if (!normalizedPath.startsWith('uploads/') && !normalizedPath.startsWith('/')) {
-			normalizedPath = `uploads/${normalizedPath}`;
-		}
-		
-		// Remove leading slash if present (we'll add it)
-		if (normalizedPath.startsWith('/')) {
-			normalizedPath = normalizedPath.substring(1);
-		}
-		
-		// Check if we're on production (Vercel)
-		if (typeof window !== 'undefined') {
-			const origin = window.location.origin;
-			const isProduction = origin.includes('vercel.app') || origin.includes('rif-ii.org');
-			
-			if (isProduction) {
-				// Use GitHub raw URL for production
-				const githubRepo = 'karimfayazi/rif-ii.org';
-				const githubBranch = 'main';
-				return `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/${normalizedPath}`;
-			}
-			
-			// On local server, use current origin
-			return `${origin}/${normalizedPath}`;
-		}
-		
-		// For server-side or fallback, use relative path
-		return `/${normalizedPath}`;
-	};
-
-
-
-	if (loading) {
-		return (
-			<div className="space-y-6">
-				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Important Pictures</h1>
-					<p className="text-gray-600 mt-2">Browse and manage uploaded pictures</p>
-				</div>
-				<div className="flex items-center justify-center py-12">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0b4d2b]"></div>
-					<span className="ml-3 text-gray-600">Loading pictures...</span>
-				</div>
-			</div>
-		);
-	}
-
-	if (error) {
-		const handleRetry = () => {
+	
+	const totalPages = Math.ceil(total / filters.pageSize);
+	
+	const canDelete = isAdmin || accessDelete;
+	
+	const handleDelete = async (picture: PictureRow) => {
+		try {
+			setDeleting(true);
 			setError(null);
-			setSelectedMainCategory(null);
-			setSelectedEventName(null);
-			setSelectedEventDate(null);
-			setViewMode('mainCategories');
-			fetchMainCategories();
-		};
-
-		return (
-			<div className="space-y-6">
+			
+			const response = await fetch(`/api/pictures/delete?pictureId=${picture.PictureID}`, {
+				method: 'DELETE',
+				credentials: 'include',
+			});
+			
+			const data = await response.json();
+			
+			if (data.success) {
+				setDeleteConfirm({ show: false, picture: null });
+				setSuccessMessage('Picture deleted successfully');
+				setTimeout(() => setSuccessMessage(null), 3000);
+				// Refresh the list
+				await fetchPictures();
+			} else {
+				setError(data.message || 'Failed to delete picture');
+				setDeleteConfirm({ show: false, picture: null });
+			}
+		} catch (err) {
+			console.error('Error deleting picture:', err);
+			setError('Error deleting picture. Please try again.');
+			setDeleteConfirm({ show: false, picture: null });
+		} finally {
+			setDeleting(false);
+		}
+	};
+	
+	return (
+		<div className="space-y-6">
+			{/* Header */}
+			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Important Pictures</h1>
-					<p className="text-gray-600 mt-2">Browse and manage uploaded pictures</p>
+					<h1 className="text-2xl font-bold text-gray-900">Pictures</h1>
+					<p className="text-gray-600 mt-1">Manage and view all uploaded pictures</p>
 				</div>
-				<div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-					<p className="text-red-600">{error}</p>
+				<div className="flex items-center space-x-3">
+					{(isAdmin || canUploadPictures) && (
+						<Link
+							href="/dashboard/pictures/upload"
+							className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm hover:shadow-md"
+						>
+							<Upload className="h-4 w-4 mr-2" />
+							Upload Pictures
+						</Link>
+					)}
 					<button
-						onClick={handleRetry}
-						className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+						onClick={() => setShowFilters(!showFilters)}
+						className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
 					>
-						Try Again
+						<Filter className="h-4 w-4 mr-2" />
+						{showFilters ? 'Hide' : 'Show'} Filters
+					</button>
+					<button
+						onClick={fetchPictures}
+						disabled={loading}
+						className="inline-flex items-center px-4 py-2 text-sm font-medium text-[#0b4d2b] bg-[#0b4d2b]/10 rounded-lg hover:bg-[#0b4d2b]/20 transition-colors disabled:opacity-50"
+					>
+						<RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+						Refresh
 					</button>
 				</div>
 			</div>
-		);
-	}
-
-	return (
-		<div className="space-y-6">
+			
+			{/* Summary Card */}
+			<div className="bg-white rounded-lg border border-gray-200 p-6">
+				<div className="flex items-center justify-between">
+					<div>
+						<p className="text-sm font-medium text-gray-600">Total Pictures</p>
+						<p className="text-2xl font-bold text-gray-900 mt-1">{total}</p>
+					</div>
+					<FileImage className="h-8 w-8 text-[#0b4d2b]" />
+				</div>
+			</div>
+			
+			{/* Filters Panel */}
+			{showFilters && (
+				<div className="bg-white rounded-lg border border-gray-200 p-6">
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+						{/* Search */}
+						<div className="lg:col-span-3">
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								<Search className="h-4 w-4 inline mr-1" />
+								Search (FileName or GroupName)
+							</label>
+							<input
+								type="text"
+								value={filters.search}
+								onChange={(e) => handleFilterChange('search', e.target.value)}
+								placeholder="Search pictures..."
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							/>
+						</div>
+						
+						{/* GroupName */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">Group Name</label>
+							<select
+								value={filters.groupName}
+								onChange={(e) => handleFilterChange('groupName', e.target.value)}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							>
+								<option value="">All Groups</option>
+								{groupNames.map(g => (
+									<option key={g} value={g}>{g}</option>
+								))}
+							</select>
+						</div>
+						
+						{/* MainCategory */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">Main Category</label>
+							<select
+								value={filters.mainCategory}
+								onChange={(e) => handleFilterChange('mainCategory', e.target.value)}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							>
+								<option value="">All Categories</option>
+								{mainCategories.map(cat => (
+									<option key={cat} value={cat}>{cat}</option>
+								))}
+							</select>
+						</div>
+						
+						{/* SubCategory */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">Sub Category</label>
+							<select
+								value={filters.subCategory}
+								onChange={(e) => handleFilterChange('subCategory', e.target.value)}
+								disabled={!filters.mainCategory}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+							>
+								<option value="">All Sub Categories</option>
+								{subCategories.map(sub => (
+									<option key={sub} value={sub}>{sub}</option>
+								))}
+							</select>
+						</div>
+						
+						{/* UploadedBy */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								<User className="h-4 w-4 inline mr-1" />
+								Uploaded By
+							</label>
+							<select
+								value={filters.uploadedBy}
+								onChange={(e) => handleFilterChange('uploadedBy', e.target.value)}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							>
+								<option value="">All Users</option>
+								{uploadedByList.map(user => (
+									<option key={user} value={user}>{user}</option>
+								))}
+							</select>
+						</div>
+						
+						{/* UploadDate From */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								<Calendar className="h-4 w-4 inline mr-1" />
+								Upload Date From
+							</label>
+							<input
+								type="date"
+								value={filters.uploadFrom}
+								onChange={(e) => handleFilterChange('uploadFrom', e.target.value)}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							/>
+						</div>
+						
+						{/* UploadDate To */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								<Calendar className="h-4 w-4 inline mr-1" />
+								Upload Date To
+							</label>
+							<input
+								type="date"
+								value={filters.uploadTo}
+								onChange={(e) => handleFilterChange('uploadTo', e.target.value)}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							/>
+						</div>
+						
+						{/* EventDate From */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								<Calendar className="h-4 w-4 inline mr-1" />
+								Event Date From
+							</label>
+							<input
+								type="date"
+								value={filters.eventFrom}
+								onChange={(e) => handleFilterChange('eventFrom', e.target.value)}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							/>
+						</div>
+						
+						{/* EventDate To */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								<Calendar className="h-4 w-4 inline mr-1" />
+								Event Date To
+							</label>
+							<input
+								type="date"
+								value={filters.eventTo}
+								onChange={(e) => handleFilterChange('eventTo', e.target.value)}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							/>
+						</div>
+					</div>
+					
+					<div className="flex items-center justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
+						<button
+							onClick={resetFilters}
+							className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+						>
+							Reset Filters
+						</button>
+					</div>
+				</div>
+			)}
+			
 			{/* Success Message */}
 			{successMessage && (
-				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top-5">
+				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
 					<div className="flex items-center">
 						<CheckCircle className="h-5 w-5 text-green-600 mr-3" />
 						<p className="text-green-800 font-medium">{successMessage}</p>
@@ -331,10 +534,10 @@ export default function PicturesPage() {
 					</button>
 				</div>
 			)}
-
+			
 			{/* Error Message */}
 			{error && (
-				<div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top-5">
+				<div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
 					<div className="flex items-center">
 						<AlertCircle className="h-5 w-5 text-red-600 mr-3" />
 						<p className="text-red-800 font-medium">{error}</p>
@@ -347,584 +550,337 @@ export default function PicturesPage() {
 					</button>
 				</div>
 			)}
-
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Important Pictures</h1>
-					<p className="text-gray-600 mt-2">
-						{viewMode === 'mainCategories' ? 'Browse and manage uploaded pictures by category' : 'View pictures in selected category'}
-					</p>
+			
+			{/* Table */}
+			<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+				<div className="overflow-x-auto">
+					<table className="w-full">
+						<thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+							<tr>
+								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<button
+										onClick={() => handleSort('GroupName')}
+										className="flex items-center hover:text-[#0b4d2b] transition-colors"
+									>
+										Group Name
+										<ArrowUpDown className="h-3 w-3 ml-1" />
+									</button>
+								</th>
+								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<button
+										onClick={() => handleSort('MainCategory')}
+										className="flex items-center hover:text-[#0b4d2b] transition-colors"
+									>
+										Main Category
+										<ArrowUpDown className="h-3 w-3 ml-1" />
+									</button>
+								</th>
+								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									Sub Category
+								</th>
+								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<button
+										onClick={() => handleSort('FileName')}
+										className="flex items-center hover:text-[#0b4d2b] transition-colors"
+									>
+										File Name
+										<ArrowUpDown className="h-3 w-3 ml-1" />
+									</button>
+								</th>
+								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									Uploaded By
+								</th>
+								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<button
+										onClick={() => handleSort('UploadDate')}
+										className="flex items-center hover:text-[#0b4d2b] transition-colors"
+									>
+										Upload Date
+										<ArrowUpDown className="h-3 w-3 ml-1" />
+									</button>
+								</th>
+								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<button
+										onClick={() => handleSort('EventDate')}
+										className="flex items-center hover:text-[#0b4d2b] transition-colors"
+									>
+										Event Date
+										<ArrowUpDown className="h-3 w-3 ml-1" />
+									</button>
+								</th>
+								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									Actions
+								</th>
+							</tr>
+						</thead>
+						<tbody className="bg-white divide-y divide-gray-200">
+							{loading ? (
+								<tr>
+									<td colSpan={8} className="px-4 py-12 text-center">
+										<div className="flex items-center justify-center">
+											<RefreshCw className="h-6 w-6 animate-spin text-[#0b4d2b] mr-3" />
+											<span className="text-gray-600">Loading pictures...</span>
+										</div>
+									</td>
+								</tr>
+							) : pictures.length === 0 ? (
+								<tr>
+									<td colSpan={8} className="px-4 py-12 text-center">
+										<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+										<p className="text-gray-600">No pictures found</p>
+										<p className="text-sm text-gray-500 mt-1">Try adjusting your filters</p>
+									</td>
+								</tr>
+							) : (
+								pictures.map((picture) => (
+									<tr key={picture.PictureID} className="hover:bg-gray-50 transition-colors">
+										<td className="px-4 py-3 text-sm text-gray-900">
+											{picture.GroupName || 'N/A'}
+										</td>
+										<td className="px-4 py-3 text-sm text-gray-900">
+											{picture.MainCategory || 'N/A'}
+										</td>
+										<td className="px-4 py-3 text-sm text-gray-900">
+											{picture.SubCategory || 'N/A'}
+										</td>
+										<td className="px-4 py-3 text-sm text-gray-900">
+											{picture.FileName || 'N/A'}
+										</td>
+										<td className="px-4 py-3 text-sm text-gray-600">
+											{picture.UploadedBy || 'N/A'}
+										</td>
+										<td className="px-4 py-3 text-sm text-gray-600">
+											{formatDate(picture.UploadDate)}
+										</td>
+										<td className="px-4 py-3 text-sm text-gray-600">
+											{formatDate(picture.EventDate)}
+										</td>
+										<td className="px-4 py-3 text-sm">
+											<div className="flex items-center space-x-2">
+												<button
+													onClick={() => setViewModal(picture)}
+													className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors"
+												>
+													<Eye className="h-3 w-3 mr-1" />
+													View
+												</button>
+												{canDelete && (
+													<button
+														onClick={() => setDeleteConfirm({ show: true, picture })}
+														className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+														title="Delete picture"
+													>
+														<Trash2 className="h-3 w-3 mr-1" />
+														Delete
+													</button>
+												)}
+											</div>
+										</td>
+									</tr>
+								))
+							)}
+						</tbody>
+					</table>
 				</div>
-				{viewMode === 'mainCategories' && (
-					<div className="flex items-center space-x-3">
-						<Link
-							href="/dashboard/pictures/upload"
-							className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
-						>
-							<Upload className="h-4 w-4 mr-2" />
-							Upload Pictures
-						</Link>
-						<button
-							onClick={fetchMainCategories}
-							className="inline-flex items-center px-4 py-2 text-[#0b4d2b] bg-[#0b4d2b]/10 rounded-lg hover:bg-[#0b4d2b]/20 transition-colors"
-						>
-							<RefreshCw className="h-4 w-4 mr-2" />
-							Refresh
-						</button>
-						<button className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors">
-							<Download className="h-4 w-4 mr-2" />
-							Export
-						</button>
+				
+				{/* Pagination */}
+				{totalPages > 1 && (
+					<div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+						<div className="text-sm text-gray-700">
+							Showing <span className="font-medium">{(filters.page - 1) * filters.pageSize + 1}</span> to{' '}
+							<span className="font-medium">{Math.min(filters.page * filters.pageSize, total)}</span> of{' '}
+							<span className="font-medium">{total}</span> results
+						</div>
+						<div className="flex items-center space-x-2">
+							<button
+								onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
+								disabled={filters.page === 1}
+								className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							>
+								<ChevronLeft className="h-4 w-4" />
+							</button>
+							<span className="text-sm text-gray-700">
+								Page {filters.page} of {totalPages}
+							</span>
+							<button
+								onClick={() => handleFilterChange('page', Math.min(totalPages, filters.page + 1))}
+								disabled={filters.page === totalPages}
+								className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							>
+								<ChevronRight className="h-4 w-4" />
+							</button>
+						</div>
 					</div>
 				)}
 			</div>
-
-			{viewMode === 'mainCategories' ? (
-				<>
-					{/* Search Filter */}
-					<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg p-6">
-						<div className="flex items-center justify-between mb-4">
-							<div>
-								<h3 className="text-lg font-semibold text-gray-900">Search Pictures</h3>
-								<p className="text-sm text-gray-600">Find specific pictures by category or subcategory</p>
-							</div>
+			
+			{/* View Modal */}
+			{viewModal && (
+				<div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+					<div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200">
+						{/* Modal Header */}
+						<div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-[#0b4d2b] via-[#0d5d3a] to-[#0a3d24] text-white">
 							<div className="flex items-center space-x-4">
-								<div className="flex items-center space-x-2">
-									<div className="h-2 w-2 bg-green-500 rounded-full"></div>
-									<span className="text-xs text-gray-500 font-medium">Live Search</span>
+								<div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+									<FileImage className="h-6 w-6" />
 								</div>
-								<button
-									onClick={() => setSearchTerm("")}
-									disabled={!searchTerm}
-									className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-								>
-									<RotateCcw className="h-3 w-3 mr-1" />
-									Reset
-								</button>
-							</div>
-						</div>
-						
-						<div className="relative group">
-							<input
-								type="text"
-								placeholder="Type to search pictures by category or subcategory..."
-								value={searchTerm}
-								onChange={(e) => setSearchTerm(e.target.value)}
-								className="w-full px-4 py-4 text-gray-900 placeholder-gray-500 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#0b4d2b]/20 focus:border-[#0b4d2b] focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
-							/>
-							{searchTerm && (
-								<button
-									onClick={() => setSearchTerm("")}
-									className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-								>
-									<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-									</svg>
-								</button>
-							)}
-						</div>
-						
-						{searchTerm && (
-							<div className="mt-4 flex items-center justify-between">
-								<div className="flex items-center space-x-2">
-									<div className="h-1.5 w-1.5 bg-[#0b4d2b] rounded-full animate-pulse"></div>
-									<span className="text-sm text-gray-600">
-										Searching for: <span className="font-medium text-gray-900">&ldquo;{searchTerm}&rdquo;</span>
-									</span>
-								</div>
-								<div className="text-xs text-gray-500">
-									{filteredMainCategories.length} result{filteredMainCategories.length !== 1 ? 's' : ''} found
+								<div>
+									<h2 className="text-2xl font-bold">Picture Details</h2>
+									<p className="text-sm opacity-90 mt-1">{viewModal.FileName || 'Untitled Picture'}</p>
 								</div>
 							</div>
-						)}
-					</div>
-
-					{/* Main Categories Grid */}
-					{filteredMainCategories.length === 0 ? (
-						<div className="bg-gray-50 rounded-lg border border-gray-200 p-12 text-center">
-							<FileImage className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-							<h3 className="text-lg font-medium text-gray-900 mb-2">
-								{searchTerm ? "No categories found" : "No picture categories available"}
-							</h3>
-							<p className="text-gray-600">
-								{searchTerm ? "Try adjusting your search terms" : "Picture categories will appear here once pictures are uploaded"}
-							</p>
+							<button
+								onClick={() => setViewModal(null)}
+								className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+								aria-label="Close"
+							>
+								<X className="h-6 w-6" />
+							</button>
 						</div>
-					) : (
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-							{filteredMainCategories.map((category, index) => (
-								<div
-									key={`${category.MainCategory}-${index}`}
-									className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 group relative"
-								>
-									<div 
-										className="cursor-pointer"
-										onClick={() => handleMainCategoryClick(category.MainCategory)}
-									>
-										<div className="aspect-video relative bg-gradient-to-br from-blue-50 to-indigo-100 rounded-t-lg overflow-hidden">
-											{category.PreviewImage ? (
-												<Image
-													src={getImageUrl(category.PreviewImage)}
-													alt={category.MainCategory || "Preview"}
-													fill
-													className="object-cover group-hover:scale-105 transition-transform duration-200"
-													sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-													unoptimized
-													onError={(e) => {
-														console.log("Image load error for main category:", category.PreviewImage);
-														const target = e.target as HTMLImageElement;
-														target.style.display = 'none';
-														const fallback = target.parentElement?.querySelector('.fallback-icon');
-														if (fallback) {
-															fallback.classList.remove('hidden');
-														}
-													}}
-												/>
-											) : null}
-											<div className="absolute inset-0 flex items-center justify-center fallback-icon hidden">
-												<Folder className="h-16 w-16 text-blue-400 group-hover:scale-110 transition-transform duration-200" />
-											</div>
-											{!category.PreviewImage && (
-												<div className="absolute inset-0 flex items-center justify-center">
-													<Folder className="h-16 w-16 text-blue-400 group-hover:scale-110 transition-transform duration-200" />
-												</div>
-											)}
-											<div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200"></div>
-											<div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded z-10">
-												{category.TotalPictures} Pictures
-											</div>
-										</div>
-										<div className="p-6">
-											<div className="flex items-start justify-between mb-4">
-												<div className="flex-1">
-													<h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#0b4d2b] transition-colors line-clamp-2">
-														{category.MainCategory || "Uncategorized"}
-													</h3>
-												</div>
-												<Folder className="h-5 w-5 text-gray-400 group-hover:text-[#0b4d2b] transition-colors flex-shrink-0 ml-2" />
-											</div>
-											<div className="flex items-center justify-between">
-												<div className="flex items-center text-xs text-gray-500">
-													<FileImage className="h-3 w-3 mr-1" />
-													<span className="truncate max-w-[200px]">
-														{category.TotalPictures} Total Pictures
-													</span>
-												</div>
-											</div>
-											{/* Action Buttons */}
-											<div className="flex items-center gap-2 pt-3 mt-3 border-t border-gray-100">
-												<button
-													onClick={(e) => {
-														e.stopPropagation();
-														handleMainCategoryClick(category.MainCategory);
-													}}
-													className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors"
-												>
-													<Eye className="h-3 w-3 mr-1" />
-													View
-												</button>
-												{(isAdmin || accessDelete) && (
-													<button
-														onClick={(e) => {
-															e.stopPropagation();
-															setDeleteFolderConfirm({ 
-																show: true, 
-																type: 'mainCategory', 
-																name: category.MainCategory,
-																mainCategory: category.MainCategory
-															});
-														}}
-														className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-														title="Delete Category"
-													>
-														<Trash2 className="h-3 w-3 mr-1" />
-														Delete
-													</button>
-												)}
-											</div>
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-
-					{/* Results Count */}
-					{filteredMainCategories.length > 0 && (
-						<div className="text-center text-sm text-gray-500">
-							Showing {filteredMainCategories.length} of {mainCategories.length} categories
-							{searchTerm && ` matching "${searchTerm}"`}
-						</div>
-					)}
-				</>
-			) : viewMode === 'eventNames' ? (
-				<>
-					{/* Back Button */}
-					<div className="flex items-center justify-between mb-6">
-						<button
-							onClick={handleBackToMainCategories}
-							className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-						>
-							<ArrowLeft className="h-4 w-4 mr-2" />
-							Back to Main Categories
-						</button>
-						<div className="text-sm text-gray-600 font-medium">
-							{selectedMainCategory}
-						</div>
-					</div>
-
-					{/* Event Names Grid */}
-					{eventNames.length === 0 ? (
-						<div className="bg-gray-50 rounded-lg border border-gray-200 p-12 text-center">
-							<FileImage className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-							<h3 className="text-lg font-medium text-gray-900 mb-2">No events found</h3>
-							<p className="text-gray-600">No events available in this category</p>
-						</div>
-					) : (
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-							{eventNames.map((event, index) => (
-								<div
-									key={`${event.EventName}-${index}`}
-									className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 group relative"
-								>
-									<div 
-										className="cursor-pointer"
-										onClick={() => handleEventNameClick(event.EventName)}
-									>
-										<div className="aspect-video relative bg-gradient-to-br from-green-50 to-green-100 rounded-t-lg overflow-hidden">
-											{event.PreviewImage ? (
-												<Image
-													src={getImageUrl(event.PreviewImage)}
-													alt={event.EventName || "Preview"}
-													fill
-													className="object-cover group-hover:scale-105 transition-transform duration-200"
-													sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-													unoptimized
-													onError={(e) => {
-														console.log("Image load error for event name:", event.PreviewImage);
-														const target = e.target as HTMLImageElement;
-														target.style.display = 'none';
-														const fallback = target.parentElement?.querySelector('.fallback-icon');
-														if (fallback) {
-															fallback.classList.remove('hidden');
-														}
-													}}
-												/>
-											) : null}
-											<div className="absolute inset-0 flex items-center justify-center fallback-icon hidden">
-												<Folder className="h-16 w-16 text-green-400 group-hover:scale-110 transition-transform duration-200" />
-											</div>
-											{!event.PreviewImage && (
-												<div className="absolute inset-0 flex items-center justify-center">
-													<Folder className="h-16 w-16 text-green-400 group-hover:scale-110 transition-transform duration-200" />
-												</div>
-											)}
-											<div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200"></div>
-											<div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded z-10">
-												{event.TotalPictures} Pictures
-											</div>
-										</div>
-										<div className="p-6">
-											<div className="flex items-start justify-between mb-4">
-												<div className="flex-1">
-													<h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#0b4d2b] transition-colors line-clamp-2">
-														{event.EventName || "Untitled Event"}
-													</h3>
-												</div>
-												<Folder className="h-5 w-5 text-gray-400 group-hover:text-[#0b4d2b] transition-colors flex-shrink-0 ml-2" />
-											</div>
-											<div className="flex items-center justify-between">
-												<div className="flex items-center text-xs text-gray-500">
-													<FileImage className="h-3 w-3 mr-1" />
-													<span className="truncate max-w-[200px]">
-														{event.TotalPictures} Total Pictures
-													</span>
-												</div>
-											</div>
-											{/* Action Buttons */}
-											<div className="flex items-center gap-2 pt-3 mt-3 border-t border-gray-100">
-												<button
-													onClick={(e) => {
-														e.stopPropagation();
-														handleEventNameClick(event.EventName);
-													}}
-													className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors"
-												>
-													<Eye className="h-3 w-3 mr-1" />
-													View
-												</button>
-												{(isAdmin || accessDelete) && (
-													<button
-														onClick={(e) => {
-															e.stopPropagation();
-															setDeleteFolderConfirm({ 
-																show: true, 
-																type: 'eventName', 
-																name: event.EventName,
-																mainCategory: selectedMainCategory,
-																eventName: event.EventName
-															});
-														}}
-														className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-														title="Delete Event"
-													>
-														<Trash2 className="h-3 w-3 mr-1" />
-														Delete
-													</button>
-												)}
-											</div>
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-				</>
-			) : viewMode === 'eventDates' ? (
-				<>
-					{/* Back Button */}
-					<div className="flex items-center justify-between mb-6">
-						<button
-							onClick={handleBackToEventNames}
-							className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-						>
-							<ArrowLeft className="h-4 w-4 mr-2" />
-							Back to Events
-						</button>
-						<div className="text-sm text-gray-600 font-medium">
-							{selectedMainCategory} / {selectedEventName}
-						</div>
-					</div>
-
-					{/* Event Dates Grid */}
-					{eventDates.length === 0 ? (
-						<div className="bg-gray-50 rounded-lg border border-gray-200 p-12 text-center">
-							<FileImage className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-							<h3 className="text-lg font-medium text-gray-900 mb-2">No event dates found</h3>
-							<p className="text-gray-600">No event dates available for this event</p>
-						</div>
-					) : (
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-							{eventDates.map((eventDate, index) => (
-								<div
-									key={`${eventDate.EventDate}-${index}`}
-									className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 group relative"
-								>
-									<div 
-										className="cursor-pointer"
-										onClick={() => handleEventDateClick(eventDate.EventDate)}
-									>
-										<div className="aspect-video relative bg-gradient-to-br from-purple-50 to-purple-100 rounded-t-lg overflow-hidden">
-											{eventDate.PreviewImage ? (
-												<Image
-													src={getImageUrl(eventDate.PreviewImage)}
-													alt={eventDate.EventDate || "Preview"}
-													fill
-													className="object-cover group-hover:scale-105 transition-transform duration-200"
-													sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-													unoptimized
-													onError={(e) => {
-														console.log("Image load error for event date:", eventDate.PreviewImage);
-														const target = e.target as HTMLImageElement;
-														target.style.display = 'none';
-														const fallback = target.parentElement?.querySelector('.fallback-icon');
-														if (fallback) {
-															fallback.classList.remove('hidden');
-														}
-													}}
-												/>
-											) : null}
-											<div className="absolute inset-0 flex items-center justify-center fallback-icon hidden">
-												<Calendar className="h-16 w-16 text-purple-400 group-hover:scale-110 transition-transform duration-200" />
-											</div>
-											{!eventDate.PreviewImage && (
-												<div className="absolute inset-0 flex items-center justify-center">
-													<Calendar className="h-16 w-16 text-purple-400 group-hover:scale-110 transition-transform duration-200" />
-												</div>
-											)}
-											<div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200"></div>
-											<div className="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-1 rounded z-10">
-												{eventDate.TotalPictures} Pictures
-											</div>
-										</div>
-										<div className="p-6">
-											<div className="flex items-start justify-between mb-4">
-												<div className="flex-1">
-													<h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#0b4d2b] transition-colors">
-														{formatDate(eventDate.EventDate)}
-													</h3>
-												</div>
-												<Calendar className="h-5 w-5 text-gray-400 group-hover:text-[#0b4d2b] transition-colors flex-shrink-0 ml-2" />
-											</div>
-											<div className="flex items-center justify-between">
-												<div className="flex items-center text-xs text-gray-500">
-													<FileImage className="h-3 w-3 mr-1" />
-													<span className="truncate max-w-[200px]">
-														{eventDate.TotalPictures} Total Pictures
-													</span>
-												</div>
-											</div>
-											{/* Action Buttons */}
-											<div className="flex items-center gap-2 pt-3 mt-3 border-t border-gray-100">
-												<button
-													onClick={(e) => {
-														e.stopPropagation();
-														handleEventDateClick(eventDate.EventDate);
-													}}
-													className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors"
-												>
-													<Eye className="h-3 w-3 mr-1" />
-													View
-												</button>
-												{(isAdmin || accessDelete) && (
-													<button
-														onClick={(e) => {
-															e.stopPropagation();
-															setDeleteFolderConfirm({ 
-																show: true, 
-																type: 'eventDate', 
-																name: formatDate(eventDate.EventDate),
-																mainCategory: selectedMainCategory,
-																eventName: selectedEventName,
-																eventDate: eventDate.EventDate
-															});
-														}}
-														className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-														title="Delete Event Date"
-													>
-														<Trash2 className="h-3 w-3 mr-1" />
-														Delete
-													</button>
-												)}
-											</div>
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-				</>
-			) : (
-				<>
-					{/* Back Button */}
-					<div className="flex items-center justify-between mb-6">
-						<button
-							onClick={handleBackToEventDates}
-							className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-						>
-							<ArrowLeft className="h-4 w-4 mr-2" />
-							Back to Event Dates
-						</button>
-						<div className="text-sm text-gray-600 font-medium">
-							{selectedMainCategory} / {selectedEventName} / {selectedEventDate && formatDate(selectedEventDate)}
-						</div>
-					</div>
-
-					{/* Pictures Grid */}
-					{pictures.length === 0 ? (
-						<div className="bg-gray-50 rounded-lg border border-gray-200 p-12 text-center">
-							<FileImage className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-							<h3 className="text-lg font-medium text-gray-900 mb-2">No pictures found</h3>
-							<p className="text-gray-600">No pictures available for this event date</p>
-						</div>
-					) : (
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-							{pictures.map((picture) => (
-								<div
-									key={picture.PictureID}
-									className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 group relative"
-								>
-									<div className="aspect-video relative bg-gray-100 rounded-t-lg overflow-hidden">
-										{picture.FilePath ? (
-											<Image
-												src={getImageUrl(picture.FilePath)}
-												alt={picture.FileName || "Picture"}
-												fill
-												className="object-cover group-hover:scale-105 transition-transform duration-200"
-												unoptimized
+						
+						{/* Modal Content */}
+						<div className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-gray-50 to-white">
+							<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+								{/* Image Preview - Takes 2 columns */}
+								<div className="lg:col-span-2 space-y-4">
+									<div className="relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
+										{viewModal.FilePath ? (
+											<img
+												src={getImageUrl(viewModal.FilePath)}
+												alt={viewModal.FileName || 'Picture'}
+												className="w-full h-auto max-h-[70vh] object-contain mx-auto block"
+												onError={(e) => {
+													const target = e.target as HTMLImageElement;
+													target.style.display = 'none';
+													const fallback = target.parentElement?.querySelector('.fallback-message');
+													if (fallback) {
+														fallback.classList.remove('hidden');
+													}
+												}}
 											/>
-										) : (
-											<div className="flex items-center justify-center h-full">
-												<FileImage className="h-12 w-12 text-gray-400" />
-											</div>
-										)}
-										<div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-											{formatFileSize(picture.FileSizeKB)}
+										) : null}
+										<div className="absolute inset-0 flex flex-col items-center justify-center fallback-message hidden bg-gradient-to-br from-gray-100 to-gray-200">
+											<FileImage className="h-20 w-20 text-gray-400 mb-4" />
+											<span className="text-base font-medium text-gray-600">Preview not available</span>
 										</div>
 									</div>
-									<div className="p-4">
-										<div className="flex items-start justify-between mb-3">
-											<div className="flex-1">
-												<h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#0b4d2b] transition-colors line-clamp-2">
-													{picture.FileName || "Untitled"}
-												</h3>
+									
+									{viewModal.FilePath && (
+										<a
+											href={getImageUrl(viewModal.FilePath)}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="inline-flex items-center justify-center w-full px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-[#0b4d2b] to-[#0a3d24] rounded-xl hover:from-[#0d5d3a] hover:to-[#0b4d2b] transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+										>
+											<ExternalLink className="h-5 w-5 mr-2" />
+											Open Original Image in New Tab
+										</a>
+									)}
+								</div>
+								
+								{/* Metadata - Takes 1 column */}
+								<div className="space-y-4">
+									<div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 space-y-5">
+										<div className="pb-4 border-b border-gray-200">
+											<h3 className="text-lg font-bold text-gray-900 flex items-center">
+												<FileImage className="h-5 w-5 mr-2 text-[#0b4d2b]" />
+												Information
+											</h3>
+										</div>
+										
+										<div className="space-y-4">
+											<div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border-l-4 border-blue-500">
+												<div className="flex items-start">
+													<FileImage className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+													<div className="flex-1">
+														<p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">File Name</p>
+														<p className="text-base font-bold text-gray-900 break-words">{viewModal.FileName || 'N/A'}</p>
+													</div>
+												</div>
 											</div>
-											<Eye className="h-4 w-4 text-gray-400 group-hover:text-[#0b4d2b] transition-colors flex-shrink-0 ml-2" />
-										</div>
-										<div className="space-y-1 text-xs text-gray-600 mb-3">
-											{picture.GroupName && (
-												<div className="flex items-center">
-													<Calendar className="h-3 w-3 mr-1" />
-													<span className="line-clamp-1">{picture.GroupName}</span>
+											
+											<div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border-l-4 border-purple-500">
+												<div className="flex items-start">
+													<Calendar className="h-5 w-5 text-purple-600 mr-3 mt-0.5 flex-shrink-0" />
+													<div className="flex-1">
+														<p className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">Group Name</p>
+														<p className="text-base font-semibold text-gray-900">{viewModal.GroupName || 'N/A'}</p>
+													</div>
 												</div>
-											)}
-											{picture.EventDate && (
-												<div className="flex items-center">
-													<Calendar className="h-3 w-3 mr-1" />
-													<span>{formatDate(picture.EventDate)}</span>
+											</div>
+											
+											<div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border-l-4 border-green-500">
+												<div className="flex items-start">
+													<FileImage className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
+													<div className="flex-1">
+														<p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">Main Category</p>
+														<p className="text-base font-semibold text-gray-900">{viewModal.MainCategory || 'N/A'}</p>
+													</div>
 												</div>
-											)}
-											{picture.UploadedBy && (
-												<div className="flex items-center">
-													<FileImage className="h-3 w-3 mr-1" />
-													<span className="line-clamp-1">{picture.UploadedBy}</span>
+											</div>
+											
+											<div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border-l-4 border-amber-500">
+												<div className="flex items-start">
+													<FileImage className="h-5 w-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
+													<div className="flex-1">
+														<p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-1">Sub Category</p>
+														<p className="text-base font-semibold text-gray-900">{viewModal.SubCategory || 'N/A'}</p>
+													</div>
 												</div>
-											)}
-										</div>
-										{/* Action Buttons */}
-										<div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-											<Link
-												href={`/dashboard/pictures/view?id=${picture.PictureID}`}
-												className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors"
-											>
-												<Eye className="h-3 w-3 mr-1" />
-												View
-											</Link>
-											{(isAdmin || accessDelete) && (
-												<button
-													onClick={(e) => {
-														e.preventDefault();
-														e.stopPropagation();
-														setDeleteConfirm({ show: true, picture });
-													}}
-													className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-													title="Delete Picture"
-												>
-													<Trash2 className="h-3 w-3 mr-1" />
-													Delete
-												</button>
-											)}
+											</div>
+											
+											<div className="bg-gradient-to-r from-cyan-50 to-teal-50 rounded-xl p-4 border-l-4 border-cyan-500">
+												<div className="flex items-start">
+													<User className="h-5 w-5 text-cyan-600 mr-3 mt-0.5 flex-shrink-0" />
+													<div className="flex-1">
+														<p className="text-xs font-semibold text-cyan-600 uppercase tracking-wide mb-1">Uploaded By</p>
+														<p className="text-base font-semibold text-gray-900">{viewModal.UploadedBy || 'N/A'}</p>
+													</div>
+												</div>
+											</div>
+											
+											<div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-4 border-l-4 border-indigo-500">
+												<div className="flex items-start">
+													<Calendar className="h-5 w-5 text-indigo-600 mr-3 mt-0.5 flex-shrink-0" />
+													<div className="flex-1">
+														<p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">Upload Date</p>
+														<p className="text-base font-semibold text-gray-900">{formatDate(viewModal.UploadDate)}</p>
+													</div>
+												</div>
+											</div>
+											
+											<div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-4 border-l-4 border-violet-500">
+												<div className="flex items-start">
+													<Calendar className="h-5 w-5 text-violet-600 mr-3 mt-0.5 flex-shrink-0" />
+													<div className="flex-1">
+														<p className="text-xs font-semibold text-violet-600 uppercase tracking-wide mb-1">Event Date</p>
+														<p className="text-base font-semibold text-gray-900">{formatDate(viewModal.EventDate)}</p>
+													</div>
+												</div>
+											</div>
 										</div>
 									</div>
 								</div>
-							))}
+							</div>
 						</div>
-					)}
-
-					{/* Results Count */}
-					{pictures.length > 0 && (
-						<div className="text-center text-sm text-gray-500">
-							Showing {pictures.length} pictures
+						
+						{/* Modal Footer */}
+						<div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+							<button
+								onClick={() => setViewModal(null)}
+								className="px-6 py-3 text-base font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow-md"
+							>
+								Close
+							</button>
 						</div>
-					)}
-				</>
+					</div>
+				</div>
 			)}
-
-
+			
 			{/* Delete Confirmation Modal */}
 			{deleteConfirm.show && deleteConfirm.picture && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-					<div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all">
+					<div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
 						{/* Modal Header */}
 						<div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl">
 							<div className="flex items-center">
@@ -937,46 +893,32 @@ export default function PicturesPage() {
 								</div>
 							</div>
 						</div>
-
+						
 						{/* Modal Content */}
 						<div className="p-6">
-							<div className="mb-4">
-								<p className="text-gray-700 text-base mb-3 font-semibold">
-									Are you sure you want to delete this picture?
+							<p className="text-gray-700 text-base mb-3 font-semibold">
+								Are you sure you want to delete this picture?
+							</p>
+							<div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-4">
+								<p className="text-sm font-medium text-gray-500 mb-1">File Name:</p>
+								<p className="text-base font-semibold text-gray-900">
+									{deleteConfirm.picture.FileName || 'N/A'}
 								</p>
-								<p className="text-gray-600 text-sm mb-4">
-									This action will permanently remove the picture from the system.
-								</p>
-								<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-									{deleteConfirm.picture.FilePath && (
-										<div className="mb-3">
-											<img
-												src={getImageUrl(deleteConfirm.picture.FilePath)}
-												alt={deleteConfirm.picture.FileName || "Picture"}
-												className="w-full h-32 object-cover rounded-lg"
-											/>
-										</div>
-									)}
-									<p className="text-sm font-medium text-gray-500 mb-1">File Name:</p>
-									<p className="text-base font-semibold text-gray-900">
-										{deleteConfirm.picture.FileName || "N/A"}
-									</p>
-									{deleteConfirm.picture.GroupName && (
-										<>
-											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Event:</p>
-											<p className="text-base text-gray-700">{deleteConfirm.picture.GroupName}</p>
-										</>
-									)}
-									{deleteConfirm.picture.MainCategory && (
-										<>
-											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Category:</p>
-											<p className="text-base text-gray-700">
-												{deleteConfirm.picture.MainCategory}
-												{deleteConfirm.picture.SubCategory && ` - ${deleteConfirm.picture.SubCategory}`}
-											</p>
-										</>
-									)}
-								</div>
+								{deleteConfirm.picture.GroupName && (
+									<>
+										<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Group:</p>
+										<p className="text-base text-gray-700">{deleteConfirm.picture.GroupName}</p>
+									</>
+								)}
+								{deleteConfirm.picture.MainCategory && (
+									<>
+										<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Category:</p>
+										<p className="text-base text-gray-700">
+											{deleteConfirm.picture.MainCategory}
+											{deleteConfirm.picture.SubCategory && ` - ${deleteConfirm.picture.SubCategory}`}
+										</p>
+									</>
+								)}
 							</div>
 							<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start">
 								<AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
@@ -985,7 +927,7 @@ export default function PicturesPage() {
 								</p>
 							</div>
 						</div>
-
+						
 						{/* Modal Footer */}
 						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
 							<button
@@ -996,42 +938,7 @@ export default function PicturesPage() {
 								Cancel
 							</button>
 							<button
-								onClick={async () => {
-									if (!deleteConfirm.picture) return;
-									
-									try {
-										setDeleting(true);
-										const response = await fetch(`/api/pictures/delete?pictureId=${deleteConfirm.picture.PictureID}`, {
-											method: 'DELETE'
-										});
-										const data = await response.json();
-										
-										if (data.success) {
-											setDeleteConfirm({ show: false, picture: null });
-											setSuccessMessage("Picture deleted successfully!");
-											setTimeout(() => setSuccessMessage(null), 5000);
-											// Refresh the pictures
-											if (selectedMainCategory && selectedEventName && selectedEventDate) {
-												fetchPictures(selectedMainCategory, selectedEventName, selectedEventDate);
-											} else if (selectedMainCategory && selectedEventName) {
-												fetchEventDates(selectedMainCategory, selectedEventName);
-											} else if (selectedMainCategory) {
-												fetchEventNames(selectedMainCategory);
-											} else {
-												fetchMainCategories();
-											}
-										} else {
-											setError(data.message || "Failed to delete picture");
-											setDeleteConfirm({ show: false, picture: null });
-										}
-									} catch (err) {
-										console.error("Error deleting picture:", err);
-										setError("Error deleting picture");
-										setDeleteConfirm({ show: false, picture: null });
-									} finally {
-										setDeleting(false);
-									}
-								}}
+								onClick={() => handleDelete(deleteConfirm.picture!)}
 								disabled={deleting}
 								className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
 							>
@@ -1051,144 +958,6 @@ export default function PicturesPage() {
 					</div>
 				</div>
 			)}
-
-			{/* Delete Folder Confirmation Modal */}
-			{deleteFolderConfirm.show && deleteFolderConfirm.type && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-					<div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all">
-						{/* Modal Header */}
-						<div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl">
-							<div className="flex items-center">
-								<div className="p-2 bg-white/20 rounded-lg mr-4">
-									<Trash2 className="h-6 w-6" />
-								</div>
-								<div>
-									<h2 className="text-2xl font-bold">Confirm Delete</h2>
-									<p className="text-red-100 text-sm mt-1">This action cannot be undone</p>
-								</div>
-							</div>
-						</div>
-
-						{/* Modal Content */}
-						<div className="p-6">
-							<div className="mb-4">
-								<p className="text-gray-700 text-base mb-3">
-									Are you sure you want to delete this {deleteFolderConfirm.type === 'mainCategory' ? 'category' : deleteFolderConfirm.type === 'eventName' ? 'event' : 'event date'}?
-								</p>
-								<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-									<p className="text-sm font-medium text-gray-500 mb-1">
-										{deleteFolderConfirm.type === 'mainCategory' ? 'Category:' : deleteFolderConfirm.type === 'eventName' ? 'Event:' : 'Event Date:'}
-									</p>
-									<p className="text-base font-semibold text-gray-900">
-										{deleteFolderConfirm.name || "N/A"}
-									</p>
-									{deleteFolderConfirm.type === 'eventName' && deleteFolderConfirm.mainCategory && (
-										<>
-											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Main Category:</p>
-											<p className="text-base text-gray-700">{deleteFolderConfirm.mainCategory}</p>
-										</>
-									)}
-									{deleteFolderConfirm.type === 'eventDate' && (
-										<>
-											{deleteFolderConfirm.mainCategory && (
-												<>
-													<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Main Category:</p>
-													<p className="text-base text-gray-700">{deleteFolderConfirm.mainCategory}</p>
-												</>
-											)}
-											{deleteFolderConfirm.eventName && (
-												<>
-													<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Event:</p>
-													<p className="text-base text-gray-700">{deleteFolderConfirm.eventName}</p>
-												</>
-											)}
-										</>
-									)}
-								</div>
-							</div>
-							<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start">
-								<AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
-								<p className="text-sm text-yellow-800">
-									<strong>Warning:</strong> This will permanently delete all pictures in this {deleteFolderConfirm.type === 'mainCategory' ? 'category' : deleteFolderConfirm.type === 'eventName' ? 'event' : 'event date'} from the database and file system. This action cannot be undone.
-								</p>
-							</div>
-						</div>
-
-						{/* Modal Footer */}
-						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
-							<button
-								onClick={() => setDeleteFolderConfirm({ show: false, type: null, name: null })}
-								disabled={deletingFolder}
-								className="px-6 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm disabled:opacity-50"
-							>
-								Cancel
-							</button>
-							<button
-								onClick={async () => {
-									if (!deleteFolderConfirm.type || !deleteFolderConfirm.mainCategory) return;
-									
-									try {
-										setDeletingFolder(true);
-										const params = new URLSearchParams();
-										params.append('mainCategory', deleteFolderConfirm.mainCategory);
-										if (deleteFolderConfirm.eventName) {
-											params.append('eventName', deleteFolderConfirm.eventName);
-										}
-										if (deleteFolderConfirm.eventDate) {
-											params.append('eventDate', deleteFolderConfirm.eventDate);
-										}
-
-										const response = await fetch(`/api/pictures/folders/delete?${params.toString()}`, {
-											method: 'DELETE'
-										});
-										
-										const data = await response.json();
-										
-										if (data.success) {
-											setDeleteFolderConfirm({ show: false, type: null, name: null });
-											setSuccessMessage(`${deleteFolderConfirm.type === 'mainCategory' ? 'Category' : deleteFolderConfirm.type === 'eventName' ? 'Event' : 'Event Date'} deleted successfully!`);
-											setTimeout(() => setSuccessMessage(null), 5000);
-											// Refresh the current view
-											if (deleteFolderConfirm.type === 'eventDate' && selectedMainCategory && selectedEventName) {
-												fetchEventDates(selectedMainCategory, selectedEventName);
-											} else if (deleteFolderConfirm.type === 'eventName' && selectedMainCategory) {
-												fetchEventNames(selectedMainCategory);
-											} else {
-												fetchMainCategories();
-											}
-										} else {
-											setError(data.message || "Failed to delete folder");
-											setDeleteFolderConfirm({ show: false, type: null, name: null });
-										}
-									} catch (err) {
-										console.error("Error deleting folder:", err);
-										setError("Error deleting folder");
-										setDeleteFolderConfirm({ show: false, type: null, name: null });
-									} finally {
-										setDeletingFolder(false);
-									}
-								}}
-								disabled={deletingFolder}
-								className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-							>
-								{deletingFolder ? (
-									<>
-										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-										Deleting...
-									</>
-								) : (
-									<>
-										<Trash2 className="h-4 w-4 mr-2" />
-										Yes, Delete
-									</>
-								)}
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
-
 		</div>
 	);
 }
-
