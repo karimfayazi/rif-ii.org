@@ -10,10 +10,10 @@ import * as path from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { key: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
-    const key = params.key;
+    const { key } = await params;
     
     if (!key) {
       return NextResponse.json(
@@ -63,7 +63,14 @@ export async function GET(
       }
     });
   } catch (error) {
-    console.error(`Error loading GIS layer ${params.key}:`, error);
+    let key = 'unknown';
+    try {
+      const resolvedParams = await params;
+      key = resolvedParams.key;
+    } catch {
+      // Ignore if params can't be resolved
+    }
+    console.error(`Error loading GIS layer ${key}:`, error);
     return NextResponse.json(
       {
         success: false,

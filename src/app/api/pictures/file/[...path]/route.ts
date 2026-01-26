@@ -19,13 +19,14 @@ const MIME_TYPES: { [key: string]: string } = {
 
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: { path: string[] } }
+	{ params }: { params: Promise<{ path: string[] }> }
 ) {
 	try {
 		// Get the requested path segments
-		const pathSegments = params.path || [];
+		const { path: pathSegments } = await params;
+		const segments = pathSegments || [];
 		
-		if (pathSegments.length === 0) {
+		if (segments.length === 0) {
 			return NextResponse.json(
 				{ success: false, message: "No file path provided" },
 				{ status: 400 }
@@ -33,7 +34,7 @@ export async function GET(
 		}
 
 		// Decode each segment (handles URL encoding like %20 for spaces)
-		const decodedSegments = pathSegments.map(segment => {
+		const decodedSegments = segments.map(segment => {
 			try {
 				return decodeURIComponent(segment);
 			} catch (e) {

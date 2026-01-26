@@ -104,7 +104,8 @@ function getLayerStyle(layerName: string): {
     return {
       color: '#f59e0b',
       weight: 2,
-      opacity: 0.8
+      opacity: 0.8,
+      fillOpacity: 0
     };
   } else if (nameLower.includes('water')) {
     return {
