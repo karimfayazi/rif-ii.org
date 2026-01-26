@@ -20,8 +20,8 @@ import {
     ChevronsRight,
     ChevronDown,
     ChevronRight,
-    Menu,
-    X,
+    PanelLeftOpen,
+    PanelLeftClose,
     Layers,
     Shield,
     TrendingUp,
@@ -122,9 +122,9 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 					type="button"
 				>
 					{collapsed ? (
-						<Menu className="h-5 w-5 text-gray-600" />
+						<PanelLeftOpen className="h-5 w-5 text-gray-600" />
 					) : (
-						<X className="h-5 w-5 text-gray-600" />
+						<PanelLeftClose className="h-5 w-5 text-gray-600" />
 					)}
 				</button>
 			</div>
@@ -165,15 +165,11 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 												window.location.href = "/login";
 											}}
                                             className={`flex w-full items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 text-left transition-colors hover:bg-red-50 hover:text-red-700 relative group`}
-											title={item.label}
+											title={collapsed ? item.label : undefined}
+											aria-label={collapsed ? item.label : undefined}
 										>
-											<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""}`} />
-											{!collapsed && <span>{item.label}</span>}
-											{collapsed && (
-												<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-													{item.label}
-												</span>
-											)}
+											<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""} flex-shrink-0`} />
+											<span className={collapsed ? "hidden" : ""}>{item.label}</span>
 										</button>
 									) : hasSubItems ? (
 										<>
@@ -193,16 +189,12 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 													}}
 													className={`flex items-center ${
 														collapsed ? "justify-center" : "gap-2"
-													} flex-1 relative group`}
-													title={item.label}
+													} flex-1`}
+													title={collapsed ? item.label : undefined}
+													aria-label={collapsed ? item.label : undefined}
 												>
-													<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""}`} />
-													{!collapsed && <span>{item.label}</span>}
-													{collapsed && (
-														<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-															{item.label}
-														</span>
-													)}
+													<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""} flex-shrink-0`} />
+													<span className={collapsed ? "hidden" : ""}>{item.label}</span>
 												</Link>
 
 												{/* Expand/collapse chevron */}
@@ -259,20 +251,16 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 														toggleMenu(item.label);
 													}
 												}}
-                                                className={`flex w-full items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 text-left transition-colors hover:bg-gray-100 relative group`}
-												title={item.label}
+                                                className={`flex w-full items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 text-left transition-colors hover:bg-gray-100`}
+												title={collapsed ? item.label : undefined}
+												aria-label={collapsed ? item.label : undefined}
 											>
-												<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""}`} />
+												<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""} flex-shrink-0`} />
+												<span className={`flex-1 ${collapsed ? "hidden" : ""}`}>{item.label}</span>
 												{!collapsed && (
 													<>
-														<span className="flex-1">{item.label}</span>
 														{isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
 													</>
-												)}
-												{collapsed && (
-													<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-														{item.label}
-													</span>
 												)}
 											</button>
 											{isExpanded && !collapsed && item.subMenus && (
@@ -319,20 +307,16 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 												// Don't expand sidebar when clicking menu items - only toggle button should do that
 												e.stopPropagation();
 											}}
-                                            className={`flex items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 transition-colors relative group ${
+                                            className={`flex items-center ${collapsed ? "justify-center" : "gap-2"} rounded-md px-3 py-2 transition-colors ${
 												isActive
 													? "bg-[#0b4d2b] text-white font-medium"
 													: "hover:bg-gray-100"
 											}`}
-											title={item.label}
+											title={collapsed ? item.label : undefined}
+											aria-label={collapsed ? item.label : undefined}
 										>
-											<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""}`} />
-											{!collapsed && <span>{item.label}</span>}
-											{collapsed && (
-												<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-													{item.label}
-												</span>
-											)}
+											<Icon className={`h-4 w-4 ${collapsed ? "h-5 w-5" : ""} flex-shrink-0`} />
+											<span className={collapsed ? "hidden" : ""}>{item.label}</span>
 										</Link>
 									)}
 								</li>
@@ -347,65 +331,32 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 			})}
 			
 			{/* Social Media Icons */}
-			{!collapsed && (
-				<div className="mt-4 pt-4 border-t border-gray-300">
-					<div className="grid grid-cols-2 gap-2">
-						<a
-							href="https://www.youtube.com"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors group"
-							title="YouTube"
-						>
-							<Youtube className="h-5 w-5 text-red-600" />
-						</a>
-						<a
-							href="https://www.facebook.com"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors group"
-							title="Facebook"
-						>
-							<svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-								<path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-							</svg>
-						</a>
-					</div>
+			<div className="mt-4 pt-4 border-t border-gray-300">
+				<div className={`${collapsed ? "flex flex-col" : "grid grid-cols-2"} gap-2`}>
+					<a
+						href="https://www.youtube.com"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors"
+						title="YouTube"
+						aria-label="YouTube"
+					>
+						<Youtube className="h-5 w-5 text-red-600" />
+					</a>
+					<a
+						href="https://www.facebook.com"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors"
+						title="Facebook"
+						aria-label="Facebook"
+					>
+						<svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+							<path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
+						</svg>
+					</a>
 				</div>
-			)}
-			
-			{collapsed && (
-				<div className="mt-4 pt-4 border-t border-gray-300">
-					<div className="flex flex-col gap-2">
-						<a
-							href="https://www.youtube.com"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors relative group"
-							title="YouTube"
-						>
-							<Youtube className="h-5 w-5 text-red-600" />
-							<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-								YouTube
-							</span>
-						</a>
-						<a
-							href="https://www.facebook.com"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors relative group"
-							title="Facebook"
-						>
-							<svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-								<path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-							</svg>
-							<span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-								Facebook
-							</span>
-						</a>
-					</div>
-				</div>
-			)}
+			</div>
         </nav>
 	);
 }

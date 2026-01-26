@@ -19,6 +19,16 @@ export default function MasterLayout({
   // Check if this is a public page (GIS maps)
   const isPublicPage = pathname === '/dashboard/kml-gis-maps';
 
+  // Load sidebar state from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("sjda_sidebar_collapsed");
+      if (saved === "1") {
+        setSidebarCollapsed(true);
+      }
+    }
+  }, []);
+
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -145,7 +155,12 @@ export default function MasterLayout({
               <div className="p-4 h-full overflow-y-auto" style={{ width: "100%" }}>
                 <Sidebar
                   collapsed={sidebarCollapsed}
-                  setCollapsed={setSidebarCollapsed}
+                  setCollapsed={(collapsed: boolean) => {
+                    setSidebarCollapsed(collapsed);
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("sjda_sidebar_collapsed", collapsed ? "1" : "0");
+                    }
+                  }}
                 />
               </div>
             </aside>
