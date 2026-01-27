@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import AccessDenied from "@/components/AccessDenied";
 import { useAccess } from "@/hooks/useAccess";
 import { useAuth } from "@/hooks/useAuth";
+import { uploadMultipleToBlob, type BlobUploadResult } from "@/lib/uploads";
 
 type UploadFormData = {
 	title: string;
@@ -90,6 +91,7 @@ export default function UploadDocumentsPage() {
 	const [files, setFiles] = useState<UploadedFile[]>([]);
 	const [uploading, setUploading] = useState(false);
 	const [uploadProgress, setUploadProgress] = useState(0);
+	const [currentFileUploading, setCurrentFileUploading] = useState<string>('');
 	const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
 	const [error, setError] = useState<string | null>(null);
 	
@@ -202,8 +204,19 @@ export default function UploadDocumentsPage() {
 			file.name.endsWith('.pptx') ||
 			file.name.endsWith('.txt') ||
 			file.name.endsWith('.zip') ||
-			file.name.endsWith('.rar')
+			file.name.endsWith('.rar') ||
+			file.name.endsWith('.csv')
 		);
+		
+		// Validate file sizes before adding (100MB limit)
+		const maxSize = 100 * 1024 * 1024; // 100MB
+		const invalidFiles = documentFiles.filter(file => file.size > maxSize);
+		
+		if (invalidFiles.length > 0) {
+			const invalidFileNames = invalidFiles.map(f => `${f.name} (${(f.size / 1024 / 1024).toFixed(2)}MB)`).join(', ');
+			setError(`The following files exceed the 100MB limit: ${invalidFileNames}`);
+			return;
+		}
 		
 		const newFiles: UploadedFile[] = documentFiles.map(file => ({
 			file,
@@ -212,6 +225,7 @@ export default function UploadDocumentsPage() {
 		}));
 
 		setFiles(prev => [...prev, ...newFiles]);
+		setError(null); // Clear any previous errors
 	};
 
 	const removeFile = (id: string) => {
@@ -257,53 +271,80 @@ export default function UploadDocumentsPage() {
 		setUploading(true);
 		setUploadStatus('uploading');
 		setError(null);
+		setUploadProgress(0);
 
 		try {
-			const formDataToSend = new FormData();
+			console.log('Starting direct Vercel Blob upload for', files.length, 'document files');
 			
-			// Add form fields
-			formDataToSend.append('title', formData.title);
-			formDataToSend.append('description', formData.description);
-			formDataToSend.append('category', formData.category);
-			formDataToSend.append('subCategory', formData.subCategory);
-			formDataToSend.append('documentDate', formData.documentDate);
-			formDataToSend.append('uploadedBy', formData.uploadedBy);
-			formDataToSend.append('fileType', formData.fileType);
-			formDataToSend.append('documentType', formData.documentType);
-			formDataToSend.append('allowPriorityUsers', formData.allowPriorityUsers.toString());
-			formDataToSend.append('allowInternalUsers', formData.allowInternalUsers.toString());
-			formDataToSend.append('allowOthersUsers', formData.allowOthersUsers.toString());
+			// Step 1: Upload files directly to Vercel Blob
+			const fileObjects = files.map(f => f.file);
+			let uploadedBlobs: BlobUploadResult[] = [];
 
-			// Add files
-			files.forEach((fileObj, index) => {
-				formDataToSend.append(`files`, fileObj.file);
-			});
+			try {
+				uploadedBlobs = await uploadMultipleToBlob(
+					fileObjects,
+					'documents',
+					(fileIndex, fileName, progress) => {
+						setCurrentFileUploading(`${fileName} (${progress.percentage}%)`);
+						// Calculate overall progress
+						const overallProgress = Math.round(
+							((fileIndex + (progress.percentage / 100)) / files.length) * 80
+						); // Reserve 20% for metadata save
+						setUploadProgress(overallProgress);
+					}
+				);
+				console.log('All documents uploaded to Vercel Blob:', uploadedBlobs);
+			} catch (uploadError) {
+				console.error('Blob upload error:', uploadError);
+				throw uploadError;
+			}
 
-			const response = await fetch('/api/documents/upload', {
+			setCurrentFileUploading('Saving metadata...');
+			setUploadProgress(85);
+
+			// Step 2: Save metadata to database
+			const response = await fetch('/api/documents/save-metadata', {
 				method: 'POST',
-				body: formDataToSend,
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					title: formData.title,
+					description: formData.description,
+					category: formData.category,
+					subCategory: formData.subCategory,
+					documentDate: formData.documentDate,
+					uploadedBy: formData.uploadedBy,
+					fileType: formData.fileType,
+					documentType: formData.documentType,
+					allowPriorityUsers: formData.allowPriorityUsers,
+					allowInternalUsers: formData.allowInternalUsers,
+					allowOthersUsers: formData.allowOthersUsers,
+					files: uploadedBlobs
+				}),
 			});
 
 			const result = await response.json();
 
 			if (result.success) {
+				console.log('Metadata saved successfully:', result);
 				setUploadStatus('success');
 				setUploadProgress(100);
+				setCurrentFileUploading('');
 				
 				// Redirect to documents page after 2 seconds
 				setTimeout(() => {
 					router.push('/dashboard/documents');
 				}, 2000);
 			} else {
-				setError(result.message || 'Upload failed');
-				setUploadStatus('error');
+				throw new Error(result.message || 'Failed to save document metadata');
 			}
 		} catch (err) {
-			setError('Upload failed. Please try again.');
+			const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+			setError(`Upload failed: ${errorMessage}`);
 			setUploadStatus('error');
-			console.error('Upload error:', err);
+			console.error('Submit error:', err);
 		} finally {
 			setUploading(false);
+			setCurrentFileUploading('');
 		}
 	};
 
@@ -804,7 +845,7 @@ export default function UploadDocumentsPage() {
 										Click to upload document files
 									</p>
 									<p className="text-sm text-gray-500">
-										PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, RAR up to 10MB each
+										PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, RAR, CSV up to 100MB each
 									</p>
 								</label>
 							</div>
@@ -847,8 +888,13 @@ export default function UploadDocumentsPage() {
 						{uploading && (
 							<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
 								<div className="flex items-center justify-between mb-2">
-									<span className="text-sm font-medium text-blue-900">Uploading...</span>
-									<span className="text-sm text-blue-700">{uploadProgress}%</span>
+									<div className="flex-1">
+										<span className="text-sm font-medium text-blue-900">Uploading...</span>
+										{currentFileUploading && (
+											<p className="text-xs text-blue-700 mt-1">{currentFileUploading}</p>
+										)}
+									</div>
+									<span className="text-sm font-semibold text-blue-700">{uploadProgress}%</span>
 								</div>
 								<div className="w-full bg-blue-200 rounded-full h-2">
 									<div

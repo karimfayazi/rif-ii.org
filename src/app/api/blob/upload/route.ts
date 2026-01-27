@@ -2,8 +2,13 @@ import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 
-// Helper function to check if user can upload reports
-async function checkUploadAccess(userId: string | null): Promise<{ canUpload: boolean; message?: string }> {
+type UploadFolder = 'reports' | 'documents' | 'pictures';
+
+// Helper function to check if user can upload based on folder type
+async function checkUploadAccess(
+	userId: string | null, 
+	folder: UploadFolder
+): Promise<{ canUpload: boolean; message?: string }> {
 	if (!userId) {
 		return { canUpload: false, message: "Unauthorized" };
 	}
@@ -11,8 +16,14 @@ async function checkUploadAccess(userId: string | null): Promise<{ canUpload: bo
 	try {
 		const { getDb } = await import('@/lib/db');
 		const pool = await getDb();
+		
+		// Map folder to permission field
+		const permissionField = folder === 'reports' ? 'Upload_Report' 
+			: folder === 'documents' ? 'Upload_Documents'
+			: 'Upload_Pictures';
+		
 		const accessQuery = `
-			SELECT [access_level], [Upload_Report]
+			SELECT [access_level], [${permissionField}]
 			FROM [_rifiiorg_db].[dbo].[tbl_user_access]
 			WHERE [username] = @userId OR [email] = @userId
 		`;
@@ -29,8 +40,8 @@ async function checkUploadAccess(userId: string | null): Promise<{ canUpload: bo
 		const accessLevel = userAccess.access_level;
 		const isAdmin = accessLevel === 'Admin';
 		
-		// Check Upload_Report permission
-		const uploadReportRaw = userAccess.Upload_Report;
+		// Check specific upload permission
+		const uploadPermissionRaw = userAccess[permissionField];
 		const checkBitField = (value: any): boolean => {
 			if (value === null || value === undefined) return false;
 			if (Buffer.isBuffer(value)) return value[0] === 1;
@@ -40,13 +51,13 @@ async function checkUploadAccess(userId: string | null): Promise<{ canUpload: bo
 			return false;
 		};
 		
-		const uploadReport = checkBitField(uploadReportRaw);
-		const canUploadReports = isAdmin || uploadReport;
+		const hasPermission = checkBitField(uploadPermissionRaw);
+		const canUpload = isAdmin || hasPermission;
 		
-		if (!canUploadReports) {
+		if (!canUpload) {
 			return { 
 				canUpload: false, 
-				message: "Insufficient Permissions. This action requires Admin level access or Upload_Report permission." 
+				message: `Insufficient Permissions. This action requires Admin level access or ${permissionField.replace('_', ' ')} permission.` 
 			};
 		}
 
@@ -57,11 +68,52 @@ async function checkUploadAccess(userId: string | null): Promise<{ canUpload: bo
 	}
 }
 
+// Get allowed file extensions and content types based on folder
+function getAllowedFileTypes(folder: UploadFolder) {
+	if (folder === 'pictures') {
+		return {
+			extensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
+			contentTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+		};
+	}
+	
+	// For reports and documents
+	return {
+		extensions: ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.zip', '.rar', '.csv'],
+		contentTypes: [
+			'application/pdf',
+			'application/msword',
+			'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+			'application/vnd.ms-excel',
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+			'application/vnd.ms-powerpoint',
+			'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+			'text/plain',
+			'text/csv',
+			'application/zip',
+			'application/x-rar-compressed',
+			'application/x-zip-compressed'
+		]
+	};
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
 	try {
-		// Check upload access
+		// Get folder type from query params
+		const { searchParams } = new URL(request.url);
+		const folder = (searchParams.get('folder') || 'reports') as UploadFolder;
+		
+		// Validate folder type
+		if (!['reports', 'documents', 'pictures'].includes(folder)) {
+			return NextResponse.json(
+				{ success: false, message: 'Invalid folder type' },
+				{ status: 400 }
+			);
+		}
+		
+		// Check upload access based on folder type
 		const userId = getUserIdFromRequest(request);
-		const accessCheck = await checkUploadAccess(userId);
+		const accessCheck = await checkUploadAccess(userId, folder);
 		
 		if (!accessCheck.canUpload) {
 			return NextResponse.json(
@@ -74,17 +126,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 		}
 
 		const body = (await request.json()) as HandleUploadBody;
+		const { extensions, contentTypes } = getAllowedFileTypes(folder);
 
 		const jsonResponse = await handleUpload({
 			body,
 			request,
 			onBeforeGenerateToken: async (pathname) => {
 				// Validate file extension
-				const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'];
 				const fileExtension = pathname.substring(pathname.lastIndexOf('.')).toLowerCase();
 				
-				if (!allowedExtensions.includes(fileExtension)) {
-					throw new Error(`File type not allowed. Supported formats: ${allowedExtensions.join(', ')}`);
+				if (!extensions.includes(fileExtension)) {
+					throw new Error(`File type not allowed for ${folder}. Supported formats: ${extensions.join(', ')}`);
 				}
 
 				// Generate a safe pathname with timestamp
@@ -97,23 +149,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 				
 				// Return configuration for token generation
 				return {
-					allowedContentTypes: [
-						'application/pdf',
-						'application/msword',
-						'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-						'application/vnd.ms-excel',
-						'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-						'application/vnd.ms-powerpoint',
-						'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-					],
+					allowedContentTypes: contentTypes,
 					maximumSizeInBytes: 100 * 1024 * 1024, // 100MB
-					tokenPayload: JSON.stringify({ userId }),
-					pathname: `remote-monitoring/testing-report/${yearMonth}/${timestamp}-${randomId}-${sanitizedName}`,
+					tokenPayload: JSON.stringify({ userId, folder }),
+					pathname: `${folder}/${yearMonth}/${timestamp}-${randomId}-${sanitizedName}`,
 				};
 			},
 			onUploadCompleted: async ({ blob, tokenPayload }) => {
-				console.log('Upload completed:', blob.url);
-				// You can add additional logic here if needed
+				console.log(`${folder} upload completed:`, blob.url);
 			},
 		});
 

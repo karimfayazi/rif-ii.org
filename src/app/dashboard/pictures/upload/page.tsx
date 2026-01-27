@@ -9,6 +9,7 @@ import SubCategoryModal from "@/components/SubCategoryModal";
 import AccessDenied from "@/components/AccessDenied";
 import { useAccess } from "@/hooks/useAccess";
 import { useAuth } from "@/hooks/useAuth";
+import { uploadMultipleToBlob, type BlobUploadResult } from "@/lib/uploads";
 
 type UploadFormData = {
 	groupName: string;
@@ -93,6 +94,7 @@ export default function UploadPicturesPage() {
 	const [files, setFiles] = useState<UploadedFile[]>([]);
 	const [uploading, setUploading] = useState(false);
 	const [uploadProgress, setUploadProgress] = useState(0);
+	const [currentFileUploading, setCurrentFileUploading] = useState<string>('');
 	const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
 	const [error, setError] = useState<string | null>(null);
 	const [categories, setCategories] = useState<Category[]>([]);
@@ -188,6 +190,16 @@ export default function UploadPicturesPage() {
 		const selectedFiles = Array.from(e.target.files || []);
 		const imageFiles = selectedFiles.filter(file => file.type.startsWith('image/'));
 		
+		// Validate file sizes before adding (100MB limit)
+		const maxSize = 100 * 1024 * 1024; // 100MB
+		const invalidFiles = imageFiles.filter(file => file.size > maxSize);
+		
+		if (invalidFiles.length > 0) {
+			const invalidFileNames = invalidFiles.map(f => `${f.name} (${(f.size / 1024 / 1024).toFixed(2)}MB)`).join(', ');
+			setError(`The following files exceed the 100MB limit: ${invalidFileNames}`);
+			return;
+		}
+		
 		const newFiles: UploadedFile[] = imageFiles.map(file => ({
 			file,
 			preview: URL.createObjectURL(file),
@@ -195,6 +207,7 @@ export default function UploadPicturesPage() {
 		}));
 
 		setFiles(prev => [...prev, ...newFiles]);
+		setError(null); // Clear any previous errors
 	};
 
 	const removeFile = (id: string) => {
@@ -229,56 +242,74 @@ export default function UploadPicturesPage() {
 		setUploading(true);
 		setUploadStatus('uploading');
 		setError(null);
+		setUploadProgress(0);
 
 		try {
-			const formDataToSend = new FormData();
+			console.log('Starting direct Vercel Blob upload for', files.length, 'picture files');
 			
-			// Add form fields
-			formDataToSend.append('groupName', formData.groupName);
-			formDataToSend.append('mainCategory', formData.mainCategory);
-			formDataToSend.append('subCategory', formData.subCategory);
-			formDataToSend.append('eventDate', formData.eventDate);
-			formDataToSend.append('uploadedBy', formData.uploadedBy);
+			// Step 1: Upload files directly to Vercel Blob
+			const fileObjects = files.map(f => f.file);
+			let uploadedBlobs: BlobUploadResult[] = [];
 
-			// Add files
-			files.forEach((fileObj, index) => {
-				formDataToSend.append(`files`, fileObj.file);
-			});
+			try {
+				uploadedBlobs = await uploadMultipleToBlob(
+					fileObjects,
+					'pictures',
+					(fileIndex, fileName, progress) => {
+						setCurrentFileUploading(`${fileName} (${progress.percentage}%)`);
+						// Calculate overall progress
+						const overallProgress = Math.round(
+							((fileIndex + (progress.percentage / 100)) / files.length) * 80
+						); // Reserve 20% for metadata save
+						setUploadProgress(overallProgress);
+					}
+				);
+				console.log('All pictures uploaded to Vercel Blob:', uploadedBlobs);
+			} catch (uploadError) {
+				console.error('Blob upload error:', uploadError);
+				throw uploadError;
+			}
 
-			const response = await fetch('/api/pictures/upload', {
+			setCurrentFileUploading('Saving metadata...');
+			setUploadProgress(85);
+
+			// Step 2: Save metadata to database
+			const response = await fetch('/api/pictures/save-metadata', {
 				method: 'POST',
-				body: formDataToSend,
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					groupName: formData.groupName,
+					mainCategory: formData.mainCategory,
+					subCategory: formData.subCategory,
+					eventDate: formData.eventDate,
+					uploadedBy: formData.uploadedBy,
+					files: uploadedBlobs
+				}),
 			});
 
 			const result = await response.json();
 
 			if (result.success) {
+				console.log('Metadata saved successfully:', result);
 				setUploadStatus('success');
 				setUploadProgress(100);
+				setCurrentFileUploading('');
 				
 				// Redirect to pictures page after 2 seconds
 				setTimeout(() => {
 					router.push('/dashboard/pictures');
 				}, 2000);
 			} else {
-				// Show detailed error message
-				let errorMessage = result.message || 'Upload failed';
-				if (result.error) {
-					errorMessage += ` (${result.error})`;
-				}
-				if (result.hint) {
-					errorMessage += ` ${result.hint}`;
-				}
-				setError(errorMessage);
-				setUploadStatus('error');
-				console.error('Upload error details:', result);
+				throw new Error(result.message || 'Failed to save picture metadata');
 			}
 		} catch (err) {
-			setError('Upload failed. Please try again.');
+			const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+			setError(`Upload failed: ${errorMessage}`);
 			setUploadStatus('error');
-			console.error('Upload error:', err);
+			console.error('Submit error:', err);
 		} finally {
 			setUploading(false);
+			setCurrentFileUploading('');
 		}
 	};
 
@@ -541,7 +572,7 @@ export default function UploadPicturesPage() {
 										Click to upload pictures
 									</p>
 									<p className="text-sm text-gray-500">
-										PNG, JPG, JPEG up to 10MB each
+										PNG, JPG, JPEG, GIF, WEBP up to 100MB each
 									</p>
 								</label>
 							</div>
@@ -586,8 +617,13 @@ export default function UploadPicturesPage() {
 						{uploading && (
 							<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
 								<div className="flex items-center justify-between mb-2">
-									<span className="text-sm font-medium text-blue-900">Uploading...</span>
-									<span className="text-sm text-blue-700">{uploadProgress}%</span>
+									<div className="flex-1">
+										<span className="text-sm font-medium text-blue-900">Uploading...</span>
+										{currentFileUploading && (
+											<p className="text-xs text-blue-700 mt-1">{currentFileUploading}</p>
+										)}
+									</div>
+									<span className="text-sm font-semibold text-blue-700">{uploadProgress}%</span>
 								</div>
 								<div className="w-full bg-blue-200 rounded-full h-2">
 									<div

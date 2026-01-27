@@ -14,14 +14,51 @@ export type UploadProgress = {
 	percentage: number;
 };
 
+export type UploadFolder = 'reports' | 'documents' | 'pictures';
+
+/**
+ * Get file type validation rules based on upload folder
+ */
+function getFileTypeRules(folder: UploadFolder) {
+	if (folder === 'pictures') {
+		return {
+			extensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
+			types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'],
+			description: 'JPG, JPEG, PNG, GIF, WEBP'
+		};
+	}
+	
+	// For reports and documents
+	return {
+		extensions: ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.zip', '.rar', '.csv'],
+		types: [
+			'application/pdf',
+			'application/msword',
+			'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+			'application/vnd.ms-excel',
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+			'application/vnd.ms-powerpoint',
+			'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+			'text/plain',
+			'text/csv',
+			'application/zip',
+			'application/x-rar-compressed',
+			'application/x-zip-compressed'
+		],
+		description: 'PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, RAR, CSV'
+	};
+}
+
 /**
  * Upload a file directly to Vercel Blob storage from the client
  * @param file The file to upload
+ * @param folder The folder type (reports, documents, pictures)
  * @param onProgress Optional callback for upload progress
  * @returns Upload result with blob URL and metadata
  */
 export async function uploadToBlob(
 	file: File,
+	folder: UploadFolder = 'reports',
 	onProgress?: (progress: UploadProgress) => void
 ): Promise<BlobUploadResult> {
 	// Validate file size (100MB limit)
@@ -32,33 +69,27 @@ export async function uploadToBlob(
 		);
 	}
 
-	// Validate file type
-	const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'];
-	const allowedTypes = [
-		'application/pdf',
-		'application/msword',
-		'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-		'application/vnd.ms-excel',
-		'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-		'application/vnd.ms-powerpoint',
-		'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-	];
-
+	// Validate file type based on folder
+	const rules = getFileTypeRules(folder);
 	const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-	if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+	
+	const isValidType = rules.types.includes(file.type) || rules.extensions.includes(fileExtension);
+	
+	if (!isValidType) {
 		throw new Error(
-			`File "${file.name}" type not supported. Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX`
+			`File "${file.name}" type not supported for ${folder}. Supported formats: ${rules.description}`
 		);
 	}
 
 	try {
 		// Upload directly to Vercel Blob
 		const newBlob = await upload(file.name, file, {
-			access: 'public',
-			handleUploadUrl: '/api/blob/upload',
+			access: folder === 'pictures' ? 'public' : 'public', // Can be changed to 'private' if needed
+			handleUploadUrl: `/api/blob/upload?folder=${folder}`,
 			clientPayload: JSON.stringify({
 				size: file.size,
 				type: file.type,
+				folder: folder
 			}),
 			onUploadProgress: onProgress ? (event) => {
 				onProgress({
@@ -87,11 +118,13 @@ export async function uploadToBlob(
 /**
  * Upload multiple files to Vercel Blob storage
  * @param files Array of files to upload
+ * @param folder The folder type (reports, documents, pictures)
  * @param onFileProgress Optional callback for individual file progress
  * @returns Array of upload results
  */
 export async function uploadMultipleToBlob(
 	files: File[],
+	folder: UploadFolder = 'reports',
 	onFileProgress?: (fileIndex: number, fileName: string, progress: UploadProgress) => void
 ): Promise<BlobUploadResult[]> {
 	const results: BlobUploadResult[] = [];
@@ -100,7 +133,7 @@ export async function uploadMultipleToBlob(
 	for (let i = 0; i < files.length; i++) {
 		const file = files[i];
 		try {
-			const result = await uploadToBlob(file, onFileProgress ? (progress) => {
+			const result = await uploadToBlob(file, folder, onFileProgress ? (progress) => {
 				onFileProgress(i, file.name, progress);
 			} : undefined);
 			results.push(result);

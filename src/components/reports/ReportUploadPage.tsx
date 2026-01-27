@@ -403,17 +403,18 @@ export default function ReportUploadPage({
 				let uploadedBlobs: BlobUploadResult[] = [];
 
 				try {
-					uploadedBlobs = await uploadMultipleToBlob(
-						fileObjects,
-						(fileIndex, fileName, progress) => {
-							setCurrentFileUploading(`${fileName} (${progress.percentage}%)`);
-							// Calculate overall progress
-							const overallProgress = Math.round(
-								((fileIndex + (progress.percentage / 100)) / files.length) * 80
-							); // Reserve 20% for metadata save
-							setUploadProgress(overallProgress);
-						}
-					);
+				uploadedBlobs = await uploadMultipleToBlob(
+					fileObjects,
+					'reports',
+					(fileIndex, fileName, progress) => {
+						setCurrentFileUploading(`${fileName} (${progress.percentage}%)`);
+						// Calculate overall progress
+						const overallProgress = Math.round(
+							((fileIndex + (progress.percentage / 100)) / files.length) * 80
+						); // Reserve 20% for metadata save
+						setUploadProgress(overallProgress);
+					}
+				);
 					console.log('All files uploaded to Vercel Blob:', uploadedBlobs);
 				} catch (uploadError) {
 					console.error('Blob upload error:', uploadError);
