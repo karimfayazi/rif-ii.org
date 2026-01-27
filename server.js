@@ -43,8 +43,8 @@ app.prepare().then(() => {
     }
     console.log(`> Server ready on http://0.0.0.0:${port}`)
     console.log(`> Local access: http://localhost:${port}`)
-    console.log(`> Network access: http://172.16.171.62:${port}`)
-    console.log(`> Health check: http://0.0.0.0:${port}/api/health`)
+    console.log(`> Network access: http://10.81.234.72:${port}`)
+    console.log(`> Health check: http://10.81.234.72:${port}/api/health`)
   })
   
   // Graceful shutdown

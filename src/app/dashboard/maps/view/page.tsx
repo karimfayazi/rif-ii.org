@@ -11,9 +11,22 @@ function GISMapViewer({ filePath, mapType }: { filePath: string; mapType: string
 	const mapInstanceRef = useRef<any>(null);
 	const [mapLoaded, setMapLoaded] = useState(false);
 	const [mapError, setMapError] = useState<string | null>(null);
+	const [layerError, setLayerError] = useState<string | null>(null);
+	const isInitializingRef = useRef(false);
 
 	useEffect(() => {
 		if (!mapContainerRef.current) return;
+		
+		// CRITICAL: Prevent double initialization (React 18 Strict Mode)
+		if (mapInstanceRef.current) {
+			console.log('Map already initialized, skipping...');
+			return;
+		}
+		
+		if (isInitializingRef.current) {
+			console.log('Map initialization in progress, skipping...');
+			return;
+		}
 
 		let linkElement: HTMLLinkElement | null = null;
 		let scriptElement: HTMLScriptElement | null = null;
@@ -25,9 +38,18 @@ function GISMapViewer({ filePath, mapType }: { filePath: string; mapType: string
 		const initializeMap = () => {
 			if (!isMounted || !mapContainerRef.current) return;
 			
+			// Double-check: if map already exists, do not re-initialize
 			if (mapInstanceRef.current) {
+				console.log('Map container already initialized, skipping...');
 				return;
 			}
+			
+			// Set initialization flag
+			if (isInitializingRef.current) {
+				console.log('Initialization already in progress, skipping...');
+				return;
+			}
+			isInitializingRef.current = true;
 
 			setTimeout(() => {
 				if (!isMounted || !mapContainerRef.current) return;
@@ -76,7 +98,17 @@ function GISMapViewer({ filePath, mapType }: { filePath: string; mapType: string
 						try {
 							const response = await fetch(filePath);
 							if (!response.ok) {
-								throw new Error('Failed to load map data');
+								// User-friendly error for 404
+								if (response.status === 404) {
+									const fileName = filePath.split('/').pop();
+									throw new Error(`Map layer file not found: ${fileName}. Please ensure the file exists in the maps directory.`);
+								}
+								throw new Error(`Failed to load map data: ${response.status} ${response.statusText}`);
+							}
+							
+							const contentType = response.headers.get('content-type') || '';
+							if (!contentType.includes('application/json') && !contentType.includes('text/plain')) {
+								throw new Error('Invalid map data format. Expected GeoJSON file.');
 							}
 							
 							const geoJsonData = await response.json();
@@ -161,7 +193,12 @@ function GISMapViewer({ filePath, mapType }: { filePath: string; mapType: string
 
 						} catch (error) {
 							console.error('Error loading GeoJSON:', error);
-							if (isMounted) setMapError('Failed to load map data: ' + (error instanceof Error ? error.message : 'Unknown error'));
+							const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+							if (isMounted) {
+								setLayerError('Layer Error: ' + errorMessage);
+								// Don't crash the whole map, just show warning
+								console.warn('Continuing with base map despite layer error');
+							}
 						}
 					};
 
@@ -186,6 +223,8 @@ function GISMapViewer({ filePath, mapType }: { filePath: string; mapType: string
 					if (isMounted) {
 						setMapError('Failed to initialize map: ' + (error instanceof Error ? error.message : 'Unknown error'));
 					}
+				} finally {
+					isInitializingRef.current = false;
 				}
 			}, 300);
 		};
@@ -241,11 +280,13 @@ function GISMapViewer({ filePath, mapType }: { filePath: string; mapType: string
 
 		return () => {
 			isMounted = false;
+			isInitializingRef.current = false;
 			if (timeoutId) clearTimeout(timeoutId);
 			if (checkInterval) clearInterval(checkInterval);
 			if (initDelay) clearTimeout(initDelay);
 			if (mapInstanceRef.current) {
 				try {
+					console.log('Cleaning up map instance...');
 					mapInstanceRef.current.remove();
 				} catch (e) {
 					console.error('Error removing map:', e);
@@ -257,6 +298,34 @@ function GISMapViewer({ filePath, mapType }: { filePath: string; mapType: string
 
 	return (
 		<div className="relative w-full overflow-hidden rounded-lg border border-gray-200">
+			{/* Layer Error Toast (non-blocking) */}
+			{layerError && !mapError && (
+				<div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30 max-w-md">
+					<div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 shadow-lg">
+						<div className="flex items-start space-x-3">
+							<div className="flex-shrink-0">
+								<svg className="h-5 w-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+									<path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+								</svg>
+							</div>
+							<div className="flex-1">
+								<p className="text-sm font-medium text-yellow-800">Layer Loading Warning</p>
+								<p className="text-xs text-yellow-700 mt-1">{layerError}</p>
+								<p className="text-xs text-yellow-600 mt-1">Base map is still functional.</p>
+							</div>
+							<button
+								onClick={() => setLayerError(null)}
+								className="flex-shrink-0 text-yellow-600 hover:text-yellow-800"
+							>
+								<svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+									<path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+								</svg>
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+			
 			<div 
 				ref={mapContainerRef}
 				className="w-full bg-gray-100"

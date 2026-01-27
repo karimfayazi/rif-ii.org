@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
 		];
 		
 		const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'];
-		const maxSize = 10 * 1024 * 1024; // 10MB
+		const maxSize = 20 * 1024 * 1024; // 20MB (increased from 10MB)
 		
 		for (const file of files) {
 			const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
@@ -123,15 +123,19 @@ export async function POST(request: NextRequest) {
 			if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
 				return NextResponse.json({
 					success: false,
-					message: `File ${file.name} is not a supported document type`
+					message: `File ${file.name} is not a supported document type`,
+					hint: 'Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX'
 				}, { status: 400 });
 			}
 			
 			if (file.size > maxSize) {
 				return NextResponse.json({
 					success: false,
-					message: `File ${file.name} is too large (max 10MB)`
-				}, { status: 400 });
+					ok: false,
+					message: `File ${file.name} is too large. Maximum file size is 20MB.`,
+					fileSize: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+					maxSize: '20MB'
+				}, { status: 413 });
 			}
 		}
 
@@ -239,13 +243,32 @@ export async function POST(request: NextRequest) {
 
 	} catch (error) {
 		console.error("Error uploading reports:", error);
+		
+		// Always return JSON, never HTML
 		return NextResponse.json(
 			{
 				success: false,
-				message: "Failed to upload reports",
-				error: error instanceof Error ? error.message : "Unknown error"
+				ok: false,
+				message: "Failed to upload reports. Please check file size and format.",
+				error: error instanceof Error ? error.message : "Unknown error",
+				hint: "Max file size: 20MB per file. Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX"
 			},
-			{ status: 500 }
+			{ 
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			}
 		);
 	}
 }
+
+// Configure Next.js API Route
+export const config = {
+	api: {
+		bodyParser: false,
+	},
+};
+
+// Set runtime to edge for better performance (optional)
+// export const runtime = 'edge'; // Uncomment if you want edge runtime

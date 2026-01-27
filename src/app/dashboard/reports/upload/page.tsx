@@ -321,34 +321,55 @@ export default function UploadReportsPage() {
 						formDataToSend.append(`files`, fileObj.file);
 					});
 
-					const uploadResponse = await fetch('/api/reports/upload', {
-						method: 'POST',
-						body: formDataToSend,
-					});
+				const uploadResponse = await fetch('/api/reports/upload', {
+					method: 'POST',
+					body: formDataToSend,
+				});
 
-					const uploadResult = await uploadResponse.json();
-					
-					if (uploadResult.success) {
-						setUploadStatus('success');
-						setUploadProgress(100);
-						
-						// Redirect to reports page after 2 seconds
-						setTimeout(() => {
-							router.push('/dashboard/reports');
-						}, 2000);
+				// SAFE JSON PARSING: Handle both JSON and non-JSON responses
+				let uploadResult;
+				const contentType = uploadResponse.headers.get('content-type') || '';
+				
+				try {
+					if (contentType.includes('application/json')) {
+						uploadResult = await uploadResponse.json();
 					} else {
-						// Show detailed error message
-						let errorMessage = uploadResult.message || 'Failed to update report';
-						if (uploadResult.error) {
-							errorMessage += ` (${uploadResult.error})`;
-						}
-						if (uploadResult.hint) {
-							errorMessage += ` ${uploadResult.hint}`;
-						}
-						setError(errorMessage);
-						setUploadStatus('error');
-						console.error('Upload error details:', uploadResult);
+						// Non-JSON response (HTML/Text error from server)
+						const text = await uploadResponse.text();
+						const preview = text.slice(0, 200);
+						throw new Error(`Server returned non-JSON response: ${preview}...`);
 					}
+				} catch (parseError) {
+					console.error('Response parsing error:', parseError);
+					setError(parseError instanceof Error ? parseError.message : 'Failed to parse server response');
+					setUploadStatus('error');
+					return;
+				}
+				
+				if (uploadResult.success) {
+					setUploadStatus('success');
+					setUploadProgress(100);
+					
+					// Redirect to reports page after 2 seconds
+					setTimeout(() => {
+						router.push('/dashboard/reports');
+					}, 2000);
+				} else {
+					// Show detailed error message
+					let errorMessage = uploadResult.message || 'Failed to update report';
+					if (uploadResult.error) {
+						errorMessage += ` (${uploadResult.error})`;
+					}
+					if (uploadResult.hint) {
+						errorMessage += ` - ${uploadResult.hint}`;
+					}
+					if (uploadResponse.status === 413) {
+						errorMessage = `File too large. ${uploadResult.message || 'Maximum file size is 20MB per file.'}`;
+					}
+					setError(errorMessage);
+					setUploadStatus('error');
+					console.error('Upload error details:', uploadResult);
+				}
 				} else {
 					// No file uploaded, just update metadata via PUT
 					const response = await fetch(`/api/reports/${reportId}`, {
@@ -397,35 +418,56 @@ export default function UploadReportsPage() {
 					formDataToSend.append(`files`, fileObj.file);
 				});
 
-				const response = await fetch('/api/reports/upload', {
-					method: 'POST',
-					body: formDataToSend,
-				});
+			const response = await fetch('/api/reports/upload', {
+				method: 'POST',
+				body: formDataToSend,
+			});
 
-				const result = await response.json();
-
-				if (result.success) {
-					setUploadStatus('success');
-					setUploadProgress(100);
-					
-					// Redirect to reports page after 2 seconds
-					setTimeout(() => {
-						router.push('/dashboard/reports');
-					}, 2000);
+			// SAFE JSON PARSING: Handle both JSON and non-JSON responses
+			let result;
+			const contentType = response.headers.get('content-type') || '';
+			
+			try {
+				if (contentType.includes('application/json')) {
+					result = await response.json();
 				} else {
-					// Show detailed error message
-					let errorMessage = result.message || 'Upload failed';
-					if (result.error) {
-						errorMessage += ` (${result.error})`;
-					}
-					if (result.hint) {
-						errorMessage += ` ${result.hint}`;
-					}
-					setError(errorMessage);
-					setUploadStatus('error');
-					console.error('Upload error details:', result);
+					// Non-JSON response (HTML/Text error from server)
+					const text = await response.text();
+					const preview = text.slice(0, 200);
+					throw new Error(`Server returned non-JSON response (Status ${response.status}): ${preview}...`);
 				}
+			} catch (parseError) {
+				console.error('Response parsing error:', parseError);
+				setError(parseError instanceof Error ? parseError.message : 'Failed to parse server response');
+				setUploadStatus('error');
+				return;
 			}
+
+			if (result.success) {
+				setUploadStatus('success');
+				setUploadProgress(100);
+				
+				// Redirect to reports page after 2 seconds
+				setTimeout(() => {
+					router.push('/dashboard/reports');
+				}, 2000);
+			} else {
+				// Show detailed error message
+				let errorMessage = result.message || 'Upload failed';
+				if (result.error) {
+					errorMessage += ` (${result.error})`;
+				}
+				if (result.hint) {
+					errorMessage += ` - ${result.hint}`;
+				}
+				if (response.status === 413) {
+					errorMessage = `File too large. ${result.message || 'Maximum file size is 20MB per file.'}`;
+				}
+				setError(errorMessage);
+				setUploadStatus('error');
+				console.error('Upload error details:', result);
+			}
+		}
 		} catch (err) {
 			const errorMessage = err instanceof Error ? err.message : 'Unknown error';
 			setError(isEditMode 

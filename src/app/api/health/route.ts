@@ -9,8 +9,8 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   return NextResponse.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
+    ok: true,
+    time: new Date().toISOString(),
     service: 'RIF-II MIS',
     version: '1.0.0'
   });

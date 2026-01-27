@@ -5,6 +5,28 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Calendar, Folder, Image as ImageIcon, ExternalLink, TrendingUp, MapPin, Building2, Newspaper, Clock, Layers, Info, Loader2, ChevronDown, ChevronUp, Shield, AlertTriangle, User, X, Droplet, Trash2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { Bar } from 'react-chartjs-2';
+import {
+	Chart as ChartJS,
+	CategoryScale,
+	LinearScale,
+	BarElement,
+	Title,
+	Tooltip,
+	Legend,
+	ChartOptions,
+} from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+// Register ChartJS components (without datalabels globally)
+ChartJS.register(
+	CategoryScale,
+	LinearScale,
+	BarElement,
+	Title,
+	Tooltip,
+	Legend
+);
 
 type PictureData = {
 	PictureID?: number;
@@ -2115,6 +2137,289 @@ function GISOnlineMapsEmbedded() {
 	);
 }
 
+// Output Progress Chart Component with exact values
+function OutputProgressChart() {
+	const data = {
+		labels: ['Output A', 'Output B', 'Output C', 'Total'],
+		datasets: [
+			{
+				label: 'Progress (%)',
+				data: [31, 20, 30, 28.5],
+				backgroundColor: [
+					'rgba(59, 130, 246, 0.8)',  // Blue
+					'rgba(34, 197, 94, 0.8)',   // Green
+					'rgba(168, 85, 247, 0.8)',  // Purple
+					'rgba(249, 115, 22, 0.8)',  // Orange
+				],
+				borderColor: [
+					'rgb(59, 130, 246)',
+					'rgb(34, 197, 94)',
+					'rgb(168, 85, 247)',
+					'rgb(249, 115, 22)',
+				],
+				borderWidth: 2,
+			}
+		]
+	};
+
+	const weights = [50, 20, 30, 100];
+
+	const options: ChartOptions<'bar'> = {
+		responsive: true,
+		maintainAspectRatio: true,
+		aspectRatio: 1.2,
+		plugins: {
+			legend: {
+				display: false,
+			},
+			tooltip: {
+				callbacks: {
+					label: function(context) {
+						const index = context.dataIndex;
+						const value = context.parsed.y;
+						const weight = weights[index];
+						return [
+							`Progress: ${value}%`,
+							`Weight: ${weight}`
+						];
+					}
+				}
+			},
+			datalabels: {
+				anchor: 'end',
+				align: 'top',
+				formatter: (value, context) => {
+					const weight = weights[context.dataIndex];
+					return `${value}%\nW: ${weight}`;
+				},
+				color: '#1f2937',
+				font: {
+					weight: 'bold',
+					size: 10,
+				},
+				textAlign: 'center',
+			}
+		},
+		scales: {
+			x: {
+				title: {
+					display: true,
+					text: 'Outputs',
+					font: {
+						size: 11,
+						weight: 'bold',
+					}
+				},
+				grid: {
+					display: false,
+				},
+				ticks: {
+					font: {
+						size: 10,
+					}
+				}
+			},
+			y: {
+				beginAtZero: true,
+				max: 100,
+				title: {
+					display: true,
+					text: 'Progress (%)',
+					font: {
+						size: 11,
+						weight: 'bold',
+					}
+				},
+				ticks: {
+					stepSize: 20,
+					font: {
+						size: 10,
+					}
+				},
+				grid: {
+					color: 'rgba(0, 0, 0, 0.05)',
+				}
+			}
+		}
+	};
+
+	return <div style={{ height: '280px' }}><Bar data={data} options={options} plugins={[ChartDataLabels]} /></div>;
+}
+
+// Sector Wise Chart Component with exact values
+function SectorWiseChart() {
+	const data = {
+		labels: ['Assessment', 'Document', 'Maps', 'Training', 'Workshop'],
+		datasets: [
+			{
+				label: 'Progress (%)',
+				data: [51, 43, 99, 46, 50],
+				backgroundColor: 'rgba(20, 184, 166, 0.8)',  // Teal
+				borderColor: 'rgb(20, 184, 166)',
+				borderWidth: 2,
+			}
+		]
+	};
+
+	const options: ChartOptions<'bar'> = {
+		responsive: true,
+		maintainAspectRatio: true,
+		aspectRatio: 1.2,
+		plugins: {
+			legend: {
+				display: false,
+			},
+			tooltip: {
+				callbacks: {
+					label: function(context) {
+						return `Progress: ${context.parsed.y}%`;
+					}
+				}
+			},
+			datalabels: {
+				anchor: 'end',
+				align: 'top',
+				formatter: (value) => `${value}%`,
+				color: '#1f2937',
+				font: {
+					weight: 'bold',
+					size: 10,
+				}
+			}
+		},
+		scales: {
+			x: {
+				title: {
+					display: true,
+					text: 'Sectors',
+					font: {
+						size: 11,
+						weight: 'bold',
+					}
+				},
+				grid: {
+					display: false,
+				},
+				ticks: {
+					font: {
+						size: 9,
+					}
+				}
+			},
+			y: {
+				beginAtZero: true,
+				max: 100,
+				title: {
+					display: true,
+					text: 'Progress (%)',
+					font: {
+						size: 11,
+						weight: 'bold',
+					}
+				},
+				ticks: {
+					stepSize: 20,
+					font: {
+						size: 10,
+					}
+				},
+				grid: {
+					color: 'rgba(0, 0, 0, 0.05)',
+				}
+			}
+		}
+	};
+
+	return <div style={{ height: '280px' }}><Bar data={data} options={options} plugins={[ChartDataLabels]} /></div>;
+}
+
+// District Wise Chart Component (using existing data)
+function DistrictWiseChart({ districtData }: { districtData: Array<{ District: string | null; AvgActivityProgress: number | null }> }) {
+	const chartData = {
+		labels: districtData.map(d => d.District || 'Unknown'),
+		datasets: [
+			{
+				label: 'Progress (%)',
+				data: districtData.map(d => Math.round(d.AvgActivityProgress || 0)),
+				backgroundColor: 'rgba(99, 102, 241, 0.8)',  // Indigo
+				borderColor: 'rgb(99, 102, 241)',
+				borderWidth: 2,
+			}
+		]
+	};
+
+	const options: ChartOptions<'bar'> = {
+		responsive: true,
+		maintainAspectRatio: true,
+		aspectRatio: 1.2,
+		plugins: {
+			legend: {
+				display: false,
+			},
+			tooltip: {
+				callbacks: {
+					label: function(context) {
+						return `Progress: ${context.parsed.y}%`;
+					}
+				}
+			},
+			datalabels: {
+				anchor: 'end',
+				align: 'top',
+				formatter: (value) => `${value}%`,
+				color: '#1f2937',
+				font: {
+					weight: 'bold',
+					size: 10,
+				}
+			}
+		},
+		scales: {
+			x: {
+				title: {
+					display: true,
+					text: 'Districts',
+					font: {
+						size: 11,
+						weight: 'bold',
+					}
+				},
+				grid: {
+					display: false,
+				},
+				ticks: {
+					font: {
+						size: 9,
+					}
+				}
+			},
+			y: {
+				beginAtZero: true,
+				max: 100,
+				title: {
+					display: true,
+					text: 'Progress (%)',
+					font: {
+						size: 11,
+						weight: 'bold',
+					}
+				},
+				ticks: {
+					stepSize: 20,
+					font: {
+						size: 10,
+					}
+				},
+				grid: {
+					color: 'rgba(0, 0, 0, 0.05)',
+				}
+			}
+		}
+	};
+
+	return <div style={{ height: '280px' }}><Bar data={chartData} options={options} plugins={[ChartDataLabels]} /></div>;
+}
+
 export default function DashboardPage() {
 	const router = useRouter();
 	const [pictures, setPictures] = useState<PictureData[]>([]);
@@ -2650,224 +2955,22 @@ export default function DashboardPage() {
 				{/* First Chart - Output Progress */}
 				<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
 					<h3 className="text-sm font-semibold text-gray-900 mb-4 text-center">Output Progress</h3>
-						{(() => {
-						// Group activities by OutputID
-						const outputAGroup = activityProgress.filter(item => {
-							const id = item.OutputID?.toString().toUpperCase().trim();
-							return id === 'A' || id === '1' || id === 'OUTPUT A' || id === 'OUTPUTA';
-						});
-						const outputBGroup = activityProgress.filter(item => {
-							const id = item.OutputID?.toString().toUpperCase().trim();
-							return id === 'B' || id === '2' || id === 'OUTPUT B' || id === 'OUTPUTB';
-						});
-						const outputCGroup = activityProgress.filter(item => {
-							const id = item.OutputID?.toString().toUpperCase().trim();
-							return id === 'C' || id === '3' || id === 'OUTPUT C' || id === 'OUTPUTC';
-						});
-
-						// Calculate Progress % for Output A, B, C (simple sum of OutputWeightage)
-						const outputASum = Math.round(outputAGroup.reduce((sum, item) => sum + (item.OutputWeightage || 0), 0));
-						const outputBSum = Math.round(outputBGroup.reduce((sum, item) => sum + (item.OutputWeightage || 0), 0));
-						const outputCSum = Math.round(outputCGroup.reduce((sum, item) => sum + (item.OutputWeightage || 0), 0));
-
-						// Get Output Weightage values (from Output Weightage section)
-						let outputAWeightage = 0;
-						let outputBWeightage = 0;
-						let outputCWeightage = 0;
-						
-						const foundA = outputWeightage.find(item => {
-							const id = item.OutputID?.toString().toUpperCase().trim();
-							return id === 'A' || id === '1' || id === 'OUTPUT A' || id === 'OUTPUTA';
-						});
-						const foundB = outputWeightage.find(item => {
-							const id = item.OutputID?.toString().toUpperCase().trim();
-							return id === 'B' || id === '2' || id === 'OUTPUT B' || id === 'OUTPUTB';
-						});
-						const foundC = outputWeightage.find(item => {
-							const id = item.OutputID?.toString().toUpperCase().trim();
-							return id === 'C' || id === '3' || id === 'OUTPUT C' || id === 'OUTPUTC';
-						});
-						
-						if (!foundA && outputWeightage.length > 0) {
-							outputAWeightage = outputWeightage[0]?.TotalWeightage || 0;
-						} else {
-							outputAWeightage = foundA?.TotalWeightage || 0;
-						}
-						
-						if (!foundB && outputWeightage.length > 1) {
-							outputBWeightage = outputWeightage[1]?.TotalWeightage || 0;
-						} else {
-							outputBWeightage = foundB?.TotalWeightage || 0;
-						}
-						
-						if (!foundC && outputWeightage.length > 2) {
-							outputCWeightage = outputWeightage[2]?.TotalWeightage || 0;
-						} else {
-							outputCWeightage = foundC?.TotalWeightage || 0;
-						}
-						
-						// Calculate Total Progress % using Weight Percentage Formula: (Percentage × Weightage) ÷ 100
-						// Formula: (Output A Progress % × Output A Weightage) ÷ 100 + (Output B Progress % × Output B Weightage) ÷ 100 + (Output C Progress % × Output C Weightage) ÷ 100
-						const totalProgressRaw = 
-							((outputASum * outputAWeightage) / 100) +
-							((outputBSum * outputBWeightage) / 100) +
-							((outputCSum * outputCWeightage) / 100);
-						
-						// Show one decimal place (e.g., 28.5%)
-						const totalProgress = Math.round(totalProgressRaw * 10) / 10;
-
-						const totalWeightage = outputAWeightage + outputBWeightage + outputCWeightage;
-
-						return (
-						<div className="w-full">
-							{/* Combined Bar Chart */}
-								<div className="flex items-end justify-center gap-3 mb-4" style={{ minHeight: '200px' }}>
-									{/* Output A Bar */}
-									<div className="flex flex-col items-center">
-										<div className="w-12 bg-gray-200 rounded-t-lg relative overflow-hidden shadow-inner mb-2" style={{ height: '180px' }}>
-											<div 
-												className="bg-gradient-to-t from-blue-500 to-blue-600 w-12 rounded-t-lg transition-all duration-1000 ease-out flex items-start justify-center pt-1 absolute bottom-0"
-												style={{ height: `${Math.min(outputASum, 100)}%` }}
-											>
-												<span className="text-white text-[10px] font-bold">{outputASum}%</span>
-										</div>
-									</div>
-										<p className="text-xs font-semibold text-blue-700 mt-1">Output A</p>
-										<p className="text-[10px] text-gray-500">W: {outputAWeightage}</p>
-													</div>
-
-									{/* Output B Bar */}
-									<div className="flex flex-col items-center">
-										<div className="w-12 bg-gray-200 rounded-t-lg relative overflow-hidden shadow-inner mb-2" style={{ height: '180px' }}>
-											<div 
-												className="bg-gradient-to-t from-green-500 to-green-600 w-12 rounded-t-lg transition-all duration-1000 ease-out flex items-start justify-center pt-1 absolute bottom-0"
-												style={{ height: `${Math.min(outputBSum, 100)}%` }}
-											>
-												<span className="text-white text-[10px] font-bold">{outputBSum}%</span>
-												</div>
-											</div>
-										<p className="text-xs font-semibold text-green-700 mt-1">Output B</p>
-										<p className="text-[10px] text-gray-500">W: {outputBWeightage}</p>
-									</div>
-
-									{/* Output C Bar */}
-									<div className="flex flex-col items-center">
-										<div className="w-12 bg-gray-200 rounded-t-lg relative overflow-hidden shadow-inner mb-2" style={{ height: '180px' }}>
-																	<div
-												className="bg-gradient-to-t from-purple-500 to-purple-600 w-12 rounded-t-lg transition-all duration-1000 ease-out flex items-start justify-center pt-1 absolute bottom-0"
-												style={{ height: `${Math.min(outputCSum, 100)}%` }}
-											>
-												<span className="text-white text-[10px] font-bold">{outputCSum}%</span>
-					</div>
-															</div>
-										<p className="text-xs font-semibold text-purple-700 mt-1">Output C</p>
-										<p className="text-[10px] text-gray-500">W: {outputCWeightage}</p>
+					<OutputProgressChart />
 				</div>
 
-									{/* Total Progress Bar */}
-									<div className="flex flex-col items-center">
-										<div className="w-12 bg-gray-200 rounded-t-lg relative overflow-hidden shadow-inner mb-2 border-2 border-orange-400" style={{ height: '180px' }}>
-											<div 
-												className="bg-gradient-to-t from-orange-500 to-orange-600 w-12 rounded-t-lg transition-all duration-1000 ease-out flex items-start justify-center pt-1 absolute bottom-0"
-												style={{ height: `${Math.min(totalProgress, 100)}%` }}
-											>
-												<span className="text-white text-[10px] font-bold">{totalProgress.toFixed(1)}%</span>
-							</div>
-							</div>
-										<p className="text-xs font-semibold text-orange-700 mt-1">Total</p>
-										<p className="text-[10px] text-gray-500">W: {totalWeightage}</p>
-						</div>
-					</div>
-																</div>
-						);
-						})()}
-					</div>
+				{/* Second Chart - Sector Wise */}
+				<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
+					<h3 className="text-sm font-semibold text-gray-900 mb-4 text-center">Sector Wise</h3>
+					<SectorWiseChart />
+				</div>
 
-					{/* Second Chart - Sector Wise */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
-						<h3 className="text-sm font-semibold text-gray-900 mb-4 text-center">Sector Wise</h3>
-						{(() => {
-						// Group by Sector_Name and calculate average ActivityProgress
-						const sectorGroups: { [key: string]: number[] } = {};
-						
-						sectorProgress.forEach(item => {
-							const sector = item.Sector_Name || 'Unknown';
-							const progress = item.ActivityProgress || 0;
-							
-							if (!sectorGroups[sector]) {
-								sectorGroups[sector] = [];
-							}
-							sectorGroups[sector].push(progress);
-							});
-
-						// Calculate averages per sector
-						const sectorData: Array<{ sector: string; avgProgress: number }> = [];
-						Object.keys(sectorGroups).forEach(sector => {
-							const values = sectorGroups[sector];
-							const avgProgress = values.reduce((sum, val) => sum + val, 0) / values.length;
-							sectorData.push({ sector, avgProgress });
-						});
-
-						const maxValue = Math.max(...sectorData.map(d => d.avgProgress), 100);
-
-							return (
-							<div className="w-full">
-								<div className="flex items-end justify-center gap-3 mb-4" style={{ minHeight: '200px' }}>
-									{sectorData.map((item, idx) => {
-										const height = (item.avgProgress / maxValue) * 100;
-										return (
-											<div key={idx} className="flex flex-col items-center">
-												<div className="w-12 bg-gray-200 rounded-t-lg relative overflow-hidden shadow-inner mb-2" style={{ height: '180px' }}>
-													<div
-														className="bg-gradient-to-t from-teal-500 to-teal-600 w-12 rounded-t-lg transition-all duration-1000 ease-out flex items-start justify-center pt-1 absolute bottom-0"
-														style={{ height: `${Math.min(height, 100)}%` }}
-													>
-														<span className="text-white text-[10px] font-bold">{Math.round(item.avgProgress)}%</span>
-												</div>
-																</div>
-												<p className="text-xs font-semibold text-teal-700 mt-1 text-center max-w-[60px] truncate">{item.sector}</p>
-															</div>
-										);
-									})}
-														</div>
-													</div>
-						);
-					})()}
-																</div>
-
-					{/* Third Chart - District Wise */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
-						<h3 className="text-sm font-semibold text-gray-900 mb-4 text-center">District Wise</h3>
-					{(() => {
-						const maxValue = Math.max(...districtProgressSummary.map(d => d.AvgActivityProgress || 0), 100);
-						
-						return (
-							<div className="w-full">
-								<div className="flex items-end justify-center gap-3 mb-4" style={{ minHeight: '200px' }}>
-									{districtProgressSummary.map((item, idx) => {
-										const value = item.AvgActivityProgress || 0;
-										const height = (value / maxValue) * 100;
-										return (
-											<div key={idx} className="flex flex-col items-center">
-												<div className="w-12 bg-gray-200 rounded-t-lg relative overflow-hidden shadow-inner mb-2" style={{ height: '180px' }}>
-																	<div
-														className="bg-gradient-to-t from-indigo-500 to-indigo-600 w-12 rounded-t-lg transition-all duration-1000 ease-out flex items-start justify-center pt-1 absolute bottom-0"
-														style={{ height: `${Math.min(height, 100)}%` }}
-													>
-														<span className="text-white text-[10px] font-bold">{Math.round(value)}%</span>
-																</div>
-															</div>
-												<p className="text-xs font-semibold text-indigo-700 mt-1 text-center max-w-[60px] truncate">{item.District || 'Unknown'}</p>
-										</div>
-									);
-									})}
-								</div>
-								</div>
-							);
-						})()}
-					</div>
+				{/* Third Chart - District Wise */}
+				<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
+					<h3 className="text-sm font-semibold text-gray-900 mb-4 text-center">District Wise</h3>
+					<DistrictWiseChart districtData={districtProgressSummary} />
 				</div>
 			</div>
+		</div>
 
 			{/* Training Dashboard Summary Cards */}
 			{trainingDashboardData && (
