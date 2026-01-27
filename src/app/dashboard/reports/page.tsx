@@ -29,6 +29,7 @@ export default function ReportsPage() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedMainCategory, setSelectedMainCategory] = useState("");
 	const [selectedSubCategory, setSelectedSubCategory] = useState("");
+	const [selectedEventDate, setSelectedEventDate] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
 	const [mainCategories, setMainCategories] = useState<string[]>([]);
@@ -52,7 +53,25 @@ export default function ReportsPage() {
 			const data = await response.json();
 
 			if (data.success) {
-				setReports(data.reports || []);
+				let fetchedReports = data.reports || [];
+				
+				// Client-side filter by event date if selected
+				if (selectedEventDate) {
+					fetchedReports = fetchedReports.filter((report: ReportData) => {
+						if (!report.EventDate) return false;
+						const reportDate = new Date(report.EventDate).toISOString().split('T')[0];
+						return reportDate === selectedEventDate;
+					});
+				}
+				
+				// Sort by EventDate DESC (latest first) - default sort
+				fetchedReports.sort((a: ReportData, b: ReportData) => {
+					const dateA = a.EventDate ? new Date(a.EventDate).getTime() : 0;
+					const dateB = b.EventDate ? new Date(b.EventDate).getTime() : 0;
+					return dateB - dateA; // DESC order
+				});
+				
+				setReports(fetchedReports);
 				
 				// Extract unique categories for filters
 				const uniqueMainCategories = [...new Set(data.reports.map((report: ReportData) => report.MainCategory).filter(Boolean))] as string[];
@@ -122,6 +141,7 @@ export default function ReportsPage() {
 		setSearchTerm("");
 		setSelectedMainCategory("");
 		setSelectedSubCategory("");
+		setSelectedEventDate("");
 		fetchReports();
 	};
 
@@ -344,9 +364,10 @@ export default function ReportsPage() {
 					</div>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+				{/* All Filters in One Row */}
+				<div className="flex flex-wrap items-end gap-3 mb-4">
 					{/* Search Input */}
-					<div className="md:col-span-2">
+					<div className="flex-1 min-w-[250px]">
 						<label className="block text-sm font-medium text-gray-700 mb-2">Search Reports</label>
 						<div className="relative">
 							<input
@@ -354,19 +375,19 @@ export default function ReportsPage() {
 								placeholder="Search by title or description..."
 								value={searchTerm}
 								onChange={(e) => setSearchTerm(e.target.value)}
-								className="w-full px-4 py-3 text-gray-900 placeholder-gray-500 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#0b4d2b]/20 focus:border-[#0b4d2b] focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
+								className="w-full px-4 py-2.5 text-gray-900 placeholder-gray-500 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#0b4d2b]/20 focus:border-[#0b4d2b] focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
 								onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
 							/>
 						</div>
 					</div>
 
 					{/* Main Category Filter */}
-					<div>
+					<div className="min-w-[180px]">
 						<label className="block text-sm font-medium text-gray-700 mb-2">Main Category</label>
 						<select
 							value={selectedMainCategory}
 							onChange={(e) => setSelectedMainCategory(e.target.value)}
-							className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
 						>
 							<option value="">All Categories</option>
 							{mainCategories.map((category) => (
@@ -378,12 +399,12 @@ export default function ReportsPage() {
 					</div>
 
 					{/* Sub Category Filter */}
-					<div>
+					<div className="min-w-[180px]">
 						<label className="block text-sm font-medium text-gray-700 mb-2">Sub Category</label>
 						<select
 							value={selectedSubCategory}
 							onChange={(e) => setSelectedSubCategory(e.target.value)}
-							className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
 						>
 							<option value="">All Sub Categories</option>
 							{subCategories.map((category) => (
@@ -393,17 +414,28 @@ export default function ReportsPage() {
 							))}
 						</select>
 					</div>
-				</div>
 
-				{/* Search Button */}
-				<div className="flex justify-end">
-					<button
-						onClick={handleSearch}
-						className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
-					>
-						<Filter className="h-4 w-4 mr-2" />
-						Apply Filters
-					</button>
+					{/* Event Date Filter */}
+					<div className="min-w-[180px]">
+						<label className="block text-sm font-medium text-gray-700 mb-2">Event Date</label>
+						<input
+							type="date"
+							value={selectedEventDate}
+							onChange={(e) => setSelectedEventDate(e.target.value)}
+							className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+						/>
+					</div>
+
+					{/* Search Button */}
+					<div className="min-w-[140px]">
+						<button
+							onClick={handleSearch}
+							className="w-full inline-flex items-center justify-center px-5 py-2.5 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
+						>
+							<Filter className="h-4 w-4 mr-2" />
+							Apply
+						</button>
+					</div>
 				</div>
 			</div>
 
@@ -426,7 +458,7 @@ export default function ReportsPage() {
 							key={index}
 							className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
 						>
-							<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-6 gap-4">
+							<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-5 gap-4">
 								{/* Left Section: File Icon, Type, and Report Name */}
 								<div className="flex items-center space-x-4 flex-1 min-w-0">
 									<div className="flex items-center space-x-3 flex-shrink-0">
@@ -440,7 +472,7 @@ export default function ReportsPage() {
 										</div>
 									</div>
 									<div className="flex-1 min-w-0">
-										<h3 className="text-lg font-semibold text-gray-900 truncate mb-1">
+										<h3 className="text-lg text-gray-900 truncate mb-1">
 											{report.ReportTitle}
 										</h3>
 										{report.Description && (
@@ -456,19 +488,19 @@ export default function ReportsPage() {
 									{report.MainCategory && (
 										<div className="flex flex-col">
 											<span className="text-xs font-medium text-gray-500 mb-1">Category</span>
-											<span className="text-sm font-semibold text-gray-900">{report.MainCategory}</span>
+											<span className="text-sm text-gray-900">{report.MainCategory}</span>
 										</div>
 									)}
 									{report.SubCategory && (
 										<div className="flex flex-col">
 											<span className="text-xs font-medium text-gray-500 mb-1">Sub Category</span>
-											<span className="text-sm font-semibold text-gray-900">{report.SubCategory}</span>
+											<span className="text-sm text-gray-900">{report.SubCategory}</span>
 										</div>
 									)}
 									{report.EventDate && (
 										<div className="flex flex-col">
 											<span className="text-xs font-medium text-gray-500 mb-1">Date</span>
-											<span className="text-sm font-semibold text-gray-900">{formatDate(report.EventDate)}</span>
+											<span className="text-sm text-gray-900">{formatDate(report.EventDate)}</span>
 										</div>
 									)}
 								</div>
