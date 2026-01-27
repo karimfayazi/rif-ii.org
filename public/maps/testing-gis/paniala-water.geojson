@@ -1,0 +1,152 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PWD Tubewell",
+        "FolderPath": "Paniala_Water_Supply_Data/Paniala_Water_Supply_Data",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88879401700007,
+          32.24407078300004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Jalar TW",
+        "FolderPath": "Paniala_Water_Supply_Data/Paniala_Water_Supply_Data",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89148490100007,
+          32.246533699000054
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Akber TW",
+        "FolderPath": "Paniala_Water_Supply_Data/Paniala_Water_Supply_Data",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89215230000008,
+          32.24469509900007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Sharki Khel 1",
+        "FolderPath": "Paniala_Water_Supply_Data/Paniala_Water_Supply_Data",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88048018100005,
+          32.235615661000054
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Sharki Khel 2",
+        "FolderPath": "Paniala_Water_Supply_Data/Paniala_Water_Supply_Data",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87993220000004,
+          32.23899139900004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OHR",
+        "FolderPath": "Paniala_Water_Supply_Data/Paniala_Water_Supply_Data",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88876341700006,
+          32.24420927700004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PHED Tube Well",
+        "FolderPath": "Paniala_Water_Supply_Data/Paniala_Water_Supply_Data",
+        "SymbolID": 3,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88854376800003,
+          32.244196715000044
+        ]
+      }
+    }
+  ]
+}

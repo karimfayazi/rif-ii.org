@@ -1,0 +1,541 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00699151821144
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87731257200005,
+            32.243136338000056
+          ],
+          [
+            70.87735783600004,
+            32.243026428000064
+          ],
+          [
+            70.87776583100003,
+            32.24252235300003
+          ],
+          [
+            70.87851255400005,
+            32.241985689000046
+          ],
+          [
+            70.87901429700008,
+            32.24165060900003
+          ],
+          [
+            70.87929726700008,
+            32.24122580200003
+          ],
+          [
+            70.87989477200006,
+            32.24027574300004
+          ],
+          [
+            70.88029941200006,
+            32.23976080600005
+          ],
+          [
+            70.88044500400008,
+            32.23916637200006
+          ],
+          [
+            70.88051225100008,
+            32.23881619000008
+          ],
+          [
+            70.88024878600004,
+            32.23824956400006
+          ],
+          [
+            70.88040226700008,
+            32.23808434000006
+          ],
+          [
+            70.88067471400007,
+            32.23755582100006
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00181627175967
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87489219800005,
+            32.24544681500004
+          ],
+          [
+            70.87561629800007,
+            32.244960640000045
+          ],
+          [
+            70.87604531000005,
+            32.244617289000075
+          ],
+          [
+            70.87630608800004,
+            32.24432113200004
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.0183573598741
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87505360900008,
+            32.24563201800004
+          ],
+          [
+            70.87565120300007,
+            32.245431634000056
+          ],
+          [
+            70.87582702900005,
+            32.24532689100005
+          ],
+          [
+            70.87611281300008,
+            32.24534122500006
+          ],
+          [
+            70.87670845700006,
+            32.24545339100007
+          ],
+          [
+            70.87852874200007,
+            32.24571870600005
+          ],
+          [
+            70.87966379300008,
+            32.245998487000065
+          ],
+          [
+            70.88098244000008,
+            32.246426419000045
+          ],
+          [
+            70.88116557700005,
+            32.246489180000026
+          ],
+          [
+            70.88166898200006,
+            32.24649670800005
+          ],
+          [
+            70.88218347400004,
+            32.246496473000036
+          ],
+          [
+            70.88266629700007,
+            32.24641664100005
+          ],
+          [
+            70.88298946600008,
+            32.246426290000045
+          ],
+          [
+            70.88320704700004,
+            32.246492698000054
+          ],
+          [
+            70.88602908700005,
+            32.24728483400003
+          ],
+          [
+            70.88721870900008,
+            32.24754862800006
+          ],
+          [
+            70.88757021200007,
+            32.24757678900005
+          ],
+          [
+            70.88887351100004,
+            32.24779065600006
+          ],
+          [
+            70.88954227100004,
+            32.24792266500003
+          ],
+          [
+            70.89048518800007,
+            32.24807749000007
+          ],
+          [
+            70.89135808400005,
+            32.24805224200003
+          ],
+          [
+            70.89194580800006,
+            32.24793652900007
+          ],
+          [
+            70.89246363600006,
+            32.247529461000056
+          ],
+          [
+            70.89272230400007,
+            32.247234390000074
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00714694560374
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.89482784200004,
+            32.24373765000007
+          ],
+          [
+            70.89463681900008,
+            32.24363148100008
+          ],
+          [
+            70.89417977600004,
+            32.24359462600006
+          ],
+          [
+            70.89407336100004,
+            32.24352455400003
+          ],
+          [
+            70.89377354400006,
+            32.24314431400006
+          ],
+          [
+            70.89344756000008,
+            32.243062450000025
+          ],
+          [
+            70.89305482900005,
+            32.242937821000055
+          ],
+          [
+            70.89256570800006,
+            32.24277213500005
+          ],
+          [
+            70.89214494800007,
+            32.24267978200004
+          ],
+          [
+            70.89148355200007,
+            32.242615398000055
+          ],
+          [
+            70.89101048900005,
+            32.24261771400006
+          ],
+          [
+            70.89018837900005,
+            32.242651554000076
+          ],
+          [
+            70.88940228300004,
+            32.24258241700005
+          ],
+          [
+            70.88894088900008,
+            32.24246954500006
+          ],
+          [
+            70.88851960900007,
+            32.24225473800004
+          ],
+          [
+            70.88878314900006,
+            32.24187103400004
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00305502822083
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88420401100007,
+            32.240948771000035
+          ],
+          [
+            70.88495066000007,
+            32.241134757000054
+          ],
+          [
+            70.88543696700003,
+            32.24123034400003
+          ],
+          [
+            70.88555306900008,
+            32.24100714400004
+          ],
+          [
+            70.88546684500005,
+            32.24054708700004
+          ],
+          [
+            70.88532396300008,
+            32.24027365300003
+          ],
+          [
+            70.88543407700007,
+            32.23999222700007
+          ],
+          [
+            70.88573301500003,
+            32.23995420500006
+          ],
+          [
+            70.88579696800008,
+            32.239809474000026
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.000912704823949
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.89395624300005,
+            32.24442085600003
+          ],
+          [
+            70.89395823700005,
+            32.24428684900005
+          ],
+          [
+            70.89398864400005,
+            32.24376270800008
+          ],
+          [
+            70.89416116900003,
+            32.24357675400006
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.000450402611027
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87731099200005,
+            32.24313756500004
+          ],
+          [
+            70.87775420600008,
+            32.243217714000025
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00106595253815
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87806908500005,
+            32.24230432400003
+          ],
+          [
+            70.87805165000003,
+            32.242606324000064
+          ],
+          [
+            70.87808582700006,
+            32.242843943000025
+          ],
+          [
+            70.87792648000004,
+            32.24290021000007
+          ],
+          [
+            70.87784511100006,
+            32.243017456000075
+          ],
+          [
+            70.87778931800005,
+            32.243221652000045
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00191899934788
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87881291100007,
+            32.24578046400006
+          ],
+          [
+            70.87894267200005,
+            32.24553072200007
+          ],
+          [
+            70.87894577500003,
+            32.24552386200003
+          ],
+          [
+            70.87914878500004,
+            32.245264156000076
+          ],
+          [
+            70.87918738200005,
+            32.24506091400008
+          ],
+          [
+            70.87919019600008,
+            32.24505472900006
+          ],
+          [
+            70.87926401300007,
+            32.24476446500006
+          ],
+          [
+            70.87953082100006,
+            32.24445032600005
+          ],
+          [
+            70.87960977700004,
+            32.24443623900004
+          ],
+          [
+            70.87965949200003,
+            32.244298334000064
+          ],
+          [
+            70.87968352100006,
+            32.24415202200004
+          ]
+        ]
+      }
+    }
+  ]
+}

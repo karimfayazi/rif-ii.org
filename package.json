@@ -13,6 +13,7 @@
     "start:next": "next start -H 0.0.0.0 -p 3000",
     "start:server": "node server.js",
     "gis:convert": "node scripts/convert-shapefiles-to-geojson.js",
+    "gis:convert-testing": "node scripts/convert-testing-gis.js",
     "lint": "eslint",
     "port:check": "netstat -ano | findstr :3000",
     "port:kill": "node scripts/free-port.js 3000",

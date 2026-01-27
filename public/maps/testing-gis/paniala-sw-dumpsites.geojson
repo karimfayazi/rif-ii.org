@@ -1,0 +1,1286 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88309987800005,
+          32.24642678500004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88312124200007,
+          32.246277476000046
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88183100400005,
+          32.246495828000036
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88131510800008,
+          32.24647175300004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88114121900003,
+          32.246442528000046
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88019313000007,
+          32.246177611000064
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87952228400007,
+          32.24595278900006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87899042800007,
+          32.245785487000035
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87820177300006,
+          32.24565403400004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87674060500007,
+          32.24543683300004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87653940200005,
+          32.24502235800003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87930436300007,
+          32.24139826700008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87928950600008,
+          32.24105733500005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87935444200008,
+          32.24099802100005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "EDP / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/EDP / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88008596500003,
+          32.23990117000005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88028301800006,
+          32.23935478200008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88032976500006,
+          32.23858088600008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88259886100008,
+          32.24096677700004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88222712400005,
+          32.24042659400004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88109206600006,
+          32.23932445500003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88020040800006,
+          32.240470293000044
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP (on storm drain)",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD",
+        "SymbolID": 3,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88099669400003,
+          32.24172972100007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD (on storm drain)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88102719400007,
+          32.24165724900007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88109187000003,
+          32.24132883500005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88088098900005,
+          32.24095830700003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88011256700008,
+          32.24241374600007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87999294200006,
+          32.242273202000035
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87990129000008,
+          32.24256789000003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87780539900007,
+          32.24243788800004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87823931700007,
+          32.24211519700003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87687199300007,
+          32.24352855200004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP Commercial Area",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87650305000005,
+          32.24395247900003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP Commercial Area",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87582981900005,
+          32.24469944000003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "EDS",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 4,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.86606997200005,
+          32.244496999000035
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "EDS",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 4,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.86838097200007,
+          32.24656697100005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP Market Area",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 5,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87697232700003,
+          32.24406176400004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP Market Area",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 5,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87695625800006,
+          32.24469771300005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 5,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87947384300003,
+          32.24454614500007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "EDS and PDS by Community - (Need further Assessment)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 4,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88597948600005,
+          32.24598341700005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88497161100008,
+          32.24259183200007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88529071300007,
+          32.24223426300006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88460417500005,
+          32.24107609200007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88299558300008,
+          32.24272155500006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88140001600004,
+          32.24253076200006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88719073100003,
+          32.243607403000055
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 5,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88714597200004,
+          32.24434277700004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88822172200008,
+          32.24333188800006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88870238900006,
+          32.243675221000046
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 7,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89018247200005,
+          32.24430083200008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89070891700004,
+          32.244140610000045
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89196775000005,
+          32.244575499000064
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89228819400006,
+          32.24418638800006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89279172200008,
+          32.24426269300005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89378355600007,
+          32.24443052700008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD (Filling)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 8,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89303037300004,
+          32.24681694800006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD (Filling)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 8,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89279596800003,
+          32.24711208000008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89226530600007,
+          32.24695586000007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89132688900008,
+          32.246574388000056
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD",
+        "SymbolID": 7,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88722991700007,
+          32.24669263800007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Organic Waste (Manure)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 9,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88322396200005,
+          32.24644847900004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Organic Waste (Manure)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 9,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88545988900006,
+          32.245368943000074
+        ]
+      }
+    }
+  ]
+}

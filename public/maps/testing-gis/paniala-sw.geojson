@@ -1,0 +1,2994 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88309987800005,
+          32.24642678500004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88312124200007,
+          32.246277476000046
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88183100400005,
+          32.246495828000036
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88131510800008,
+          32.24647175300004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88114121900003,
+          32.246442528000046
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88019313000007,
+          32.246177611000064
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87952228400007,
+          32.24595278900006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87899042800007,
+          32.245785487000035
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87820177300006,
+          32.24565403400004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87674060500007,
+          32.24543683300004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87653940200005,
+          32.24502235800003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87930436300007,
+          32.24139826700008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87928950600008,
+          32.24105733500005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87935444200008,
+          32.24099802100005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "EDP / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/EDP / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88008596500003,
+          32.23990117000005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88028301800006,
+          32.23935478200008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88032976500006,
+          32.23858088600008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88259886100008,
+          32.24096677700004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88222712400005,
+          32.24042659400004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88109206600006,
+          32.23932445500003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88020040800006,
+          32.240470293000044
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP (on storm drain)",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD",
+        "SymbolID": 3,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88099669400003,
+          32.24172972100007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD (on storm drain)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88102719400007,
+          32.24165724900007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88109187000003,
+          32.24132883500005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88088098900005,
+          32.24095830700003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD",
+        "SymbolID": 0,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88011256700008,
+          32.24241374600007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 1,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87999294200006,
+          32.242273202000035
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87990129000008,
+          32.24256789000003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87780539900007,
+          32.24243788800004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87823931700007,
+          32.24211519700003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87687199300007,
+          32.24352855200004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP Commercial Area",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87650305000005,
+          32.24395247900003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP Commercial Area",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 2,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87582981900005,
+          32.24469944000003
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "EDS",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 4,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.86606997200005,
+          32.244496999000035
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "EDS",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 4,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.86838097200007,
+          32.24656697100005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP Market Area",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 5,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87697232700003,
+          32.24406176400004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP Market Area",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 5,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87695625800006,
+          32.24469771300005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 5,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.87947384300003,
+          32.24454614500007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "EDS and PDS by Community - (Need further Assessment)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 4,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88597948600005,
+          32.24598341700005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88497161100008,
+          32.24259183200007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88529071300007,
+          32.24223426300006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88460417500005,
+          32.24107609200007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88299558300008,
+          32.24272155500006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88140001600004,
+          32.24253076200006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD / ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88719073100003,
+          32.243607403000055
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 5,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88714597200004,
+          32.24434277700004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88822172200008,
+          32.24333188800006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88870238900006,
+          32.243675221000046
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 7,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89018247200005,
+          32.24430083200008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89070891700004,
+          32.244140610000045
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89196775000005,
+          32.244575499000064
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89228819400006,
+          32.24418638800006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89279172200008,
+          32.24426269300005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89378355600007,
+          32.24443052700008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD (Filling)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 8,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89303037300004,
+          32.24681694800006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD (Filling)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 8,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89279596800003,
+          32.24711208000008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89226530600007,
+          32.24695586000007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "ECP / PCP",
+        "FolderPath": "Paniala_DS/Paniala_DS/ECP",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.89132688900008,
+          32.246574388000056
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "OD / ECP",
+        "FolderPath": "Paniala_DS/Paniala_DS/OD",
+        "SymbolID": 7,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88722991700007,
+          32.24669263800007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Organic Waste (Manure)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 9,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88322396200005,
+          32.24644847900004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Organic Waste (Manure)",
+        "FolderPath": "Paniala_DS/Paniala_DS",
+        "SymbolID": 9,
+        "AltMode": -1,
+        "Base": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "HasLabel": 0,
+        "LabelID": -1
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.88545988900006,
+          32.245368943000074
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00128832058367
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88387356100003,
+            32.24647661600005
+          ],
+          [
+            70.88394211500008,
+            32.246015562000025
+          ],
+          [
+            70.88396792400005,
+            32.24581035700004
+          ],
+          [
+            70.88403417000006,
+            32.24553868100003
+          ],
+          [
+            70.88407009900004,
+            32.24520486900008
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.0013737312526
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88318349300005,
+            32.24648641300007
+          ],
+          [
+            70.88325240000006,
+            32.24626809800003
+          ],
+          [
+            70.88328255900007,
+            32.24595100000005
+          ],
+          [
+            70.88341097700004,
+            32.24582232100005
+          ],
+          [
+            70.88345746400006,
+            32.24560375500005
+          ],
+          [
+            70.88348898600003,
+            32.24518391600003
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00266925094342
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.89030247200003,
+            32.246000700000025
+          ],
+          [
+            70.88989284600007,
+            32.245706916000074
+          ],
+          [
+            70.88926836900004,
+            32.24532863500008
+          ],
+          [
+            70.88892785300004,
+            32.245100458000024
+          ],
+          [
+            70.88862241300006,
+            32.24485999800004
+          ],
+          [
+            70.88803354500004,
+            32.244618622000075
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00606560486077
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87724868100008,
+            32.240213039000025
+          ],
+          [
+            70.87756907900007,
+            32.240390726000044
+          ],
+          [
+            70.87785929300003,
+            32.24049413800003
+          ],
+          [
+            70.87799824400008,
+            32.240586681000025
+          ],
+          [
+            70.87820764600008,
+            32.24079157800003
+          ],
+          [
+            70.87842754200005,
+            32.241018739000026
+          ],
+          [
+            70.87864452600007,
+            32.24114298600006
+          ],
+          [
+            70.87903283000003,
+            32.24139455400007
+          ],
+          [
+            70.87918069400007,
+            32.24148421800004
+          ],
+          [
+            70.87928650200007,
+            32.24164875900004
+          ],
+          [
+            70.87938243700006,
+            32.24172260000006
+          ],
+          [
+            70.87948481300003,
+            32.24175277000006
+          ],
+          [
+            70.87970246300006,
+            32.241797560000066
+          ],
+          [
+            70.88001060900007,
+            32.241766674000075
+          ],
+          [
+            70.88037383000005,
+            32.24182041200004
+          ],
+          [
+            70.88064765000007,
+            32.24178368500003
+          ],
+          [
+            70.88095465300006,
+            32.241740151000045
+          ],
+          [
+            70.88096721100004,
+            32.24167521900006
+          ],
+          [
+            70.88111867800006,
+            32.241617148000046
+          ],
+          [
+            70.88148857400006,
+            32.241459389000056
+          ],
+          [
+            70.88181278100006,
+            32.241307266000035
+          ],
+          [
+            70.88189253200005,
+            32.24126986400006
+          ],
+          [
+            70.88203419600006,
+            32.241106984000055
+          ],
+          [
+            70.88224780500008,
+            32.24108119700003
+          ],
+          [
+            70.88253713600005,
+            32.24096213200005
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00166730669958
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88095907800005,
+            32.24176296300004
+          ],
+          [
+            70.88102611600004,
+            32.242000835000056
+          ],
+          [
+            70.88131362300004,
+            32.24206211100005
+          ],
+          [
+            70.88153095600006,
+            32.24205033100003
+          ],
+          [
+            70.88170120700005,
+            32.241970571000024
+          ],
+          [
+            70.88182544400007,
+            32.24190392000003
+          ],
+          [
+            70.88181350500008,
+            32.24158107100004
+          ],
+          [
+            70.88206993000006,
+            32.241575383000054
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00135143039705
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.89058498500003,
+            32.24414515700005
+          ],
+          [
+            70.89120899900007,
+            32.24405038300006
+          ],
+          [
+            70.89192923900004,
+            32.24405580200005
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00244415846924
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.89450520300005,
+            32.24459891600003
+          ],
+          [
+            70.89337573300008,
+            32.24436110200003
+          ],
+          [
+            70.89269852100006,
+            32.24420210000005
+          ],
+          [
+            70.89211469800006,
+            32.24409102100003
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00448114967191
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87578011100004,
+            32.24343706600007
+          ],
+          [
+            70.87599894600004,
+            32.243543385000066
+          ],
+          [
+            70.87614429900003,
+            32.24361378800006
+          ],
+          [
+            70.87629809700007,
+            32.24367552000007
+          ],
+          [
+            70.87629283100006,
+            32.24369989100006
+          ],
+          [
+            70.87621092900008,
+            32.24376112300007
+          ],
+          [
+            70.87611155300004,
+            32.24382172700007
+          ],
+          [
+            70.87606737400006,
+            32.243869353000036
+          ],
+          [
+            70.87602157800006,
+            32.243934883000065
+          ],
+          [
+            70.87616319100005,
+            32.244058249000034
+          ],
+          [
+            70.87612712600003,
+            32.24412167000003
+          ],
+          [
+            70.87628406400006,
+            32.24425228900003
+          ],
+          [
+            70.87629387100003,
+            32.24432316600007
+          ],
+          [
+            70.87636512000006,
+            32.244358946000034
+          ],
+          [
+            70.87674671300005,
+            32.244546581000066
+          ],
+          [
+            70.87695690100003,
+            32.24463373100008
+          ],
+          [
+            70.87709094300004,
+            32.244689160000064
+          ],
+          [
+            70.87718163800008,
+            32.24473350200003
+          ],
+          [
+            70.87757675600005,
+            32.24490371700006
+          ],
+          [
+            70.87768619300005,
+            32.244931234000035
+          ],
+          [
+            70.87777862000007,
+            32.24496559800008
+          ],
+          [
+            70.87793795200008,
+            32.245005922000075
+          ],
+          [
+            70.87811913300004,
+            32.245049857000026
+          ],
+          [
+            70.87826602800004,
+            32.245129718000044
+          ],
+          [
+            70.87854010300003,
+            32.24525291000003
+          ],
+          [
+            70.87824430500007,
+            32.24571299100006
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00196778958195
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87629445900006,
+            32.24426297500003
+          ],
+          [
+            70.87669576600007,
+            32.243848738000054
+          ],
+          [
+            70.87678406500004,
+            32.24371031900006
+          ],
+          [
+            70.87695620700003,
+            32.24354066200004
+          ],
+          [
+            70.87712994400005,
+            32.243447597000056
+          ],
+          [
+            70.87719945500004,
+            32.24335022400004
+          ],
+          [
+            70.87731811300006,
+            32.24315239900005
+          ],
+          [
+            70.87747672200004,
+            32.24317425000004
+          ],
+          [
+            70.87762041700006,
+            32.24320683700006
+          ],
+          [
+            70.87775034300006,
+            32.24321665900004
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00167249144815
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88183012900004,
+            32.24656453800003
+          ],
+          [
+            70.88194431300008,
+            32.246125982000024
+          ],
+          [
+            70.88198500200008,
+            32.24570175400004
+          ],
+          [
+            70.88204262200003,
+            32.24528518100004
+          ],
+          [
+            70.88203900400003,
+            32.24491259800004
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00168832400257
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88693542900006,
+            32.24726894100007
+          ],
+          [
+            70.88702264700004,
+            32.246994319000066
+          ],
+          [
+            70.88718865200008,
+            32.246419358000026
+          ],
+          [
+            70.88742728900007,
+            32.24565395800005
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.0019817438062
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88129598700004,
+            32.24651432200005
+          ],
+          [
+            70.88137506300006,
+            32.24613382100006
+          ],
+          [
+            70.88143330900004,
+            32.24595259400007
+          ],
+          [
+            70.88144527100008,
+            32.245750874000066
+          ],
+          [
+            70.88141652800005,
+            32.24531929200003
+          ],
+          [
+            70.88123089300007,
+            32.24525963200006
+          ],
+          [
+            70.88118457300004,
+            32.24496150300007
+          ],
+          [
+            70.88104269800004,
+            32.24496154900004
+          ],
+          [
+            70.88103564500005,
+            32.24483216500005
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.000498436620488
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87806459900008,
+            32.24564645400005
+          ],
+          [
+            70.87825923900004,
+            32.245187592000036
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00245838278917
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87732824700004,
+            32.243123825000055
+          ],
+          [
+            70.87773525600005,
+            32.242608344000075
+          ],
+          [
+            70.87816366400006,
+            32.24221244600005
+          ],
+          [
+            70.87858821800006,
+            32.241981288000034
+          ],
+          [
+            70.87888242800005,
+            32.241771966000044
+          ],
+          [
+            70.87914362500004,
+            32.241504588000055
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.000874963582335
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87666314200004,
+            32.24545756900005
+          ],
+          [
+            70.87695316100007,
+            32.24463206900003
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00630975983524
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.89269432900005,
+            32.24724863200004
+          ],
+          [
+            70.89256896900008,
+            32.24713428800004
+          ],
+          [
+            70.89232266300007,
+            32.247006630000044
+          ],
+          [
+            70.89185383200004,
+            32.24685109300003
+          ],
+          [
+            70.89137115800008,
+            32.24667554200005
+          ],
+          [
+            70.89106690600005,
+            32.24647429800007
+          ],
+          [
+            70.89082046500005,
+            32.246313110000074
+          ],
+          [
+            70.89030319200003,
+            32.246013068000025
+          ],
+          [
+            70.89053300800003,
+            32.24560427000006
+          ],
+          [
+            70.89070252400006,
+            32.245104163000065
+          ],
+          [
+            70.89057676500005,
+            32.24496073100005
+          ],
+          [
+            70.89059529600007,
+            32.24467571100007
+          ],
+          [
+            70.89058680900007,
+            32.244148911000025
+          ],
+          [
+            70.89007929200005,
+            32.24432342500006
+          ],
+          [
+            70.88962178900005,
+            32.244368767000026
+          ],
+          [
+            70.88902734400006,
+            32.244458278000025
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00226604550662
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.89134689200006,
+            32.24654693800005
+          ],
+          [
+            70.89148946500006,
+            32.24633586300007
+          ],
+          [
+            70.89174435300004,
+            32.24560509100007
+          ],
+          [
+            70.89219410600003,
+            32.245658347000074
+          ],
+          [
+            70.89243885500008,
+            32.245660265000026
+          ],
+          [
+            70.89295219100006,
+            32.245826985000065
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00165210499547
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88557342600006,
+            32.24689572900007
+          ],
+          [
+            70.88572402400007,
+            32.24659315100007
+          ],
+          [
+            70.88583657400005,
+            32.24633895000005
+          ],
+          [
+            70.88576767100005,
+            32.24613732300003
+          ],
+          [
+            70.88574835500003,
+            32.24593506700006
+          ],
+          [
+            70.88585364700003,
+            32.245790197000076
+          ],
+          [
+            70.88601031300004,
+            32.24571623800006
+          ],
+          [
+            70.88597653300008,
+            32.24564151000004
+          ],
+          [
+            70.88596873900008,
+            32.24545615300008
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00171406352913
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88595513200005,
+            32.245461102000036
+          ],
+          [
+            70.88578011000004,
+            32.24546712500006
+          ],
+          [
+            70.88565133100008,
+            32.24545157600005
+          ],
+          [
+            70.88567300200003,
+            32.24517273200007
+          ],
+          [
+            70.88568387600003,
+            32.24506072600008
+          ],
+          [
+            70.88566560400005,
+            32.244804997000074
+          ],
+          [
+            70.88561365800007,
+            32.24454313600006
+          ],
+          [
+            70.88560706500004,
+            32.24443089500005
+          ],
+          [
+            70.88570639900007,
+            32.244403857000066
+          ],
+          [
+            70.88575356900003,
+            32.24432210100008
+          ],
+          [
+            70.88577159200008,
+            32.24413909500004
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00235477190897
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.89338372700007,
+            32.246188854000025
+          ],
+          [
+            70.89311265700007,
+            32.24607123800007
+          ],
+          [
+            70.89296508000007,
+            32.24590795100005
+          ],
+          [
+            70.89295690300008,
+            32.245796178000035
+          ],
+          [
+            70.89303224400004,
+            32.24547734200007
+          ],
+          [
+            70.89299543200008,
+            32.24543443300007
+          ],
+          [
+            70.89296176500005,
+            32.24528692700005
+          ],
+          [
+            70.89287991800006,
+            32.24524360800007
+          ],
+          [
+            70.89272592800006,
+            32.24521228800006
+          ],
+          [
+            70.89287686700004,
+            32.24428254000003
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00173110535668
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88250002700005,
+            32.240944382000066
+          ],
+          [
+            70.88272294100005,
+            32.24090397900005
+          ],
+          [
+            70.88348149400008,
+            32.24094314200005
+          ],
+          [
+            70.88422636800004,
+            32.240956632000064
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Existing Drain/Existing Drain",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00191896828606
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88901528800005,
+            32.24443667300005
+          ],
+          [
+            70.88896577100007,
+            32.24416586500007
+          ],
+          [
+            70.88881340100005,
+            32.24374200400007
+          ],
+          [
+            70.88853477400005,
+            32.243434742000034
+          ],
+          [
+            70.88822537400006,
+            32.24327570600008
+          ],
+          [
+            70.88819303400004,
+            32.24284632900003
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00699151821144
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87731257200005,
+            32.243136338000056
+          ],
+          [
+            70.87735783600004,
+            32.243026428000064
+          ],
+          [
+            70.87776583100003,
+            32.24252235300003
+          ],
+          [
+            70.87851255400005,
+            32.241985689000046
+          ],
+          [
+            70.87901429700008,
+            32.24165060900003
+          ],
+          [
+            70.87929726700008,
+            32.24122580200003
+          ],
+          [
+            70.87989477200006,
+            32.24027574300004
+          ],
+          [
+            70.88029941200006,
+            32.23976080600005
+          ],
+          [
+            70.88044500400008,
+            32.23916637200006
+          ],
+          [
+            70.88051225100008,
+            32.23881619000008
+          ],
+          [
+            70.88024878600004,
+            32.23824956400006
+          ],
+          [
+            70.88040226700008,
+            32.23808434000006
+          ],
+          [
+            70.88067471400007,
+            32.23755582100006
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00181627175967
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87489219800005,
+            32.24544681500004
+          ],
+          [
+            70.87561629800007,
+            32.244960640000045
+          ],
+          [
+            70.87604531000005,
+            32.244617289000075
+          ],
+          [
+            70.87630608800004,
+            32.24432113200004
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.0183573598741
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87505360900008,
+            32.24563201800004
+          ],
+          [
+            70.87565120300007,
+            32.245431634000056
+          ],
+          [
+            70.87582702900005,
+            32.24532689100005
+          ],
+          [
+            70.87611281300008,
+            32.24534122500006
+          ],
+          [
+            70.87670845700006,
+            32.24545339100007
+          ],
+          [
+            70.87852874200007,
+            32.24571870600005
+          ],
+          [
+            70.87966379300008,
+            32.245998487000065
+          ],
+          [
+            70.88098244000008,
+            32.246426419000045
+          ],
+          [
+            70.88116557700005,
+            32.246489180000026
+          ],
+          [
+            70.88166898200006,
+            32.24649670800005
+          ],
+          [
+            70.88218347400004,
+            32.246496473000036
+          ],
+          [
+            70.88266629700007,
+            32.24641664100005
+          ],
+          [
+            70.88298946600008,
+            32.246426290000045
+          ],
+          [
+            70.88320704700004,
+            32.246492698000054
+          ],
+          [
+            70.88602908700005,
+            32.24728483400003
+          ],
+          [
+            70.88721870900008,
+            32.24754862800006
+          ],
+          [
+            70.88757021200007,
+            32.24757678900005
+          ],
+          [
+            70.88887351100004,
+            32.24779065600006
+          ],
+          [
+            70.88954227100004,
+            32.24792266500003
+          ],
+          [
+            70.89048518800007,
+            32.24807749000007
+          ],
+          [
+            70.89135808400005,
+            32.24805224200003
+          ],
+          [
+            70.89194580800006,
+            32.24793652900007
+          ],
+          [
+            70.89246363600006,
+            32.247529461000056
+          ],
+          [
+            70.89272230400007,
+            32.247234390000074
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00714694560374
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.89482784200004,
+            32.24373765000007
+          ],
+          [
+            70.89463681900008,
+            32.24363148100008
+          ],
+          [
+            70.89417977600004,
+            32.24359462600006
+          ],
+          [
+            70.89407336100004,
+            32.24352455400003
+          ],
+          [
+            70.89377354400006,
+            32.24314431400006
+          ],
+          [
+            70.89344756000008,
+            32.243062450000025
+          ],
+          [
+            70.89305482900005,
+            32.242937821000055
+          ],
+          [
+            70.89256570800006,
+            32.24277213500005
+          ],
+          [
+            70.89214494800007,
+            32.24267978200004
+          ],
+          [
+            70.89148355200007,
+            32.242615398000055
+          ],
+          [
+            70.89101048900005,
+            32.24261771400006
+          ],
+          [
+            70.89018837900005,
+            32.242651554000076
+          ],
+          [
+            70.88940228300004,
+            32.24258241700005
+          ],
+          [
+            70.88894088900008,
+            32.24246954500006
+          ],
+          [
+            70.88851960900007,
+            32.24225473800004
+          ],
+          [
+            70.88878314900006,
+            32.24187103400004
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00305502822083
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.88420401100007,
+            32.240948771000035
+          ],
+          [
+            70.88495066000007,
+            32.241134757000054
+          ],
+          [
+            70.88543696700003,
+            32.24123034400003
+          ],
+          [
+            70.88555306900008,
+            32.24100714400004
+          ],
+          [
+            70.88546684500005,
+            32.24054708700004
+          ],
+          [
+            70.88532396300008,
+            32.24027365300003
+          ],
+          [
+            70.88543407700007,
+            32.23999222700007
+          ],
+          [
+            70.88573301500003,
+            32.23995420500006
+          ],
+          [
+            70.88579696800008,
+            32.239809474000026
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.000912704823949
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.89395624300005,
+            32.24442085600003
+          ],
+          [
+            70.89395823700005,
+            32.24428684900005
+          ],
+          [
+            70.89398864400005,
+            32.24376270800008
+          ],
+          [
+            70.89416116900003,
+            32.24357675400006
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.000450402611027
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87731099200005,
+            32.24313756500004
+          ],
+          [
+            70.87775420600008,
+            32.243217714000025
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00106595253815
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87806908500005,
+            32.24230432400003
+          ],
+          [
+            70.87805165000003,
+            32.242606324000064
+          ],
+          [
+            70.87808582700006,
+            32.242843943000025
+          ],
+          [
+            70.87792648000004,
+            32.24290021000007
+          ],
+          [
+            70.87784511100006,
+            32.243017456000075
+          ],
+          [
+            70.87778931800005,
+            32.243221652000045
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Name": "Placemark",
+        "FolderPath": "Drain Proposed by Community/Drain Proposed by Community",
+        "SymbolID": 0,
+        "AltMode": 0,
+        "Base": 0,
+        "Clamped": -1,
+        "Extruded": 0,
+        "Snippet": null,
+        "PopupInfo": "<html xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" xmlns:msxsl=\"urn:schemas-microsoft-com:xslt\">\n<head>\n<META http-equiv=\"Content-Type\" content=\"text/html\">\n<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n</head>\n<body style=\"margin:0",
+        "Shape_Leng": 0.00191899934788
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            70.87881291100007,
+            32.24578046400006
+          ],
+          [
+            70.87894267200005,
+            32.24553072200007
+          ],
+          [
+            70.87894577500003,
+            32.24552386200003
+          ],
+          [
+            70.87914878500004,
+            32.245264156000076
+          ],
+          [
+            70.87918738200005,
+            32.24506091400008
+          ],
+          [
+            70.87919019600008,
+            32.24505472900006
+          ],
+          [
+            70.87926401300007,
+            32.24476446500006
+          ],
+          [
+            70.87953082100006,
+            32.24445032600005
+          ],
+          [
+            70.87960977700004,
+            32.24443623900004
+          ],
+          [
+            70.87965949200003,
+            32.244298334000064
+          ],
+          [
+            70.87968352100006,
+            32.24415202200004
+          ]
+        ]
+      }
+    }
+  ]
+}
