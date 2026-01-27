@@ -1729,13 +1729,8 @@ function OutputProgressChart() {
 			tooltip: {
 				callbacks: {
 					label: function(context) {
-						const index = context.dataIndex;
 						const value = context.parsed.y;
-						const weight = weights[index];
-						return [
-							`Progress: ${value}%`,
-							`Weight: ${weight}`
-						];
+						return `Progress: ${value}%`;
 					}
 				}
 			},
@@ -2379,9 +2374,9 @@ export default function DashboardPage() {
 	return (
 		<div className="space-y-8">
 			{/* Header */}
-			<div>
-				<h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-				<p className="text-gray-600 mt-2">Welcome to the RIF-II MIS Dashboard</p>
+			<div className="space-y-1">
+				<h1 className="text-3xl font-semibold text-gray-900 leading-tight tracking-tight">Dashboard</h1>
+				<p className="text-sm text-gray-600 leading-relaxed">Welcome to the RIF-II MIS Dashboard</p>
 			</div>
 
 		{/* GIS Maps Section */}
@@ -2389,26 +2384,26 @@ export default function DashboardPage() {
 
 		{/* Progress % Section - Three Columns */}
 		<div className="space-y-6">
-			<div className="flex items-center gap-3">
-				<h2 className="text-xl font-bold text-gray-900 tracking-tight">Project Tracking Progress (%)</h2>
-				<p className="text-sm text-gray-500">Monitor and track project completion across all outputs</p>
+			<div className="space-y-1">
+				<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">Project Tracking Progress (%)</h2>
+				<p className="text-sm text-gray-600 leading-relaxed">Monitor and track project completion across all outputs</p>
 			</div>
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* First Chart - Output Progress */}
 				<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
-					<h3 className="text-sm font-semibold text-gray-900 mb-4 text-center">Output Progress</h3>
+					<h3 className="text-base font-medium text-gray-900 leading-snug mb-4 text-center">Output Progress</h3>
 					<OutputProgressChart />
 				</div>
 
 				{/* Second Chart - Sector Wise */}
 				<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
-					<h3 className="text-sm font-semibold text-gray-900 mb-4 text-center">Sector Wise</h3>
+					<h3 className="text-base font-medium text-gray-900 leading-snug mb-4 text-center">Sector Wise</h3>
 					<SectorWiseChart />
 				</div>
 
 				{/* Third Chart - District Wise */}
 				<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
-					<h3 className="text-sm font-semibold text-gray-900 mb-4 text-center">District Wise</h3>
+					<h3 className="text-base font-medium text-gray-900 leading-snug mb-4 text-center">District Wise</h3>
 					<DistrictWiseChart districtData={districtProgressSummary} />
 				</div>
 			</div>
@@ -2417,9 +2412,9 @@ export default function DashboardPage() {
 			{/* Training Dashboard Summary Cards */}
 			{trainingDashboardData && (
 				<div className="space-y-6">
-					<div className="flex items-center gap-3">
-						<h2 className="text-xl font-bold text-gray-900 tracking-tight">Training, Capacity Building & Awareness</h2>
-						<p className="text-sm text-gray-500">Overview of trainings, days and participants (event type wise and district wise).</p>
+					<div className="space-y-1">
+						<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">Training, Capacity Building & Awareness</h2>
+						<p className="text-sm text-gray-600 leading-relaxed">Overview of trainings, days and participants (event type wise and district wise).</p>
 					</div>
 
 					{/* Overall cards */}
@@ -2483,9 +2478,9 @@ export default function DashboardPage() {
 			<div className="bg-gradient-to-r from-[#0b4d2b] to-[#0a3d24] rounded-xl shadow-lg overflow-hidden">
 				<div className="p-6">
 					<div className="flex items-center justify-between">
-						<div>
-							<h2 className="text-2xl font-bold text-white mb-1">Project Activity Picture Gallery (click Picture for detail)</h2>
-							<p className="text-green-100 text-sm">
+						<div className="space-y-1">
+							<h2 className="text-2xl font-semibold text-white leading-snug tracking-tight">Project Activity Picture Gallery (click Picture for detail)</h2>
+							<p className="text-sm text-green-100 leading-relaxed">
 								Displaying {pictures.length} picture{pictures.length !== 1 ? 's' : ''} from your collection
 							</p>
 						</div>
@@ -2507,8 +2502,8 @@ export default function DashboardPage() {
 				{carouselPictures.length === 0 ? (
 					<div className="p-12 text-center bg-white">
 						<ImageIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-						<h3 className="text-lg font-medium text-gray-900 mb-2">No pictures available</h3>
-						<p className="text-gray-600">Pictures will appear here once they are uploaded</p>
+						<h3 className="text-base font-medium text-gray-900 leading-snug mb-2">No pictures available</h3>
+						<p className="text-sm text-gray-600 leading-relaxed">Pictures will appear here once they are uploaded</p>
 					</div>
 				) : (
 					<div className="relative bg-white rounded-xl shadow-sm p-6">
@@ -2595,7 +2590,7 @@ export default function DashboardPage() {
 											<div className="p-4 bg-gradient-to-b from-white via-gray-50/50 to-white border-t border-gray-100">
 												{/* Title */}
 												{picture.FileName && (
-													<h3 className="text-sm font-bold text-gray-900 line-clamp-1 mb-3 group-hover:text-[#0b4d2b] transition-colors duration-300">
+													<h3 className="text-base font-medium text-gray-900 leading-snug line-clamp-1 mb-3 group-hover:text-[#0b4d2b] transition-colors duration-300">
 														{picture.FileName}
 													</h3>
 												)}
@@ -2675,9 +2670,9 @@ export default function DashboardPage() {
 							<div className="p-2 bg-white/20 rounded-lg">
 								<Newspaper className="h-6 w-6 text-white" />
 						</div>
-							<div>
-								<h2 className="text-2xl font-bold text-white">Latest News & Updates [Dummy]</h2>
-								<p className="text-sm text-green-100 mt-1">Stay informed about our latest projects and initiatives</p>
+							<div className="space-y-1">
+								<h2 className="text-2xl font-semibold text-white leading-snug tracking-tight">Latest News & Updates [Dummy]</h2>
+								<p className="text-sm text-green-100 leading-relaxed">Stay informed about our latest projects and initiatives</p>
 						</div>
 						</div>
 						<button
@@ -2727,10 +2722,10 @@ export default function DashboardPage() {
 											<Clock className="h-4 w-4" />
 											<span>{news.date}</span>
 						</div>
-										<h3 className="text-2xl font-bold text-gray-900 leading-tight">
+										<h3 className="text-xl font-semibold text-gray-900 leading-snug tracking-tight">
 											{news.title}
 										</h3>
-										<p className="text-gray-600 leading-relaxed">
+										<p className="text-sm text-gray-600 leading-relaxed">
 											{news.description}
 										</p>
 										<button className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white font-medium rounded-lg hover:bg-[#0a3d24] transition-colors w-fit">
@@ -2788,9 +2783,9 @@ export default function DashboardPage() {
 							<div className="p-2 bg-white/20 rounded-lg">
 								<Shield className="h-6 w-6 text-white" />
 							</div>
-							<div>
-								<h2 className="text-2xl font-bold text-white">RIF-II Security Alert</h2>
-								<p className="text-sm text-red-100 mt-1">Stay informed about security incidents and alerts</p>
+							<div className="space-y-1">
+								<h2 className="text-2xl font-semibold text-white leading-snug tracking-tight">RIF-II Security Alert</h2>
+								<p className="text-sm text-red-100 leading-relaxed">Stay informed about security incidents and alerts</p>
 							</div>
 						</div>
 					</div>
@@ -2816,7 +2811,7 @@ export default function DashboardPage() {
 								>
 									<div className="flex items-start justify-between">
 										<div className="flex-1">
-											<h3 className="text-lg font-semibold text-gray-900 mb-2">
+											<h3 className="text-base font-medium text-gray-900 leading-snug mb-2">
 												{alert.incident_title}
 											</h3>
 											{alert.ReferenceNumber && (
@@ -2880,7 +2875,7 @@ export default function DashboardPage() {
 							{/* Picture Information Overlay */}
 							<div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6">
 								<div className="text-white">
-									<h3 className="text-2xl font-bold mb-3">
+									<h3 className="text-xl font-semibold leading-snug tracking-tight mb-3">
 										{selectedPicture.FileName || "Untitled Picture"}
 									</h3>
 									<div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">

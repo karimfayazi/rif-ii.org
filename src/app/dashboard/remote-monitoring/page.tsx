@@ -1,33 +1,24 @@
 "use client";
 
-import { Monitor, Construction, ArrowLeft, Upload } from "lucide-react";
+import { Monitor, Construction, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export default function RemoteMonitoringPage() {
 	return (
 		<div className="space-y-6">
 			{/* Header */}
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-4">
-					<Link
-						href="/dashboard"
-						className="inline-flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-green-50 rounded-lg transition-colors"
-					>
-						<ArrowLeft className="h-4 w-4 mr-2" />
-						Back
-					</Link>
-					<div>
-						<h1 className="text-2xl font-bold text-gray-900">Remote Monitoring</h1>
-						<p className="text-gray-600 mt-1">Monitor and track remote systems and operations</p>
-					</div>
-				</div>
+			<div className="flex items-center gap-4">
 				<Link
-					href="/dashboard/remote-monitoring/testing-report"
-					className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
+					href="/dashboard"
+					className="inline-flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-green-50 rounded-lg transition-colors"
 				>
-					<Upload className="h-4 w-4 mr-2" />
-					Upload Report
+					<ArrowLeft className="h-4 w-4 mr-2" />
+					Back
 				</Link>
+				<div>
+					<h1 className="text-2xl font-bold text-gray-900">Remote Monitoring</h1>
+					<p className="text-gray-600 mt-1">Monitor and track remote systems and operations</p>
+				</div>
 			</div>
 
 			{/* Under Construction Message */}

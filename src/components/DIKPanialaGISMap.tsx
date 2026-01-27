@@ -501,9 +501,9 @@ export default function DIKPanialaGISMapSection() {
 		<div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
 			<div className="p-6 border-b border-gray-200">
 				<div className="flex items-start justify-between gap-4">
-					<div className="flex-1">
-						<h2 className="text-xl font-semibold text-gray-900">DIK District - Tehsil Wise - Paniala Maps</h2>
-						<p className="text-sm text-gray-600 mt-1">Interactive GIS map with multiple layers</p>
+					<div className="flex-1 space-y-1">
+						<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">DIK District - Tehsil Wise - Paniala Maps</h2>
+						<p className="text-sm text-gray-600 leading-relaxed">Interactive GIS map with multiple layers</p>
 					</div>
 					{/* Layer Controls - Dropdown */}
 					<div className="flex-shrink-0">
