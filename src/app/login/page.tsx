@@ -70,17 +70,6 @@ export default function LoginPage() {
 							</svg>
 							Home
 						</Link>
-						<a
-							href="http://172.16.171.62:3000/gis-map"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-flex items-center gap-2 text-white text-xs font-medium hover:text-blue-200 transition-colors"
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-							</svg>
-							Online GIS Map
-						</a>
 					</div>
 					<div className="text-white text-sm font-semibold text-center flex-1">
 						Regional Infrastructure Fund – II in Khyber Pakhtunkhwa for &ldquo;RESILIENT RESOURCE MANAGEMENT IN CITIES (RRMIC)&rdquo;
