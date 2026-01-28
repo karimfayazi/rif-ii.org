@@ -137,7 +137,7 @@ function DynamicChartRenderer({ chartType, data, options, height = '280px' }: Dy
 		
 		return (
 			<div style={{ height }}>
-				<Pie data={data} options={pieOptions} plugins={[ChartDataLabels]} />
+				<Pie data={data as any} options={pieOptions} plugins={[ChartDataLabels]} />
 			</div>
 		);
 	} else if (chartType === 'horizontal-bar') {
@@ -185,7 +185,7 @@ function DynamicChartRenderer({ chartType, data, options, height = '280px' }: Dy
 		
 		return (
 			<div style={{ height }}>
-				<Bar data={data} options={horizontalOptions} plugins={[ChartDataLabels]} />
+				<Bar data={data as any} options={horizontalOptions} plugins={[ChartDataLabels]} />
 			</div>
 		);
 	} else if (chartType === 'area') {
@@ -201,7 +201,7 @@ function DynamicChartRenderer({ chartType, data, options, height = '280px' }: Dy
 		
 		return (
 			<div style={{ height }}>
-				<Line data={areaData} options={options as ChartOptions<'line'>} plugins={[ChartDataLabels]} />
+				<Line data={areaData as any} options={options as ChartOptions<'line'>} plugins={[ChartDataLabels]} />
 			</div>
 		);
 	} else if (chartType === 'line') {
@@ -215,14 +215,14 @@ function DynamicChartRenderer({ chartType, data, options, height = '280px' }: Dy
 		
 		return (
 			<div style={{ height }}>
-				<Line data={lineData} options={options as ChartOptions<'line'>} plugins={[ChartDataLabels]} />
+				<Line data={lineData as any} options={options as ChartOptions<'line'>} plugins={[ChartDataLabels]} />
 			</div>
 		);
 	} else {
 		// Default: vertical bar chart
 		return (
 			<div style={{ height }}>
-				<Bar data={data} options={options as ChartOptions<'bar'>} plugins={[ChartDataLabels]} />
+				<Bar data={data as any} options={options as ChartOptions<'bar'>} plugins={[ChartDataLabels]} />
 			</div>
 		);
 	}
