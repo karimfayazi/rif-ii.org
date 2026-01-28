@@ -68,6 +68,7 @@ export default function TrainingParticipantsPage() {
 	const [organizationDepartments, setOrganizationDepartments] = useState<string[]>([]);
 	const [workshopTrainingNames, setWorkshopTrainingNames] = useState<string[]>([]);
 	const [viewingParticipant, setViewingParticipant] = useState<WorkshopParticipant | null>(null);
+	const [showFilters, setShowFilters] = useState<boolean>(true);
 
 	const fetchParticipants = useCallback(async () => {
 		try {
@@ -247,14 +248,21 @@ export default function TrainingParticipantsPage() {
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-3">
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">Training Participants</h1>
-					<p className="text-gray-600 mt-2">View workshop training participants</p>
+					<p className="text-sm text-gray-600 mt-1">View workshop training participants</p>
 				</div>
 				<div className="flex items-center space-x-3">
+					<button
+						onClick={() => setShowFilters(prev => !prev)}
+						className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+					>
+						<Filter className="h-4 w-4 mr-2" />
+						Filter On/Off
+					</button>
 					<button
 						onClick={handleExport}
 						className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -288,23 +296,24 @@ export default function TrainingParticipantsPage() {
 				</div>
 			</div>
 
-			{/* Filters */}
-			<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-				<div className="flex items-center mb-4">
-					<Filter className="h-5 w-5 text-gray-500 mr-2" />
+		{/* Filters */}
+		{showFilters && (
+			<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg p-3">
+				<div className="flex items-center mb-2">
+					<Filter className="h-4 w-4 text-gray-500 mr-2" />
 					<h2 className="text-lg font-semibold text-gray-900">Filters</h2>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
 					{/* District Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+					<div className="min-w-0">
+						<label className="block text-xs font-medium text-gray-700 mb-1">
 							District
 						</label>
 						<select
 							value={selectedDistrict}
 							onChange={(e) => setSelectedDistrict(e.target.value)}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						>
 							<option value="">All</option>
 							{DISTRICT_OPTIONS.filter(d => d !== "All").map((district) => (
@@ -316,14 +325,14 @@ export default function TrainingParticipantsPage() {
 					</div>
 
 					{/* Tehsil Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+					<div className="min-w-0">
+						<label className="block text-xs font-medium text-gray-700 mb-1">
 							Tehsil
 						</label>
 						<select
 							value={selectedTehsil}
 							onChange={(e) => setSelectedTehsil(e.target.value)}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						>
 							<option value="">All Tehsils</option>
 							{tehsils.map((tehsil) => (
@@ -335,14 +344,14 @@ export default function TrainingParticipantsPage() {
 					</div>
 
 					{/* Gender Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+					<div className="min-w-0">
+						<label className="block text-xs font-medium text-gray-700 mb-1">
 							Gender
 						</label>
 						<select
 							value={selectedGender}
 							onChange={(e) => setSelectedGender(e.target.value)}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						>
 							<option value="">All Genders</option>
 							{GENDER_OPTIONS.map((gender) => (
@@ -354,14 +363,14 @@ export default function TrainingParticipantsPage() {
 					</div>
 
 					{/* Organization Department Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+					<div className="min-w-0">
+						<label className="block text-xs font-medium text-gray-700 mb-1">
 							Organization/Department
 						</label>
 						<select
 							value={selectedOrganizationDepartment}
 							onChange={(e) => setSelectedOrganizationDepartment(e.target.value)}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						>
 							<option value="">All Departments</option>
 							{organizationDepartments.map((dept) => (
@@ -373,14 +382,14 @@ export default function TrainingParticipantsPage() {
 					</div>
 
 					{/* Workshop Training Name Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+					<div className="min-w-0">
+						<label className="block text-xs font-medium text-gray-700 mb-1">
 							Workshop/Training Name
 						</label>
 						<select
 							value={selectedWorkshopTrainingName}
 							onChange={(e) => setSelectedWorkshopTrainingName(e.target.value)}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						>
 							<option value="">All Workshops</option>
 							{workshopTrainingNames.map((workshop) => (
@@ -392,8 +401,8 @@ export default function TrainingParticipantsPage() {
 					</div>
 
 					{/* Participant Name Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+					<div className="min-w-0">
+						<label className="block text-xs font-medium text-gray-700 mb-1">
 							Participant Name
 						</label>
 						<input
@@ -401,13 +410,13 @@ export default function TrainingParticipantsPage() {
 							value={participantName}
 							onChange={(e) => setParticipantName(e.target.value)}
 							placeholder="Search by name..."
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							className="w-full h-9 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						/>
 					</div>
 
 					{/* CNIC Number Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+					<div className="min-w-0">
+						<label className="block text-xs font-medium text-gray-700 mb-1">
 							CNIC Number
 						</label>
 						<input
@@ -415,13 +424,13 @@ export default function TrainingParticipantsPage() {
 							value={cnicNumber}
 							onChange={(e) => setCnicNumber(e.target.value)}
 							placeholder="Search by CNIC..."
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							className="w-full h-9 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						/>
 					</div>
 
 					{/* Contact Number Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+					<div className="min-w-0">
+						<label className="block text-xs font-medium text-gray-700 mb-1">
 							Contact Number
 						</label>
 						<input
@@ -429,28 +438,33 @@ export default function TrainingParticipantsPage() {
 							value={contactNumber}
 							onChange={(e) => setContactNumber(e.target.value)}
 							placeholder="Search by contact..."
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							className="w-full h-9 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 						/>
 					</div>
-				</div>
 
-				{/* Search and Reset Buttons */}
-				<div className="flex justify-end gap-3 mt-4">
-					<button
-						onClick={handleReset}
-						className="inline-flex items-center px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-					>
-						Reset
-					</button>
-					<button
-						onClick={handleSearch}
-						className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
-					>
-						<Filter className="h-4 w-4 mr-2" />
-						Apply Filters
-					</button>
+					{/* Reset Button */}
+					<div className="min-w-0 flex items-end">
+						<button
+							onClick={handleReset}
+							className="w-full inline-flex items-center justify-center px-4 py-1.5 h-9 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+						>
+							Reset
+						</button>
+					</div>
+
+					{/* Apply Filters Button */}
+					<div className="min-w-0 flex items-end">
+						<button
+							onClick={handleSearch}
+							className="w-full inline-flex items-center justify-center px-4 py-1.5 h-9 text-sm bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
+						>
+							<Filter className="h-4 w-4 mr-2" />
+							Apply Filters
+						</button>
+					</div>
 				</div>
 			</div>
+		)}
 
 			{/* Summary Cards */}
 			<div className="grid grid-cols-1 md:grid-cols-4 gap-6">

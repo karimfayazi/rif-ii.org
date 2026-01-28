@@ -99,9 +99,12 @@ export default function TrainingPage() {
 	const [selectedEventType, setSelectedEventType] = useState("");
 	const [selectedLocationTehsil, setSelectedLocationTehsil] = useState("");
 	const [selectedTrainingFacilitator, setSelectedTrainingFacilitator] = useState("");
+	const [trainingName, setTrainingName] = useState("");
+	const [eventDate, setEventDate] = useState("");
 	const [outputs, setOutputs] = useState<string[]>([]);
 	const [eventTypes, setEventTypes] = useState<string[]>([]);
 	const [locationTehsils, setLocationTehsils] = useState<string[]>([]);
+	const [showFilters, setShowFilters] = useState<boolean>(true);
 
 	const fetchTrainingData = useCallback(async () => {
 		try {
@@ -152,6 +155,8 @@ export default function TrainingPage() {
 		setSelectedEventType("");
 		setSelectedLocationTehsil("");
 		setSelectedTrainingFacilitator("");
+		setTrainingName("");
+		setEventDate("");
 	};
 
 	const formatNumber = (num: number | null | undefined) => {
@@ -286,8 +291,10 @@ export default function TrainingPage() {
 		const matchesEventType = !selectedEventType || item.EventType === selectedEventType;
 		const matchesLocationTehsil = !selectedLocationTehsil || item.LocationTehsil === selectedLocationTehsil;
 		const matchesTrainingFacilitator = !selectedTrainingFacilitator || item.TrainingFacilitatorName === selectedTrainingFacilitator;
+		const matchesTrainingName = !trainingName || (item.TrainingTitle && item.TrainingTitle.toLowerCase().includes(trainingName.toLowerCase()));
+		const matchesEventDate = !eventDate || item.StartDate === eventDate;
 		
-		return matchesDistrict && matchesOutput && matchesEventType && matchesLocationTehsil && matchesTrainingFacilitator;
+		return matchesDistrict && matchesOutput && matchesEventType && matchesLocationTehsil && matchesTrainingFacilitator && matchesTrainingName && matchesEventDate;
 	});
 
 	// Calculate summary statistics
@@ -458,7 +465,7 @@ export default function TrainingPage() {
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-3">
 			{/* Success Message */}
 			{success && (
 				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top">
@@ -499,221 +506,270 @@ export default function TrainingPage() {
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">Training, Capacity Building & Awareness</h1>
-					<p className="text-gray-600 mt-2">View and manage training events</p>
+					<p className="text-sm text-gray-600 mt-1">View and manage training events</p>
 				</div>
-				<div className="flex items-center space-x-3">
+				<div className="flex items-center gap-3">
+					<button
+						onClick={() => setShowFilters(prev => !prev)}
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
+					>
+						<Filter className="h-4 w-4 mr-2 flex-shrink-0" />
+						Filter On/Off
+					</button>
 					{accessAdd && trainingSection && !accessLoading && (
 						<a
 							href="/dashboard/training/add"
-							className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+							className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
 						>
-							<Plus className="h-4 w-4 mr-2" />
+							<Plus className="h-4 w-4 mr-2 flex-shrink-0" />
 							Add Record
 						</a>
 					)}
 					<button
 						onClick={fetchTrainingData}
-						className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
 					>
-						<RefreshCw className="h-4 w-4 mr-2" />
+						<RefreshCw className="h-4 w-4 mr-2 flex-shrink-0" />
 						Refresh
 					</button>
 					<button
 						onClick={handleExportToExcel}
 						disabled={filteredData.length === 0}
-						className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
 					>
-						<Download className="h-4 w-4 mr-2" />
+						<Download className="h-4 w-4 mr-2 flex-shrink-0" />
 						Export to Excel
 					</button>
 				</div>
 			</div>
 
-			{/* Filters */}
-			<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-				<div className="flex items-center mb-4">
-					<Filter className="h-5 w-5 text-gray-500 mr-2" />
+		{/* Filters */}
+		{showFilters && (
+			<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg p-3">
+				<div className="flex items-center mb-2">
+					<Filter className="h-4 w-4 text-gray-500 mr-2" />
 					<h2 className="text-lg font-semibold text-gray-900">Filters</h2>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-					{/* District Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							District
-						</label>
-						<select
-							value={selectedDistrict}
-							onChange={(e) => setSelectedDistrict(e.target.value)}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
-						>
-							<option value="">All</option>
-							{DISTRICT_OPTIONS.filter(d => d !== "All").map((district) => (
-								<option key={district} value={district}>
-									{district}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{/* Training Facilitator Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Training Facilitator
-						</label>
-						<select
-							value={selectedTrainingFacilitator}
-							onChange={(e) => setSelectedTrainingFacilitator(e.target.value)}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
-						>
-							<option value="">All Training Facilitators</option>
-							{TRAINING_FACILITATOR_OPTIONS.map((facilitator) => (
-								<option key={facilitator} value={facilitator}>
-									{facilitator}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{/* Output Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Output
-						</label>
-						<select
-							value={selectedOutput}
-							onChange={(e) => setSelectedOutput(e.target.value)}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
-						>
-							<option value="">All Outputs</option>
-							{outputs.map((output) => (
-								<option key={output} value={output}>
-									{output}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{/* Event Type Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Event Type
-						</label>
-						<select
-							value={selectedEventType}
-							onChange={(e) => setSelectedEventType(e.target.value)}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
-						>
-							<option value="">All Event Types</option>
-							{eventTypes.map((type) => (
-								<option key={type} value={type}>
-									{type}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{/* Location Tehsil Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Location Tehsil
-						</label>
-						<select
-							value={selectedLocationTehsil}
-							onChange={(e) => setSelectedLocationTehsil(e.target.value)}
-							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
-						>
-							<option value="">All Tehsils</option>
-							{locationTehsils.map((tehsil) => (
-								<option key={tehsil} value={tehsil}>
-									{tehsil}
-								</option>
-							))}
-						</select>
-					</div>
-
-				</div>
-
-				{/* Search and Reset Buttons */}
-				<div className="flex justify-end gap-3 mt-4">
-					<button
-						onClick={handleReset}
-						className="inline-flex items-center px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-					>
-						Reset
-					</button>
-					<button
-						onClick={handleSearch}
-						className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
-					>
-						<Filter className="h-4 w-4 mr-2" />
-						Apply Filters
-					</button>
-				</div>
-			</div>
-
-			{/* Summary Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-				{/* Total Number of Days */}
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-					<div className="flex items-center">
-						<div className="p-2 bg-blue-100 rounded-lg">
-							<Calendar className="h-6 w-6 text-blue-600" />
+				<div className="space-y-3">
+					{/* Row 1: Training Name, District, Tehsil, Event Type */}
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+						{/* Training Name Filter */}
+						<div className="min-w-0">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								Training Name
+							</label>
+							<input
+								type="text"
+								value={trainingName}
+								onChange={(e) => setTrainingName(e.target.value)}
+								placeholder="Search by training name..."
+								className="w-full h-9 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							/>
 						</div>
-						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Total Number of Days</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{formatNumber(totalDays)}
-							</p>
+
+						{/* District Filter */}
+						<div className="min-w-0">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								District
+							</label>
+							<select
+								value={selectedDistrict}
+								onChange={(e) => setSelectedDistrict(e.target.value)}
+								className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							>
+								<option value="">All</option>
+								{DISTRICT_OPTIONS.filter(d => d !== "All").map((district) => (
+									<option key={district} value={district}>
+										{district}
+									</option>
+								))}
+							</select>
+						</div>
+
+						{/* Tehsil Filter */}
+						<div className="min-w-0">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								Tehsil
+							</label>
+							<select
+								value={selectedLocationTehsil}
+								onChange={(e) => setSelectedLocationTehsil(e.target.value)}
+								className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							>
+								<option value="">All Tehsils</option>
+								{locationTehsils.map((tehsil) => (
+									<option key={tehsil} value={tehsil}>
+										{tehsil}
+									</option>
+								))}
+							</select>
+						</div>
+
+						{/* Event Type Filter */}
+						<div className="min-w-0">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								Event Type
+							</label>
+							<select
+								value={selectedEventType}
+								onChange={(e) => setSelectedEventType(e.target.value)}
+								className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							>
+								<option value="">All Event Types</option>
+								{eventTypes.map((type) => (
+									<option key={type} value={type}>
+										{type}
+									</option>
+								))}
+							</select>
 						</div>
 					</div>
-				</div>
 
-				{/* Male Participants */}
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-					<div className="flex items-center">
-						<div className="p-2 bg-green-100 rounded-lg">
-							<User className="h-6 w-6 text-green-600" />
+					{/* Row 2: Event Date, Training Facilitator, Output, Buttons */}
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+						{/* Event Date Filter */}
+						<div className="min-w-0">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								Event Date
+							</label>
+							<input
+								type="date"
+								value={eventDate}
+								onChange={(e) => setEventDate(e.target.value)}
+								className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							/>
 						</div>
-						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Male</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{formatNumber(totalMale)}
-							</p>
-						</div>
-					</div>
-				</div>
 
-				{/* Female Participants */}
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-					<div className="flex items-center">
-						<div className="p-2 bg-pink-100 rounded-lg">
-							<UserCheck className="h-6 w-6 text-pink-600" />
+						{/* Training Facilitator Filter */}
+						<div className="min-w-0">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								Training Facilitator
+							</label>
+							<select
+								value={selectedTrainingFacilitator}
+								onChange={(e) => setSelectedTrainingFacilitator(e.target.value)}
+								className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							>
+								<option value="">All Facilitators</option>
+								{TRAINING_FACILITATOR_OPTIONS.map((facilitator) => (
+									<option key={facilitator} value={facilitator}>
+										{facilitator}
+									</option>
+								))}
+							</select>
 						</div>
-						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Female</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{formatNumber(totalFemale)}
-							</p>
-						</div>
-					</div>
-				</div>
 
-				{/* Total Participants */}
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-					<div className="flex items-center">
-						<div className="p-2 bg-purple-100 rounded-lg">
-							<Users className="h-6 w-6 text-purple-600" />
+						{/* Output Filter */}
+						<div className="min-w-0">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								Output
+							</label>
+							<select
+								value={selectedOutput}
+								onChange={(e) => setSelectedOutput(e.target.value)}
+								className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							>
+								<option value="">All Outputs</option>
+								{outputs.map((output) => (
+									<option key={output} value={output}>
+										{output}
+									</option>
+								))}
+							</select>
 						</div>
-						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Total Participant</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{formatNumber(totalParticipants)}
-							</p>
+
+						{/* Buttons - Right Aligned */}
+						<div className="min-w-0 flex items-end gap-2">
+							<button
+								onClick={handleReset}
+								className="flex-1 inline-flex items-center justify-center px-3 py-1.5 h-9 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+							>
+								Reset
+							</button>
+							<button
+								onClick={handleSearch}
+								className="flex-1 inline-flex items-center justify-center px-3 py-1.5 h-9 text-sm bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
+							>
+								<Filter className="h-4 w-4 mr-1" />
+								Apply
+							</button>
 						</div>
 					</div>
 				</div>
 			</div>
+		)}
+
+		{/* Summary Cards */}
+		<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+			{/* Total Number of Days */}
+			<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
+				<div className="flex items-center justify-between gap-3">
+					<div className="flex items-center gap-3 min-w-0 flex-1">
+						<div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
+							<Calendar className="h-5 w-5 text-blue-600" />
+						</div>
+						<p className="text-sm font-medium text-gray-700 truncate">
+							Total Number of Days
+						</p>
+					</div>
+					<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
+						{formatNumber(totalDays)}
+					</p>
+				</div>
+			</div>
+
+			{/* Male Participants */}
+			<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
+				<div className="flex items-center justify-between gap-3">
+					<div className="flex items-center gap-3 min-w-0 flex-1">
+						<div className="p-2 bg-green-50 rounded-lg flex-shrink-0">
+							<User className="h-5 w-5 text-green-600" />
+						</div>
+						<p className="text-sm font-medium text-gray-700 truncate">
+							Male
+						</p>
+					</div>
+					<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
+						{formatNumber(totalMale)}
+					</p>
+				</div>
+			</div>
+
+			{/* Female Participants */}
+			<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
+				<div className="flex items-center justify-between gap-3">
+					<div className="flex items-center gap-3 min-w-0 flex-1">
+						<div className="p-2 bg-pink-50 rounded-lg flex-shrink-0">
+							<UserCheck className="h-5 w-5 text-pink-600" />
+						</div>
+						<p className="text-sm font-medium text-gray-700 truncate">
+							Female
+						</p>
+					</div>
+					<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
+						{formatNumber(totalFemale)}
+					</p>
+				</div>
+			</div>
+
+			{/* Total Participants */}
+			<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
+				<div className="flex items-center justify-between gap-3">
+					<div className="flex items-center gap-3 min-w-0 flex-1">
+						<div className="p-2 bg-purple-50 rounded-lg flex-shrink-0">
+							<Users className="h-5 w-5 text-purple-600" />
+						</div>
+						<p className="text-sm font-medium text-gray-700 truncate">
+							Total Participant
+						</p>
+					</div>
+					<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
+						{formatNumber(totalParticipants)}
+					</p>
+				</div>
+			</div>
+		</div>
 
 			{/* Training Data Grid */}
 			{filteredData.length === 0 ? (
@@ -721,7 +777,7 @@ export default function TrainingPage() {
 					<BarChart3 className="mx-auto h-12 w-12 text-gray-400 mb-4" />
 					<h3 className="text-lg font-medium text-gray-900 mb-2">No training events found</h3>
 					<p className="text-gray-600">
-						{selectedDistrict || selectedOutput || selectedEventType || selectedLocationTehsil || selectedTrainingFacilitator
+						{selectedDistrict || selectedOutput || selectedEventType || selectedLocationTehsil || selectedTrainingFacilitator || trainingName || eventDate
 							? "Try adjusting your search criteria" 
 							: "No training data available"
 						}
@@ -733,71 +789,168 @@ export default function TrainingPage() {
 						<table className="min-w-full divide-y divide-gray-200">
 							<thead className="bg-gray-50">
 								<tr>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Training Details</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Participants</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Training Facilitator</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Output</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Training Details</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">District</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Location Tehsil</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Venue</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Start Date</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">End Date</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Total Days</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">TMA Male</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">TMA Female</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">PHED Male</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">PHED Female</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">LGRD Male</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">LGRD Female</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">PDD Male</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">PDD Female</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Community Male</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Community Female</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Any Other Male</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Any Other Female</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Any Other Specify</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-blue-50">Total Male</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-pink-50">Total Female</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">Total Participants</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Training Facilitator</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Output</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap sticky right-0 bg-gray-50">Actions</th>
 								</tr>
 							</thead>
 							<tbody className="bg-white divide-y divide-gray-200">
 								{filteredData.map((item, index) => (
 									<tr key={item.SN || index} className="hover:bg-gray-50">
-										<td className="px-6 py-4">
-											<div className="space-y-1">
-												<div className="text-sm font-semibold text-gray-900">
-													{item.TrainingTitle || "N/A"}
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm font-semibold text-gray-900 max-w-xs truncate" title={item.TrainingTitle}>
+												{item.TrainingTitle || "N/A"}
+											</div>
+											{item.EventType && (
+												<div className="text-xs text-gray-500">
+													{item.EventType}
 												</div>
-												{item.EventType && (
-													<div className="text-xs text-gray-500">
-														Type: {item.EventType}
-													</div>
-												)}
-												{item.Venue && (
-													<div className="text-xs text-gray-500">
-														Venue: {item.Venue}
-													</div>
-												)}
-											</div>
+											)}
 										</td>
-										<td className="px-6 py-4">
+										<td className="px-4 py-3 whitespace-nowrap">
 											<div className="text-sm text-gray-900">
-												{item.District && <div>{item.District}</div>}
-												{item.LocationTehsil && <div className="text-xs text-gray-500">{item.LocationTehsil}</div>}
+												{item.District || "N/A"}
 											</div>
 										</td>
-										<td className="px-6 py-4">
+										<td className="px-4 py-3 whitespace-nowrap">
 											<div className="text-sm text-gray-900">
-												{item.StartDate && <div>Start: {item.StartDate}</div>}
-												{item.EndDate && <div className="text-xs text-gray-500">End: {item.EndDate}</div>}
+												{item.LocationTehsil || "N/A"}
 											</div>
 										</td>
-										<td className="px-6 py-4">
-											<div className="text-sm font-medium text-gray-900">
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 max-w-xs truncate" title={item.Venue}>
+												{item.Venue || "N/A"}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900">
+												{item.StartDate || "N/A"}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900">
+												{item.EndDate || "N/A"}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm font-medium text-gray-900 text-center">
 												{formatNumber(item.TotalDays)}
 											</div>
 										</td>
-										<td className="px-6 py-4">
-											<div className="text-sm text-gray-900">
-												<div>Male: {formatNumber(item.TotalMale)}</div>
-												<div>Female: {formatNumber(item.TotalFemale)}</div>
-												<div className="font-semibold">Total: {formatNumber(item.TotalParticipants)}</div>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.TMAMale)}
 											</div>
 										</td>
-										<td className="px-6 py-4">
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.TMAFemale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.PHEDMale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.PHEDFemale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.LGRDMale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.LGRDFemale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.PDDMale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.PDDFemale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.CommunityMale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.CommunityFemale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.AnyOtherMale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 text-center">
+												{formatNumber(item.AnyOtherFemale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
+											<div className="text-sm text-gray-900 max-w-xs truncate" title={item.AnyOtherSpecify}>
+												{item.AnyOtherSpecify || "N/A"}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap bg-blue-50">
+											<div className="text-sm font-semibold text-gray-900 text-center">
+												{formatNumber(item.TotalMale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap bg-pink-50">
+											<div className="text-sm font-semibold text-gray-900 text-center">
+												{formatNumber(item.TotalFemale)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap bg-purple-50">
+											<div className="text-sm font-bold text-gray-900 text-center">
+												{formatNumber(item.TotalParticipants)}
+											</div>
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap">
 											<div className="text-sm text-gray-900">
 												{item.TrainingFacilitatorName || "N/A"}
 											</div>
 										</td>
-										<td className="px-6 py-4">
+										<td className="px-4 py-3 whitespace-nowrap">
 											<div className="text-sm text-gray-900">
 												{item.Output || "N/A"}
 											</div>
 										</td>
-										<td className="px-6 py-4">
+										<td className="px-4 py-3 whitespace-nowrap sticky right-0 bg-white">
 											<div className="flex items-center space-x-2">
 												<button
 													onClick={() => handleView(item)}

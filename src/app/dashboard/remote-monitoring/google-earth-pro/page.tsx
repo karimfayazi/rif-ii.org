@@ -46,6 +46,13 @@ export default function GoogleEarthProViewerPage() {
 	const [mapLoaded, setMapLoaded] = useState(false);
 	const [sidebarOpen, setSidebarOpen] = useState(true);
 	const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set());
+	const [tooltip, setTooltip] = useState<{
+		visible: boolean;
+		x: number;
+		y: number;
+		title: string;
+		props: Record<string, any>;
+	}>({ visible: false, x: 0, y: 0, title: '', props: {} });
 	
 	// Refs
 	const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -53,6 +60,8 @@ export default function GoogleEarthProViewerPage() {
 	const layerRefsRef = useRef<{ [key: string]: any }>({});
 	const baseLayerRefsRef = useRef<{ [key: string]: any }>({});
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const rafIdRef = useRef<number | null>(null);
+	const pendingTooltipRef = useRef<{ x: number; y: number } | null>(null);
 	
 	// Handle file upload
 	const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,6 +232,10 @@ export default function GoogleEarthProViewerPage() {
 		return () => {
 			isMounted = false;
 			if (timeoutId) clearTimeout(timeoutId);
+			if (rafIdRef.current) {
+				cancelAnimationFrame(rafIdRef.current);
+				rafIdRef.current = null;
+			}
 			if (mapInstanceRef.current) {
 				try {
 					mapInstanceRef.current.remove();
@@ -302,6 +315,7 @@ export default function GoogleEarthProViewerPage() {
 					},
 					onEachFeature: (feature: any, layer: any) => {
 						if (feature.properties) {
+							// Existing click popup
 							let popupContent = '<div style="max-width: 200px;">';
 							popupContent += `<div style="font-weight: bold; margin-bottom: 8px; color: #1f2937;">${feature.properties.name || layerData.name}</div>`;
 							popupContent += '<div style="font-size: 12px; color: #4b5563;">';
@@ -314,6 +328,45 @@ export default function GoogleEarthProViewerPage() {
 							
 							popupContent += '</div></div>';
 							layer.bindPopup(popupContent);
+							
+							// Add hover tooltip for point features
+							if (layerData.type === 'point' || layerData.type === 'mixed') {
+								layer.on('mouseover', (e: any) => {
+									if (!mapContainerRef.current) return;
+									
+									const rect = mapContainerRef.current.getBoundingClientRect();
+									const mouseX = e.originalEvent.clientX - rect.left;
+									const mouseY = e.originalEvent.clientY - rect.top;
+									
+									const sanitized = sanitizeProperties(feature.properties);
+									
+									setTooltip({
+										visible: true,
+										x: mouseX,
+										y: mouseY,
+										title: feature.properties.name || layerData.name || 'Feature',
+										props: sanitized
+									});
+								});
+								
+								layer.on('mousemove', (e: any) => {
+									if (!mapContainerRef.current) return;
+									
+									const rect = mapContainerRef.current.getBoundingClientRect();
+									const mouseX = e.originalEvent.clientX - rect.left;
+									const mouseY = e.originalEvent.clientY - rect.top;
+									
+									updateTooltipPosition(mouseX, mouseY);
+								});
+								
+								layer.on('mouseout', () => {
+									setTooltip(prev => ({ ...prev, visible: false }));
+									if (rafIdRef.current) {
+										cancelAnimationFrame(rafIdRef.current);
+										rafIdRef.current = null;
+									}
+								});
+							}
 						}
 					}
 				});
@@ -395,6 +448,59 @@ export default function GoogleEarthProViewerPage() {
 	
 	// Count stats
 	const visibleCount = layers.filter(l => l.visible).length;
+	
+	// Helper: Format property key for display
+	const formatPropertyKey = (key: string): string => {
+		return key
+			.replace(/_/g, ' ')
+			.replace(/([A-Z])/g, ' $1')
+			.split(' ')
+			.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+			.join(' ')
+			.trim();
+	};
+	
+	// Helper: Sanitize properties for tooltip
+	const sanitizeProperties = (props: Record<string, any>): Record<string, any> => {
+		const sanitized: Record<string, any> = {};
+		const excludeKeys = ['name', '_style', 'styleUrl', 'styleHash', 'stroke', 'stroke-opacity', 
+			'stroke-width', 'fill', 'fill-opacity', 'icon', 'marker-color', 'marker-size', 
+			'marker-symbol'];
+		
+		Object.entries(props).forEach(([key, value]) => {
+			if (!excludeKeys.includes(key) && value != null && value !== '' && typeof value !== 'object') {
+				sanitized[key] = value;
+			}
+		});
+		
+		return sanitized;
+	};
+	
+	// Update tooltip position with RAF
+	const updateTooltipPosition = (x: number, y: number) => {
+		pendingTooltipRef.current = { x, y };
+		
+		if (!rafIdRef.current) {
+			rafIdRef.current = requestAnimationFrame(() => {
+				if (pendingTooltipRef.current && mapContainerRef.current) {
+					const rect = mapContainerRef.current.getBoundingClientRect();
+					const tooltipWidth = 320;
+					const tooltipHeight = 200; // approximate
+					
+					let clampedX = Math.max(8, Math.min(pendingTooltipRef.current.x + 12, rect.width - tooltipWidth - 8));
+					let clampedY = Math.max(8, Math.min(pendingTooltipRef.current.y + 12, rect.height - tooltipHeight - 8));
+					
+					setTooltip(prev => ({
+						...prev,
+						x: clampedX,
+						y: clampedY
+					}));
+				}
+				rafIdRef.current = null;
+				pendingTooltipRef.current = null;
+			});
+		}
+	};
 	
 	return (
 		<div className="flex flex-col h-screen bg-gray-50">
@@ -487,10 +593,10 @@ export default function GoogleEarthProViewerPage() {
 			</div>
 			
 			{/* Main Content */}
-			<div className="flex-1 flex overflow-hidden">
+			<div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
 				{/* Sidebar */}
 				{sidebarOpen && (
-					<div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+					<div className="w-full lg:w-[22%] lg:max-w-xs shrink-0 bg-white border-r border-gray-200 flex flex-col">
 						{/* Tabs */}
 						<div className="flex border-b border-gray-200">
 							<button
@@ -680,8 +786,8 @@ export default function GoogleEarthProViewerPage() {
 				{/* Toggle Sidebar Button */}
 				<button
 					onClick={() => setSidebarOpen(!sidebarOpen)}
-					className="absolute left-0 top-1/2 -translate-y-1/2 z-[1000] bg-white border border-gray-200 rounded-r-lg px-1 py-3 hover:bg-gray-50 transition-colors shadow-lg"
-					style={{ left: sidebarOpen ? '320px' : '0' }}
+					className="absolute left-0 top-1/2 -translate-y-1/2 z-[1000] bg-white border border-gray-200 rounded-r-lg px-1 py-3 hover:bg-gray-50 transition-colors shadow-lg lg:left-[22%]"
+					style={{ left: sidebarOpen ? undefined : '0' }}
 				>
 					{sidebarOpen ? (
 						<ChevronDown className="h-4 w-4 text-gray-600 rotate-90" />
@@ -691,7 +797,7 @@ export default function GoogleEarthProViewerPage() {
 				</button>
 				
 				{/* Map Container */}
-				<div className="flex-1 relative">
+				<div className="flex-1 min-w-0 relative">
 					{!mapLoaded && (
 						<div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-[999]">
 							<div className="text-center">
@@ -701,6 +807,59 @@ export default function GoogleEarthProViewerPage() {
 						</div>
 					)}
 					<div ref={mapContainerRef} className="w-full h-full" />
+					
+					{/* Hover Tooltip */}
+					{tooltip.visible && (
+						<div
+							className="absolute z-[1000] w-[320px] max-w-[90vw] rounded-xl border border-gray-200 bg-white shadow-2xl pointer-events-none"
+							style={{
+								left: `${tooltip.x}px`,
+								top: `${tooltip.y}px`,
+							}}
+						>
+							{/* Header */}
+							<div className="px-3 pt-3 pb-2 border-b border-gray-100">
+								<div className="flex items-center gap-2">
+									<MapPin className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+									<h3 className="text-sm font-semibold text-gray-900 truncate">
+										{tooltip.title}
+									</h3>
+								</div>
+							</div>
+							
+							{/* Body */}
+							{Object.keys(tooltip.props).length > 0 ? (
+								<div className="px-3 py-3 space-y-2 max-h-[300px] overflow-y-auto">
+									{Object.entries(tooltip.props).slice(0, 10).map(([key, value], idx) => (
+										<div
+											key={key}
+											className={`flex items-start justify-between gap-3 ${
+												idx !== 0 ? 'pt-2 border-t border-gray-50' : ''
+											}`}
+										>
+											<span className="text-xs font-medium text-gray-500 flex-shrink-0">
+												{formatPropertyKey(key)}:
+											</span>
+											<span className="text-xs text-gray-900 text-right break-words">
+												{String(value)}
+											</span>
+										</div>
+									))}
+									{Object.keys(tooltip.props).length > 10 && (
+										<div className="pt-2 border-t border-gray-50 text-center">
+											<span className="text-xs text-gray-500 italic">
+												+{Object.keys(tooltip.props).length - 10} more fields
+											</span>
+										</div>
+									)}
+								</div>
+							) : (
+								<div className="px-3 py-3">
+									<p className="text-xs text-gray-500 italic">No additional properties</p>
+								</div>
+							)}
+						</div>
+					)}
 				</div>
 			</div>
 		</div>

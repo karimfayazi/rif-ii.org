@@ -264,7 +264,7 @@ export default function DocumentsPage() {
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-3">
 			{/* Success Message */}
 			{success && (
 				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top">
@@ -301,12 +301,12 @@ export default function DocumentsPage() {
 				</div>
 			)}
 
-			{/* Header */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Important Documents</h1>
-					<p className="text-gray-600 mt-2">Browse and download available documents</p>
-				</div>
+		{/* Header */}
+		<div className="flex items-center justify-between">
+			<div>
+				<h1 className="text-2xl font-bold text-gray-900">Important Documents</h1>
+				<p className="text-sm text-gray-600 mt-1">Browse and download available documents</p>
+			</div>
 				<div className="flex items-center space-x-3">
 					<Link
 						href="/dashboard/documents/upload"
@@ -329,210 +329,210 @@ export default function DocumentsPage() {
 				</div>
 			</div>
 
-			{/* Search and Filters */}
-			<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg p-6">
-				<div className="flex items-center justify-between mb-4">
-					<div>
-						<h3 className="text-lg font-semibold text-gray-900">Search & Filter Documents</h3>
-						<p className="text-sm text-gray-600">Find specific documents by title, description, or category</p>
-					</div>
-					<div className="flex items-center space-x-4">
-						<div className="flex items-center space-x-2">
-							<div className="h-2 w-2 bg-green-500 rounded-full"></div>
-							<span className="text-xs text-gray-500 font-medium">Live Search</span>
-						</div>
-						<button
-							onClick={handleReset}
-							className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200"
-						>
-							<RotateCcw className="h-3 w-3 mr-1" />
-							Reset
-						</button>
-					</div>
+		{/* Search and Filters */}
+		<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg p-3">
+			<div className="flex items-center justify-between mb-2">
+				<div>
+					<h3 className="text-lg font-semibold text-gray-900">Search & Filter Documents</h3>
+					<p className="text-xs text-gray-600">Find specific documents by title, description, or category</p>
 				</div>
-
-				{/* All Filters in One Row */}
-				<div className="flex flex-wrap items-end gap-3 mb-4">
-					{/* Search Input */}
-					<div className="flex-1 min-w-[250px]">
-						<label className="block text-sm font-medium text-gray-700 mb-2">Search Documents</label>
-						<div className="relative">
-							<input
-								type="text"
-								placeholder="Search by title or description..."
-								value={searchTerm}
-								onChange={(e) => setSearchTerm(e.target.value)}
-								className="w-full px-4 py-2.5 text-gray-900 placeholder-gray-500 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#0b4d2b]/20 focus:border-[#0b4d2b] focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
-								onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-							/>
-						</div>
+				<div className="flex items-center space-x-4">
+					<div className="flex items-center space-x-2">
+						<div className="h-2 w-2 bg-green-500 rounded-full"></div>
+						<span className="text-xs text-gray-500 font-medium">Live Search</span>
 					</div>
-
-					{/* Main Category Filter */}
-					<div className="min-w-[180px]">
-						<label className="block text-sm font-medium text-gray-700 mb-2">Main Category</label>
-						<select
-							value={selectedMainCategory}
-							onChange={(e) => setSelectedMainCategory(e.target.value)}
-							className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-						>
-							<option value="">All Categories</option>
-							{mainCategories.map((category) => (
-								<option key={category} value={category}>
-									{category}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{/* Sub Category Filter */}
-					<div className="min-w-[180px]">
-						<label className="block text-sm font-medium text-gray-700 mb-2">Sub Category</label>
-						<select
-							value={selectedSubCategory}
-							onChange={(e) => setSelectedSubCategory(e.target.value)}
-							className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-						>
-							<option value="">All Sub Categories</option>
-							{subCategories.map((category) => (
-								<option key={category} value={category}>
-									{category}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{/* Document Date Filter */}
-					<div className="min-w-[180px]">
-						<label className="block text-sm font-medium text-gray-700 mb-2">Document Date</label>
-						<input
-							type="date"
-							value={selectedDocumentDate}
-							onChange={(e) => setSelectedDocumentDate(e.target.value)}
-							className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-						/>
-					</div>
-
-					{/* Search Button */}
-					<div className="min-w-[140px]">
-						<button
-							onClick={handleSearch}
-							className="w-full inline-flex items-center justify-center px-5 py-2.5 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
-						>
-							<Filter className="h-4 w-4 mr-2" />
-							Apply
-						</button>
-					</div>
+					<button
+						onClick={handleReset}
+						className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200"
+					>
+						<RotateCcw className="h-3 w-3 mr-1" />
+						Reset
+					</button>
 				</div>
 			</div>
 
-			{/* Documents Grid - Horizontal View */}
-			{documents.length === 0 ? (
-				<div className="bg-gray-50 rounded-lg border border-gray-200 p-12 text-center">
-					<FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-					<h3 className="text-lg font-medium text-gray-900 mb-2">No documents found</h3>
-					<p className="text-gray-600">
-						{searchTerm || selectedMainCategory || selectedSubCategory 
-							? "Try adjusting your search criteria" 
-							: "Documents will appear here once they are uploaded"
-						}
-					</p>
+			{/* All Filters in One Row */}
+			<div className="flex flex-wrap items-end gap-2">
+				{/* Search Input */}
+				<div className="flex-1 min-w-[250px]">
+					<label className="block text-xs font-medium text-gray-700 mb-1">Search Documents</label>
+					<div className="relative">
+						<input
+							type="text"
+							placeholder="Search by title or description..."
+							value={searchTerm}
+							onChange={(e) => setSearchTerm(e.target.value)}
+							className="w-full h-9 px-3 py-1.5 text-sm text-gray-900 placeholder-gray-500 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#0b4d2b]/20 focus:border-[#0b4d2b] focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
+							onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+						/>
+					</div>
 				</div>
-			) : (
-				<div className="space-y-4">
-					{documents.map((document, index) => (
-						<div
-							key={index}
-							className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
-						>
-							<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-5 gap-4">
-								{/* Left Section: File Icon, Type, and Document Name */}
-								<div className="flex items-center space-x-4 flex-1 min-w-0">
-									<div className="flex items-center space-x-3 flex-shrink-0">
-										<div className="text-3xl">
-											{getFileIcon(document.FilePath)}
-										</div>
-										<div>
-											<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-												{getFileExtension(document.FilePath)}
-											</span>
-										</div>
+
+				{/* Main Category Filter */}
+				<div className="min-w-[180px]">
+					<label className="block text-xs font-medium text-gray-700 mb-1">Main Category</label>
+					<select
+						value={selectedMainCategory}
+						onChange={(e) => setSelectedMainCategory(e.target.value)}
+						className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+					>
+						<option value="">All Categories</option>
+						{mainCategories.map((category) => (
+							<option key={category} value={category}>
+								{category}
+							</option>
+						))}
+					</select>
+				</div>
+
+				{/* Sub Category Filter */}
+				<div className="min-w-[180px]">
+					<label className="block text-xs font-medium text-gray-700 mb-1">Sub Category</label>
+					<select
+						value={selectedSubCategory}
+						onChange={(e) => setSelectedSubCategory(e.target.value)}
+						className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+					>
+						<option value="">All Sub Categories</option>
+						{subCategories.map((category) => (
+							<option key={category} value={category}>
+								{category}
+							</option>
+						))}
+					</select>
+				</div>
+
+				{/* Document Date Filter */}
+				<div className="min-w-[180px]">
+					<label className="block text-xs font-medium text-gray-700 mb-1">Document Date</label>
+					<input
+						type="date"
+						value={selectedDocumentDate}
+						onChange={(e) => setSelectedDocumentDate(e.target.value)}
+						className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+					/>
+				</div>
+
+				{/* Search Button */}
+				<div className="min-w-[140px]">
+					<button
+						onClick={handleSearch}
+						className="w-full h-9 inline-flex items-center justify-center px-4 py-1.5 text-sm bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
+					>
+						<Filter className="h-4 w-4 mr-2" />
+						Apply
+					</button>
+				</div>
+			</div>
+		</div>
+
+		{/* Documents Grid - Horizontal View */}
+		{documents.length === 0 ? (
+			<div className="bg-gray-50 rounded-lg border border-gray-200 p-8 text-center">
+				<FileText className="mx-auto h-10 w-10 text-gray-400 mb-3" />
+				<h3 className="text-base font-medium text-gray-900 mb-1">No documents found</h3>
+				<p className="text-sm text-gray-600">
+					{searchTerm || selectedMainCategory || selectedSubCategory 
+						? "Try adjusting your search criteria" 
+						: "Documents will appear here once they are uploaded"
+					}
+				</p>
+			</div>
+		) : (
+			<div className="space-y-2">
+				{documents.map((document, index) => (
+					<div
+						key={index}
+						className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
+					>
+						<div className="flex flex-col lg:flex-row lg:items-center p-3 gap-2">
+							{/* Left Section: File Icon, Type, and Document Name - Fixed width for alignment */}
+							<div className="flex items-center space-x-2 lg:w-[45%] min-w-0">
+								<div className="flex items-center space-x-2 flex-shrink-0 w-[90px]">
+									<div className="text-2xl w-8 text-center">
+										{getFileIcon(document.FilePath)}
 									</div>
-									<div className="flex-1 min-w-0">
-										<h3 className="text-lg text-gray-900 truncate mb-1">
-											{document.Title}
-										</h3>
-										{document.Description && (
-											<p className="text-sm text-gray-600 truncate">
-												{document.Description}
-											</p>
-										)}
+									<div className="w-12">
+										<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 whitespace-nowrap">
+											{getFileExtension(document.FilePath)}
+										</span>
 									</div>
 								</div>
-
-								{/* Middle Section: Category Information */}
-								<div className="flex items-center space-x-4 lg:space-x-6 px-0 lg:px-6 flex-shrink-0 border-t lg:border-t-0 lg:border-l lg:border-r border-gray-200 pt-4 lg:pt-0">
-									{document.Category && (
-										<div className="flex flex-col">
-											<span className="text-xs font-medium text-gray-500 mb-1">Category</span>
-											<span className="text-sm text-gray-900">{document.Category}</span>
-										</div>
-									)}
-									{document.SubCategory && (
-										<div className="flex flex-col">
-											<span className="text-xs font-medium text-gray-500 mb-1">Sub Category</span>
-											<span className="text-sm text-gray-900">{document.SubCategory}</span>
-										</div>
-									)}
-									{document.document_date && (
-										<div className="flex flex-col">
-											<span className="text-xs font-medium text-gray-500 mb-1">Date</span>
-											<span className="text-sm text-gray-900">{formatDate(document.document_date)}</span>
-										</div>
-									)}
-								</div>
-
-								{/* Right Section: Action Buttons */}
-								<div className="flex items-center space-x-2 flex-shrink-0 pl-0 lg:pl-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-gray-200">
-									{/* View Button */}
-									<Link
-										href={`/dashboard/documents/view?id=${document.DocumentID}`}
-										className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
-										title="View Document"
-									>
-										<Eye className="h-4 w-4 mr-1.5" />
-										View
-									</Link>
-
-									{/* Edit/Update Button */}
-									{accessEdit && (
-										<Link
-											href={`/dashboard/documents/upload?id=${document.DocumentID}`}
-											className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
-											title="Edit/Update Document"
-										>
-											<Edit className="h-4 w-4 mr-1.5" />
-											Edit
-										</Link>
-									)}
-
-									{/* Delete Button */}
-									{accessDelete && (
-										<button
-											onClick={() => setDeleteConfirm({ show: true, document: document })}
-											className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
-											title="Delete Document"
-										>
-											<Trash2 className="h-4 w-4 mr-1.5" />
-											Delete
-										</button>
+								<div className="flex-1 min-w-0">
+									<h3 className="text-base font-medium text-gray-900 truncate mb-0.5 text-left">
+										{document.Title}
+									</h3>
+									{document.Description && (
+										<p className="text-xs text-gray-600 truncate text-left">
+											{document.Description}
+										</p>
 									)}
 								</div>
 							</div>
+
+							{/* Middle Section: Category Information - Fixed width for alignment */}
+							<div className="flex items-center justify-start space-x-3 lg:space-x-4 lg:w-[35%] px-0 lg:px-4 flex-shrink-0 border-t lg:border-t-0 lg:border-l lg:border-r border-gray-200 pt-2 lg:pt-0">
+								<div className="flex flex-col w-[100px] min-w-[100px]">
+									<span className="text-xs font-medium text-gray-500 mb-0.5 text-left">Category</span>
+									<span className="text-xs text-gray-900 truncate text-left" title={document.Category}>
+										{document.Category || '-'}
+									</span>
+								</div>
+								<div className="flex flex-col w-[100px] min-w-[100px]">
+									<span className="text-xs font-medium text-gray-500 mb-0.5 text-left">Sub Category</span>
+									<span className="text-xs text-gray-900 truncate text-left" title={document.SubCategory}>
+										{document.SubCategory || '-'}
+									</span>
+								</div>
+								<div className="flex flex-col w-[90px] min-w-[90px]">
+									<span className="text-xs font-medium text-gray-500 mb-0.5 text-left">Date</span>
+									<span className="text-xs text-gray-900 whitespace-nowrap text-left">
+										{document.document_date ? formatDate(document.document_date) : '-'}
+									</span>
+								</div>
+							</div>
+
+							{/* Right Section: Action Buttons - Fixed width for alignment */}
+							<div className="flex items-center justify-end space-x-1.5 lg:w-[20%] lg:min-w-[220px] flex-shrink-0 pl-0 lg:pl-4 pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-200">
+								{/* View Button */}
+								<Link
+									href={`/dashboard/documents/view?id=${document.DocumentID}`}
+									className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200 whitespace-nowrap"
+									title="View Document"
+								>
+									<Eye className="h-3.5 w-3.5 mr-1" />
+									View
+								</Link>
+
+								{/* Edit/Update Button */}
+								{accessEdit && (
+									<Link
+										href={`/dashboard/documents/upload?id=${document.DocumentID}`}
+										className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200 whitespace-nowrap"
+										title="Edit/Update Document"
+									>
+										<Edit className="h-3.5 w-3.5 mr-1" />
+										Edit
+									</Link>
+								)}
+
+								{/* Delete Button */}
+								{accessDelete && (
+									<button
+										onClick={() => setDeleteConfirm({ show: true, document: document })}
+										className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border border-red-200 whitespace-nowrap"
+										title="Delete Document"
+									>
+										<Trash2 className="h-3.5 w-3.5 mr-1" />
+										Delete
+									</button>
+								)}
+							</div>
 						</div>
-					))}
-				</div>
-			)}
+					</div>
+				))}
+			</div>
+		)}
 
 			{/* Results Count */}
 			{documents.length > 0 && (
