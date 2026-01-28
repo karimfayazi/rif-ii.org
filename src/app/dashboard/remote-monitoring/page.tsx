@@ -1,6 +1,6 @@
 "use client";
 
-import { Monitor, Construction, ArrowLeft } from "lucide-react";
+import { Monitor, Construction, ArrowLeft, Globe } from "lucide-react";
 import Link from "next/link";
 
 export default function RemoteMonitoringPage() {
@@ -55,34 +55,60 @@ export default function RemoteMonitoringPage() {
 				</div>
 			</div>
 
-			{/* Additional Info Card */}
-			<div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-				<div className="flex items-start space-x-4">
-					<div className="p-3 bg-blue-100 rounded-lg">
-						<Monitor className="h-6 w-6 text-blue-600" />
+			{/* Action Cards */}
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+				{/* Google Earth Pro Viewer */}
+				<Link href="/dashboard/remote-monitoring/google-earth-pro">
+					<div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 p-6 hover:shadow-lg transition-shadow cursor-pointer group">
+						<div className="flex items-start space-x-4">
+							<div className="p-3 bg-emerald-100 rounded-lg group-hover:bg-emerald-200 transition-colors">
+								<Globe className="h-6 w-6 text-emerald-600" />
+							</div>
+							<div className="flex-1">
+								<h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-emerald-700 transition-colors">
+									Google Earth Pro Viewer
+								</h3>
+								<p className="text-sm text-gray-700 mb-3">
+									View and analyze KMZ layers with professional GIS controls
+								</p>
+								<div className="flex items-center text-sm text-emerald-600 font-medium">
+									<span>Open Viewer</span>
+									<ArrowLeft className="h-4 w-4 ml-2 rotate-180 group-hover:translate-x-1 transition-transform" />
+								</div>
+							</div>
+						</div>
 					</div>
-					<div>
-						<h3 className="text-lg font-semibold text-gray-900 mb-2">
-							What to Expect
-						</h3>
-						<ul className="space-y-2 text-gray-700">
-							<li className="flex items-start">
-								<span className="text-blue-600 mr-2">•</span>
-								<span>Real-time system monitoring and alerts</span>
-							</li>
-							<li className="flex items-start">
-								<span className="text-blue-600 mr-2">•</span>
-								<span>Remote device status tracking</span>
-							</li>
-							<li className="flex items-start">
-								<span className="text-blue-600 mr-2">•</span>
-								<span>Performance metrics and analytics</span>
-							</li>
-							<li className="flex items-start">
-								<span className="text-blue-600 mr-2">•</span>
-								<span>Automated notifications and reporting</span>
-							</li>
-						</ul>
+				</Link>
+
+				{/* Additional Info Card */}
+				<div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+					<div className="flex items-start space-x-4">
+						<div className="p-3 bg-blue-100 rounded-lg">
+							<Monitor className="h-6 w-6 text-blue-600" />
+						</div>
+						<div>
+							<h3 className="text-lg font-semibold text-gray-900 mb-2">
+								What to Expect
+							</h3>
+							<ul className="space-y-2 text-gray-700 text-sm">
+								<li className="flex items-start">
+									<span className="text-blue-600 mr-2">•</span>
+									<span>Real-time system monitoring</span>
+								</li>
+								<li className="flex items-start">
+									<span className="text-blue-600 mr-2">•</span>
+									<span>Remote device tracking</span>
+								</li>
+								<li className="flex items-start">
+									<span className="text-blue-600 mr-2">•</span>
+									<span>Performance analytics</span>
+								</li>
+								<li className="flex items-start">
+									<span className="text-blue-600 mr-2">•</span>
+									<span>Automated reporting</span>
+								</li>
+							</ul>
+						</div>
 					</div>
 				</div>
 			</div>
