@@ -6,12 +6,16 @@ import { ChevronLeft, ChevronRight, Calendar, Folder, Image as ImageIcon, Extern
 import Link from "next/link";
 import Image from "next/image";
 import DIKPanialaGISMapSection from '@/components/DIKPanialaGISMap';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Line, Pie } from 'react-chartjs-2';
 import {
 	Chart as ChartJS,
 	CategoryScale,
 	LinearScale,
 	BarElement,
+	LineElement,
+	PointElement,
+	ArcElement,
+	Filler,
 	Title,
 	Tooltip,
 	Legend,
@@ -24,6 +28,10 @@ ChartJS.register(
 	CategoryScale,
 	LinearScale,
 	BarElement,
+	LineElement,
+	PointElement,
+	ArcElement,
+	Filler,
 	Title,
 	Tooltip,
 	Legend
@@ -42,6 +50,208 @@ type PictureData = {
 	IsActive: boolean | null;
 	EventDate: string | null;
 };
+
+// Chart Type Switcher Component
+type ChartType = 'bar' | 'horizontal-bar' | 'line' | 'area' | 'pie';
+
+interface ChartTypeSwitcherProps {
+	chartId: string;
+	currentType: ChartType;
+	onTypeChange: (type: ChartType) => void;
+}
+
+function ChartTypeSwitcher({ chartId, currentType, onTypeChange }: ChartTypeSwitcherProps) {
+	const types: { value: ChartType; label: string }[] = [
+		{ value: 'bar', label: 'V-Bar' },
+		{ value: 'horizontal-bar', label: 'H-Bar' },
+		{ value: 'line', label: 'Line' },
+		{ value: 'area', label: 'Area' },
+		{ value: 'pie', label: 'Pie' },
+	];
+
+	return (
+		<div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+			{types.map((type) => (
+				<button
+					key={type.value}
+					onClick={() => onTypeChange(type.value)}
+					className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
+						currentType === type.value
+							? 'bg-white text-gray-900 shadow-sm'
+							: 'text-gray-600 hover:text-gray-900'
+					}`}
+				>
+					{type.label}
+				</button>
+			))}
+		</div>
+	);
+}
+
+// Dynamic Chart Renderer Component
+interface DynamicChartRendererProps {
+	chartType: ChartType;
+	data: any;
+	options: ChartOptions<'bar'> | ChartOptions<'line'> | ChartOptions<'pie'>;
+	height?: string;
+}
+
+function DynamicChartRenderer({ chartType, data, options, height = '280px' }: DynamicChartRendererProps) {
+	if (chartType === 'pie') {
+		// Pie chart
+		const pieOptions: ChartOptions<'pie'> = {
+			responsive: true,
+			maintainAspectRatio: true,
+			aspectRatio: 1.2,
+			plugins: {
+				legend: {
+					display: true,
+					position: 'right',
+					labels: {
+						boxWidth: 12,
+						padding: 10,
+						font: {
+							size: 10,
+						}
+					}
+				},
+				tooltip: {
+					callbacks: {
+						label: function(context) {
+							const label = context.label || '';
+							const value = context.parsed || 0;
+							return `${label}: ${value}%`;
+						}
+					}
+				},
+				datalabels: {
+					color: '#fff',
+					font: {
+						weight: 'bold',
+						size: 10,
+					},
+					formatter: (value) => `${value}%`,
+				}
+			}
+		};
+		
+		return (
+			<div style={{ height }}>
+				<Pie data={data} options={pieOptions} plugins={[ChartDataLabels]} />
+			</div>
+		);
+	} else if (chartType === 'horizontal-bar') {
+		// Horizontal bar chart
+		const horizontalOptions: ChartOptions<'bar'> = {
+			...options,
+			indexAxis: 'y' as const,
+			scales: {
+				x: {
+					beginAtZero: true,
+					max: 100,
+					title: {
+						display: true,
+						text: 'Progress (%)',
+						font: {
+							size: 11,
+							weight: 'bold',
+						}
+					},
+					ticks: {
+						stepSize: 20,
+						font: {
+							size: 10,
+						}
+					},
+					grid: {
+						color: 'rgba(0, 0, 0, 0.05)',
+					}
+				},
+				y: {
+					title: {
+						display: false,
+					},
+					grid: {
+						display: false,
+					},
+					ticks: {
+						font: {
+							size: 9,
+						}
+					}
+				}
+			}
+		};
+		
+		return (
+			<div style={{ height }}>
+				<Bar data={data} options={horizontalOptions} plugins={[ChartDataLabels]} />
+			</div>
+		);
+	} else if (chartType === 'area') {
+		// Area chart is a line chart with fill
+		const areaData = {
+			...data,
+			datasets: data.datasets.map((dataset: any) => ({
+				...dataset,
+				fill: true,
+				tension: 0.4,
+			}))
+		};
+		
+		return (
+			<div style={{ height }}>
+				<Line data={areaData} options={options as ChartOptions<'line'>} plugins={[ChartDataLabels]} />
+			</div>
+		);
+	} else if (chartType === 'line') {
+		const lineData = {
+			...data,
+			datasets: data.datasets.map((dataset: any) => ({
+				...dataset,
+				tension: 0.4,
+			}))
+		};
+		
+		return (
+			<div style={{ height }}>
+				<Line data={lineData} options={options as ChartOptions<'line'>} plugins={[ChartDataLabels]} />
+			</div>
+		);
+	} else {
+		// Default: vertical bar chart
+		return (
+			<div style={{ height }}>
+				<Bar data={data} options={options as ChartOptions<'bar'>} plugins={[ChartDataLabels]} />
+			</div>
+		);
+	}
+}
+
+// Hook for chart type persistence
+function useChartType(chartId: string, defaultType: ChartType = 'bar'): [ChartType, (type: ChartType) => void] {
+	const [chartType, setChartType] = useState<ChartType>(defaultType);
+	const [isClient, setIsClient] = useState(false);
+
+	useEffect(() => {
+		setIsClient(true);
+		// Load from localStorage on mount (client-side only)
+		const saved = localStorage.getItem(`chartType_${chartId}`);
+		const validTypes: ChartType[] = ['bar', 'horizontal-bar', 'line', 'area', 'pie'];
+		if (saved && validTypes.includes(saved as ChartType)) {
+			setChartType(saved as ChartType);
+		}
+	}, [chartId]);
+
+	const updateChartType = (type: ChartType) => {
+		setChartType(type);
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(`chartType_${chartId}`, type);
+		}
+	};
+
+	return [chartType, updateChartType];
+}
 
 // GIS Map Component with Boundaries using Leaflet (OpenStreetMap)
 function GISMapWithBoundaries() {
@@ -1693,6 +1903,8 @@ function GISOnlineMapsEmbedded() {
 
 // Output Progress Chart Component with exact values
 function OutputProgressChart() {
+	const [chartType, setChartType] = useChartType('outputProgress', 'bar');
+
 	const data = {
 		labels: ['Output A', 'Output B', 'Output C', 'Total'],
 		datasets: [
@@ -1700,16 +1912,16 @@ function OutputProgressChart() {
 				label: 'Progress (%)',
 				data: [31, 20, 30, 28.5],
 				backgroundColor: [
-					'rgba(59, 130, 246, 0.8)',  // Blue
-					'rgba(34, 197, 94, 0.8)',   // Green
-					'rgba(168, 85, 247, 0.8)',  // Purple
-					'rgba(249, 115, 22, 0.8)',  // Orange
+					'rgba(59, 130, 246, 0.85)',   // Bright Blue
+					'rgba(16, 185, 129, 0.85)',   // Emerald Green
+					'rgba(168, 85, 247, 0.85)',   // Vibrant Purple
+					'rgba(251, 146, 60, 0.85)',   // Bright Orange
 				],
 				borderColor: [
-					'rgb(59, 130, 246)',
-					'rgb(34, 197, 94)',
-					'rgb(168, 85, 247)',
-					'rgb(249, 115, 22)',
+					'rgb(37, 99, 235)',    // Darker Blue
+					'rgb(5, 150, 105)',    // Darker Green
+					'rgb(124, 58, 237)',   // Darker Purple
+					'rgb(249, 115, 22)',   // Darker Orange
 				],
 				borderWidth: 2,
 			}
@@ -1791,19 +2003,44 @@ function OutputProgressChart() {
 		}
 	};
 
-	return <div style={{ height: '280px' }}><Bar data={data} options={options} plugins={[ChartDataLabels]} /></div>;
+	return (
+		<div>
+			<div className="flex justify-end mb-3">
+				<ChartTypeSwitcher 
+					chartId="outputProgress" 
+					currentType={chartType} 
+					onTypeChange={setChartType}
+				/>
+			</div>
+			<DynamicChartRenderer chartType={chartType} data={data} options={options} height="280px" />
+		</div>
+	);
 }
 
 // Sector Wise Chart Component with exact values
 function SectorWiseChart() {
+	const [chartType, setChartType] = useChartType('sectorWise', 'bar');
+
 	const data = {
 		labels: ['Assessment', 'Document', 'Maps', 'Training', 'Workshop'],
 		datasets: [
 			{
 				label: 'Progress (%)',
 				data: [51, 43, 99, 46, 50],
-				backgroundColor: 'rgba(20, 184, 166, 0.8)',  // Teal
-				borderColor: 'rgb(20, 184, 166)',
+				backgroundColor: [
+					'rgba(20, 184, 166, 0.8)',   // Teal
+					'rgba(251, 146, 60, 0.8)',   // Orange
+					'rgba(34, 197, 94, 0.8)',    // Green
+					'rgba(239, 68, 68, 0.8)',    // Red
+					'rgba(168, 85, 247, 0.8)',   // Purple
+				],
+				borderColor: [
+					'rgb(20, 184, 166)',
+					'rgb(251, 146, 60)',
+					'rgb(34, 197, 94)',
+					'rgb(239, 68, 68)',
+					'rgb(168, 85, 247)',
+				],
 				borderWidth: 2,
 			}
 		]
@@ -1878,19 +2115,46 @@ function SectorWiseChart() {
 		}
 	};
 
-	return <div style={{ height: '280px' }}><Bar data={data} options={options} plugins={[ChartDataLabels]} /></div>;
+	return (
+		<div>
+			<div className="flex justify-end mb-3">
+				<ChartTypeSwitcher 
+					chartId="sectorWise" 
+					currentType={chartType} 
+					onTypeChange={setChartType}
+				/>
+			</div>
+			<DynamicChartRenderer chartType={chartType} data={data} options={options} height="280px" />
+		</div>
+	);
 }
 
 // District Wise Chart Component (using existing data)
 function DistrictWiseChart({ districtData }: { districtData: Array<{ District: string | null; AvgActivityProgress: number | null }> }) {
+	const [chartType, setChartType] = useChartType('districtWise', 'bar');
+
+	// Color palette for districts
+	const colorPalette = [
+		{ bg: 'rgba(99, 102, 241, 0.8)', border: 'rgb(99, 102, 241)' },      // Indigo
+		{ bg: 'rgba(236, 72, 153, 0.8)', border: 'rgb(236, 72, 153)' },      // Pink
+		{ bg: 'rgba(59, 130, 246, 0.8)', border: 'rgb(59, 130, 246)' },      // Blue
+		{ bg: 'rgba(16, 185, 129, 0.8)', border: 'rgb(16, 185, 129)' },      // Emerald
+		{ bg: 'rgba(245, 158, 11, 0.8)', border: 'rgb(245, 158, 11)' },      // Amber
+		{ bg: 'rgba(139, 92, 246, 0.8)', border: 'rgb(139, 92, 246)' },      // Violet
+		{ bg: 'rgba(14, 165, 233, 0.8)', border: 'rgb(14, 165, 233)' },      // Sky
+		{ bg: 'rgba(217, 70, 239, 0.8)', border: 'rgb(217, 70, 239)' },      // Fuchsia
+		{ bg: 'rgba(34, 197, 94, 0.8)', border: 'rgb(34, 197, 94)' },        // Green
+		{ bg: 'rgba(251, 146, 60, 0.8)', border: 'rgb(251, 146, 60)' },      // Orange
+	];
+
 	const chartData = {
 		labels: districtData.map(d => d.District || 'Unknown'),
 		datasets: [
 			{
 				label: 'Progress (%)',
 				data: districtData.map(d => Math.round(d.AvgActivityProgress || 0)),
-				backgroundColor: 'rgba(99, 102, 241, 0.8)',  // Indigo
-				borderColor: 'rgb(99, 102, 241)',
+				backgroundColor: districtData.map((_, index) => colorPalette[index % colorPalette.length].bg),
+				borderColor: districtData.map((_, index) => colorPalette[index % colorPalette.length].border),
 				borderWidth: 2,
 			}
 		]
@@ -1965,7 +2229,18 @@ function DistrictWiseChart({ districtData }: { districtData: Array<{ District: s
 		}
 	};
 
-	return <div style={{ height: '280px' }}><Bar data={chartData} options={options} plugins={[ChartDataLabels]} /></div>;
+	return (
+		<div>
+			<div className="flex justify-end mb-3">
+				<ChartTypeSwitcher 
+					chartId="districtWise" 
+					currentType={chartType} 
+					onTypeChange={setChartType}
+				/>
+			</div>
+			<DynamicChartRenderer chartType={chartType} data={chartData} options={options} height="280px" />
+		</div>
+	);
 }
 
 export default function DashboardPage() {
@@ -2388,25 +2663,25 @@ export default function DashboardPage() {
 				<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">Project Tracking Progress (%)</h2>
 				<p className="text-sm text-gray-600 leading-relaxed">Monitor and track project completion across all outputs</p>
 			</div>
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				{/* First Chart - Output Progress */}
-				<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
-					<h3 className="text-base font-medium text-gray-900 leading-snug mb-4 text-center">Output Progress</h3>
-					<OutputProgressChart />
-				</div>
-
-				{/* Second Chart - Sector Wise */}
-				<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
-					<h3 className="text-base font-medium text-gray-900 leading-snug mb-4 text-center">Sector Wise</h3>
-					<SectorWiseChart />
-				</div>
-
-				{/* Third Chart - District Wise */}
-				<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
-					<h3 className="text-base font-medium text-gray-900 leading-snug mb-4 text-center">District Wise</h3>
-					<DistrictWiseChart districtData={districtProgressSummary} />
-				</div>
+		<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+			{/* First Chart - Output Progress */}
+			<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
+				<h3 className="text-base font-medium text-gray-900 leading-snug mb-2 text-center">Output Progress</h3>
+				<OutputProgressChart />
 			</div>
+
+			{/* Second Chart - Sector Wise */}
+			<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
+				<h3 className="text-base font-medium text-gray-900 leading-snug mb-2 text-center">Sector Wise</h3>
+				<SectorWiseChart />
+			</div>
+
+			{/* Third Chart - District Wise */}
+			<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
+				<h3 className="text-base font-medium text-gray-900 leading-snug mb-2 text-center">District Wise</h3>
+				<DistrictWiseChart districtData={districtProgressSummary} />
+			</div>
+		</div>
 		</div>
 
 			{/* Training Dashboard Summary Cards */}
