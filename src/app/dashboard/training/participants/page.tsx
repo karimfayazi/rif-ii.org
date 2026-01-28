@@ -255,42 +255,42 @@ export default function TrainingParticipantsPage() {
 					<h1 className="text-2xl font-bold text-gray-900">Training Participants</h1>
 					<p className="text-sm text-gray-600 mt-1">View workshop training participants</p>
 				</div>
-				<div className="flex items-center space-x-3">
+				<div className="flex items-center gap-3">
 					<button
 						onClick={() => setShowFilters(prev => !prev)}
-						className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
 					>
-						<Filter className="h-4 w-4 mr-2" />
+						<Filter className="h-4 w-4 mr-2 flex-shrink-0" />
 						Filter On/Off
 					</button>
 					<button
 						onClick={handleExport}
-						className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
 					>
-						<FileDown className="h-4 w-4 mr-2" />
+						<FileDown className="h-4 w-4 mr-2 flex-shrink-0" />
 						Export
 					</button>
 					{accessAdd && trainingSection && (
 						<button
 							onClick={() => router.push('/dashboard/training/participants/add')}
-							className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+							className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
 						>
-							<Users className="h-4 w-4 mr-2" />
+							<Users className="h-4 w-4 mr-2 flex-shrink-0" />
 							Add Records
 						</button>
 					)}
 					<button
 						onClick={() => router.push('/dashboard/training/dashboard')}
-						className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
 					>
-						<ArrowLeft className="h-4 w-4 mr-2" />
+						<ArrowLeft className="h-4 w-4 mr-2 flex-shrink-0" />
 						Back to Training
 					</button>
 					<button
 						onClick={fetchParticipants}
-						className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
 					>
-						<RefreshCw className="h-4 w-4 mr-2" />
+						<RefreshCw className="h-4 w-4 mr-2 flex-shrink-0" />
 						Refresh
 					</button>
 				</div>
@@ -446,7 +446,7 @@ export default function TrainingParticipantsPage() {
 					<div className="min-w-0 flex items-end">
 						<button
 							onClick={handleReset}
-							className="w-full inline-flex items-center justify-center px-4 py-1.5 h-9 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+							className="flex-1 inline-flex items-center justify-center px-3 py-1.5 h-9 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
 						>
 							Reset
 						</button>
@@ -456,74 +456,86 @@ export default function TrainingParticipantsPage() {
 					<div className="min-w-0 flex items-end">
 						<button
 							onClick={handleSearch}
-							className="w-full inline-flex items-center justify-center px-4 py-1.5 h-9 text-sm bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
+							className="flex-1 inline-flex items-center justify-center px-3 py-1.5 h-9 text-sm bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
 						>
-							<Filter className="h-4 w-4 mr-2" />
-							Apply Filters
+							<Filter className="h-4 w-4 mr-1" />
+							Apply
 						</button>
 					</div>
 				</div>
 			</div>
 		)}
 
-			{/* Summary Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-					<div className="flex items-center">
-						<div className="p-2 bg-blue-100 rounded-lg">
-							<Users className="h-6 w-6 text-blue-600" />
+		{/* Summary Cards */}
+		<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+			{/* Total Participants */}
+			<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
+				<div className="flex items-center justify-between gap-3">
+					<div className="flex items-center gap-3 min-w-0 flex-1">
+						<div className="p-2 bg-purple-50 rounded-lg flex-shrink-0">
+							<Users className="h-5 w-5 text-purple-600" />
 						</div>
-						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Total Participants</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{formatNumber(totalParticipants)}
-							</p>
-						</div>
+						<p className="text-sm font-medium text-gray-700 truncate">
+							Total Participants
+						</p>
 					</div>
-				</div>
-
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-					<div className="flex items-center">
-						<div className="p-2 bg-green-100 rounded-lg">
-							<User className="h-6 w-6 text-green-600" />
-						</div>
-						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Male</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{formatNumber(totalMale)}
-							</p>
-						</div>
-					</div>
-				</div>
-
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-					<div className="flex items-center">
-						<div className="p-2 bg-pink-100 rounded-lg">
-							<UserCheck className="h-6 w-6 text-pink-600" />
-						</div>
-						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Female</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{formatNumber(totalFemale)}
-							</p>
-						</div>
-					</div>
-				</div>
-
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-					<div className="flex items-center">
-						<div className="p-2 bg-purple-100 rounded-lg">
-							<BarChart3 className="h-6 w-6 text-purple-600" />
-						</div>
-						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Total Workshops</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{formatNumber(uniqueWorkshops)}
-							</p>
-						</div>
-					</div>
+					<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
+						{formatNumber(totalParticipants)}
+					</p>
 				</div>
 			</div>
+
+			{/* Male Participants */}
+			<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
+				<div className="flex items-center justify-between gap-3">
+					<div className="flex items-center gap-3 min-w-0 flex-1">
+						<div className="p-2 bg-green-50 rounded-lg flex-shrink-0">
+							<User className="h-5 w-5 text-green-600" />
+						</div>
+						<p className="text-sm font-medium text-gray-700 truncate">
+							Male
+						</p>
+					</div>
+					<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
+						{formatNumber(totalMale)}
+					</p>
+				</div>
+			</div>
+
+			{/* Female Participants */}
+			<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
+				<div className="flex items-center justify-between gap-3">
+					<div className="flex items-center gap-3 min-w-0 flex-1">
+						<div className="p-2 bg-pink-50 rounded-lg flex-shrink-0">
+							<UserCheck className="h-5 w-5 text-pink-600" />
+						</div>
+						<p className="text-sm font-medium text-gray-700 truncate">
+							Female
+						</p>
+					</div>
+					<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
+						{formatNumber(totalFemale)}
+					</p>
+				</div>
+			</div>
+
+			{/* Total Workshops */}
+			<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
+				<div className="flex items-center justify-between gap-3">
+					<div className="flex items-center gap-3 min-w-0 flex-1">
+						<div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
+							<BarChart3 className="h-5 w-5 text-blue-600" />
+						</div>
+						<p className="text-sm font-medium text-gray-700 truncate">
+							Total Workshops
+						</p>
+					</div>
+					<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
+						{formatNumber(uniqueWorkshops)}
+					</p>
+				</div>
+			</div>
+		</div>
 
 			{/* Participants Data Grid */}
 			{filteredData.length === 0 ? (

@@ -814,6 +814,9 @@ export default function TrainingPage() {
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">Total Participants</th>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Training Facilitator</th>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Output</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Link Completion Report</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Participant List</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Event Pictures</th>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap sticky right-0 bg-gray-50">Actions</th>
 								</tr>
 							</thead>
@@ -945,20 +948,56 @@ export default function TrainingPage() {
 												{item.TrainingFacilitatorName || "N/A"}
 											</div>
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap">
-											<div className="text-sm text-gray-900">
-												{item.Output || "N/A"}
-											</div>
-										</td>
-										<td className="px-4 py-3 whitespace-nowrap sticky right-0 bg-white">
-											<div className="flex items-center space-x-2">
-												<button
-													onClick={() => handleView(item)}
-													className="inline-flex items-center px-3 py-1.5 text-sm text-green-600 bg-green-50 rounded hover:bg-green-100 transition-colors"
-													title="View"
-												>
-													<Eye className="h-4 w-4" />
-												</button>
+									<td className="px-4 py-3 whitespace-nowrap">
+										<div className="text-sm text-gray-900">
+											{item.Output || "N/A"}
+										</div>
+									</td>
+									<td className="px-4 py-3 whitespace-nowrap">
+										{item.ActivityCompletionReportLink ? (
+											<button
+												onClick={() => window.open(item.ActivityCompletionReportLink, "_blank", "noopener,noreferrer")}
+												className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+											>
+												Link Completion Report
+											</button>
+										) : (
+											<span className="text-sm text-gray-400">-</span>
+										)}
+									</td>
+									<td className="px-4 py-3 whitespace-nowrap">
+										{item.ParticipantListAttachment ? (
+											<button
+												onClick={() => window.open(item.ParticipantListAttachment, "_blank", "noopener,noreferrer")}
+												className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+											>
+												Participant List
+											</button>
+										) : (
+											<span className="text-sm text-gray-400">-</span>
+										)}
+									</td>
+									<td className="px-4 py-3 whitespace-nowrap">
+										{item.PictureAttachment ? (
+											<button
+												onClick={() => window.open(item.PictureAttachment, "_blank", "noopener,noreferrer")}
+												className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+											>
+												Event Pictures
+											</button>
+										) : (
+											<span className="text-sm text-gray-400">-</span>
+										)}
+									</td>
+									<td className="px-4 py-3 whitespace-nowrap sticky right-0 bg-white">
+										<div className="flex items-center space-x-2">
+											<button
+												onClick={() => handleView(item)}
+												className="inline-flex items-center px-3 py-1.5 text-sm text-green-600 bg-green-50 rounded hover:bg-green-100 transition-colors"
+												title="View"
+											>
+												<Eye className="h-4 w-4" />
+											</button>
 												{trainingSection && !accessLoading && (
 													<>
 														{accessEdit && (
@@ -1201,54 +1240,45 @@ export default function TrainingPage() {
 								</div>
 							)}
 
-							{/* Additional Information */}
-							<div className="bg-gray-50 rounded-lg p-4">
-								<h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
-								<div className="space-y-4">
-									{/* File Downloads Section */}
-									{(viewingRecord.ActivityCompletionReportLink || viewingRecord.ParticipantListAttachment || viewingRecord.PictureAttachment) && (
-										<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-											<h4 className="text-sm font-semibold text-gray-900 mb-3">Attachments & Downloads</h4>
-											<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-												{viewingRecord.ActivityCompletionReportLink && (
-													<button
-														onClick={() => handleDownloadFile(
-															viewingRecord.ActivityCompletionReportLink!,
-															`Activity_Completion_Report_${viewingRecord.SN || 'report'}.pdf`
-														)}
-														className="flex items-center justify-center space-x-2 px-4 py-3 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium text-blue-700"
-													>
-														<FileText className="h-5 w-5" />
-														<span>Download Report</span>
-														<FileDown className="h-4 w-4" />
-													</button>
-												)}
-												{viewingRecord.ParticipantListAttachment && (
-													<button
-														onClick={() => handleDownloadFile(
-															viewingRecord.ParticipantListAttachment!,
-															`Participant_List_${viewingRecord.SN || 'list'}.pdf`
-														)}
-														className="flex items-center justify-center space-x-2 px-4 py-3 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium text-blue-700"
-													>
-														<FileText className="h-5 w-5" />
-														<span>Download List</span>
-														<FileDown className="h-4 w-4" />
-													</button>
-												)}
-												{viewingRecord.PictureAttachment && (
-													<button
-														onClick={() => handleDownloadPictures(viewingRecord.PictureAttachment!)}
-														className="flex items-center justify-center space-x-2 px-4 py-3 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium text-blue-700"
-													>
-														<ImageIcon className="h-5 w-5" />
-														<span>Download Pictures</span>
-														<FileDown className="h-4 w-4" />
-													</button>
-												)}
-											</div>
+						{/* Additional Information */}
+						<div className="bg-gray-50 rounded-lg p-4">
+							<h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+							<div className="space-y-4">
+								{/* External Links Section */}
+								{(viewingRecord.ActivityCompletionReportLink || viewingRecord.ParticipantListAttachment || viewingRecord.PictureAttachment) && (
+									<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+										<h4 className="text-sm font-semibold text-gray-900 mb-3">External Links</h4>
+										<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+											{viewingRecord.ActivityCompletionReportLink && (
+												<button
+													onClick={() => window.open(viewingRecord.ActivityCompletionReportLink, "_blank", "noopener,noreferrer")}
+													className="flex items-center justify-center space-x-2 px-4 py-3 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium text-blue-700"
+												>
+													<FileText className="h-5 w-5" />
+													<span>Link Completion Report</span>
+												</button>
+											)}
+											{viewingRecord.ParticipantListAttachment && (
+												<button
+													onClick={() => window.open(viewingRecord.ParticipantListAttachment, "_blank", "noopener,noreferrer")}
+													className="flex items-center justify-center space-x-2 px-4 py-3 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium text-blue-700"
+												>
+													<FileText className="h-5 w-5" />
+													<span>Participant List</span>
+												</button>
+											)}
+											{viewingRecord.PictureAttachment && (
+												<button
+													onClick={() => window.open(viewingRecord.PictureAttachment, "_blank", "noopener,noreferrer")}
+													className="flex items-center justify-center space-x-2 px-4 py-3 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium text-blue-700"
+												>
+													<ImageIcon className="h-5 w-5" />
+													<span>Event Pictures</span>
+												</button>
+											)}
 										</div>
-									)}
+									</div>
+								)}
 									
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 										{viewingRecord.DataCompilerName && (
