@@ -143,7 +143,7 @@ function DynamicChartRenderer({ chartType, data, options, height = '280px' }: Dy
 	} else if (chartType === 'horizontal-bar') {
 		// Horizontal bar chart
 		const horizontalOptions: ChartOptions<'bar'> = {
-			...options,
+			...(options as ChartOptions<'bar'>),
 			indexAxis: 'y' as const,
 			scales: {
 				x: {
