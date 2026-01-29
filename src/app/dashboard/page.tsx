@@ -2657,6 +2657,17 @@ export default function DashboardPage() {
 		{/* GIS Maps Section */}
 		<DIKPanialaGISMapSection />
 
+		{/* Google Earth Pro Viewer Button */}
+		<div className="flex justify-center">
+			<Link 
+				href="/dashboard/remote-monitoring/google-earth-pro"
+				className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white font-medium rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
+			>
+				<Layers className="h-5 w-5 mr-2" />
+				Google Earth Pro Viewer
+			</Link>
+		</div>
+
 		{/* Progress % Section - Three Columns */}
 		<div className="space-y-6">
 			<div className="space-y-1">
