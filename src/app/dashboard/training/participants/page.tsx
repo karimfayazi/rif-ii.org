@@ -286,11 +286,11 @@ export default function TrainingParticipantsPage() {
 						</button>
 					)}
 					<button
-						onClick={() => router.push('/dashboard/training/dashboard')}
+						onClick={() => router.push('/dashboard/training-workshops')}
 						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
 					>
 						<ArrowLeft className="h-4 w-4 mr-2 flex-shrink-0" />
-						Back to Training
+						Back to Training-Workshops
 					</button>
 					<button
 						onClick={fetchParticipants}

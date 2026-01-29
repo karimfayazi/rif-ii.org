@@ -64,15 +64,15 @@ const GROUPS: NavGroup[] = [
 			{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
 			{ label: "Reports", href: "/dashboard/reports", icon: BarChart3 },
 			{ label: "Progress Tracking", href: "/dashboard/tracking-sheet", icon: TrendingUp },
-			{ 
-				label: "Training-Workshops", 
-				href: "/dashboard/training/dashboard",
-				icon: GraduationCap,
-				subItems: [
-					{ label: "Events", href: "/dashboard/training" },
-					{ label: "Participants", href: "/dashboard/training/participants" },
-				]
-			},
+		{ 
+			label: "Training-Workshops", 
+			href: "/dashboard/training-workshops",
+			icon: GraduationCap,
+			subItems: [
+				{ label: "Events", href: "/dashboard/training" },
+				{ label: "Participants", href: "/dashboard/training/participants" },
+			]
+		},
 			{ label: "Important Documents", href: "/dashboard/documents", icon: FileText },
 			{ label: "Important links", href: "/dashboard/links", icon: Link2 },
 			{ label: "Tehsil Wise Progress", href: "/dashboard/tehsil-wise-progress", icon: MapPin },
