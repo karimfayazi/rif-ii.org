@@ -64,6 +64,8 @@ export default function TrainingParticipantsPage() {
 	const [participantName, setParticipantName] = useState("");
 	const [cnicNumber, setCnicNumber] = useState("");
 	const [contactNumber, setContactNumber] = useState("");
+	const [startDateFilter, setStartDateFilter] = useState("");
+	const [endDateFilter, setEndDateFilter] = useState("");
 	const [tehsils, setTehsils] = useState<string[]>([]);
 	const [organizationDepartments, setOrganizationDepartments] = useState<string[]>([]);
 	const [workshopTrainingNames, setWorkshopTrainingNames] = useState<string[]>([]);
@@ -79,6 +81,8 @@ export default function TrainingParticipantsPage() {
 			if (selectedGender) params.append('gender', selectedGender);
 			if (selectedOrganizationDepartment) params.append('organizationDepartment', selectedOrganizationDepartment);
 			if (selectedWorkshopTrainingName) params.append('workshopTrainingName', selectedWorkshopTrainingName);
+			if (startDateFilter) params.append('startDate', startDateFilter);
+			if (endDateFilter) params.append('endDate', endDateFilter);
 
 			const response = await fetch(`/api/training/participants?${params.toString()}`);
 			const data = await response.json();
@@ -103,7 +107,7 @@ export default function TrainingParticipantsPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [selectedDistrict, selectedTehsil, selectedGender, selectedOrganizationDepartment, selectedWorkshopTrainingName]);
+	}, [selectedDistrict, selectedTehsil, selectedGender, selectedOrganizationDepartment, selectedWorkshopTrainingName, startDateFilter, endDateFilter]);
 
 	useEffect(() => {
 		fetchParticipants();
@@ -122,6 +126,8 @@ export default function TrainingParticipantsPage() {
 		setParticipantName("");
 		setCnicNumber("");
 		setContactNumber("");
+		setStartDateFilter("");
+		setEndDateFilter("");
 	};
 
 	const formatNumber = (num: number | null | undefined) => {
@@ -428,21 +434,47 @@ export default function TrainingParticipantsPage() {
 						/>
 					</div>
 
-					{/* Contact Number Filter */}
-					<div className="min-w-0">
-						<label className="block text-xs font-medium text-gray-700 mb-1">
-							Contact Number
-						</label>
-						<input
-							type="text"
-							value={contactNumber}
-							onChange={(e) => setContactNumber(e.target.value)}
-							placeholder="Search by contact..."
-							className="w-full h-9 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
-						/>
-					</div>
+				{/* Contact Number Filter */}
+				<div className="min-w-0">
+					<label className="block text-xs font-medium text-gray-700 mb-1">
+						Contact Number
+					</label>
+					<input
+						type="text"
+						value={contactNumber}
+						onChange={(e) => setContactNumber(e.target.value)}
+						placeholder="Search by contact..."
+						className="w-full h-9 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+					/>
+				</div>
 
-					{/* Reset Button */}
+				{/* Start Date Filter */}
+				<div className="min-w-0">
+					<label className="block text-xs font-medium text-gray-700 mb-1">
+						Start Date
+					</label>
+					<input
+						type="date"
+						value={startDateFilter}
+						onChange={(e) => setStartDateFilter(e.target.value)}
+						className="w-full h-9 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+					/>
+				</div>
+
+				{/* End Date Filter */}
+				<div className="min-w-0">
+					<label className="block text-xs font-medium text-gray-700 mb-1">
+						End Date
+					</label>
+					<input
+						type="date"
+						value={endDateFilter}
+						onChange={(e) => setEndDateFilter(e.target.value)}
+						className="w-full h-9 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+					/>
+				</div>
+
+				{/* Reset Button */}
 					<div className="min-w-0 flex items-end">
 						<button
 							onClick={handleReset}
@@ -562,6 +594,7 @@ export default function TrainingParticipantsPage() {
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Contact Number</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Location</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Workshop/Training</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Dates</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: "#ffffff" }}>Actions</th>
 								</tr>
 							</thead>
@@ -604,25 +637,31 @@ export default function TrainingParticipantsPage() {
 												{item.tehsil && <div className="text-xs text-gray-500">{item.tehsil}</div>}
 											</div>
 										</td>
-										<td className="px-6 py-4">
-											<div className="text-sm text-gray-900">
-												<div className="font-semibold">{item.workshop_training_name || "N/A"}</div>
-												{item.workshop_session_conference && (
-													<div className="text-xs text-gray-500">
-														{item.workshop_session_conference}
-													</div>
-												)}
-											</div>
-										</td>
-										<td className="px-6 py-4">
-											<div className="flex items-center space-x-2">
-												<button
-													onClick={() => setViewingParticipant(item)}
-													className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-													title="View"
-												>
-													<Eye className="h-4 w-4" />
-												</button>
+									<td className="px-6 py-4">
+										<div className="text-sm text-gray-900">
+											<div className="font-semibold">{item.workshop_training_name || "N/A"}</div>
+											{item.workshop_session_conference && (
+												<div className="text-xs text-gray-500">
+													{item.workshop_session_conference}
+												</div>
+											)}
+										</div>
+									</td>
+									<td className="px-6 py-4">
+										<div className="text-sm text-gray-900">
+											<div>Start date - {item.start_date || "-"}</div>
+											<div className="text-xs text-gray-500">End date - {item.end_date || "-"}</div>
+										</div>
+									</td>
+									<td className="px-6 py-4">
+										<div className="flex items-center space-x-2">
+											<button
+												onClick={() => setViewingParticipant(item)}
+												className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+												title="View"
+											>
+												<Eye className="h-4 w-4" />
+											</button>
 												{trainingSection && (
 													<>
 														{accessEdit && (
