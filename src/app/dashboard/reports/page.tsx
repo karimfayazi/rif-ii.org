@@ -320,23 +320,23 @@ export default function ReportsPage() {
 				<h1 className="text-2xl font-bold text-gray-900">Reports</h1>
 				<p className="text-sm text-gray-600 mt-1">Browse and download available reports</p>
 			</div>
-			<div className="flex items-center space-x-3">
+			<div className="flex items-center gap-3">
 				<Link
 					href="/dashboard/reports/upload"
-					className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
+					className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
 				>
-					<Upload className="h-4 w-4 mr-2" />
+					<Upload className="h-4 w-4 mr-2 flex-shrink-0" />
 					Upload report
 				</Link>
 				<button
 					onClick={fetchReports}
-					className="inline-flex items-center px-4 py-2 text-[#0b4d2b] bg-[#0b4d2b]/10 rounded-lg hover:bg-[#0b4d2b]/20 transition-colors"
+					className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
 				>
-					<RefreshCw className="h-4 w-4 mr-2" />
+					<RefreshCw className="h-4 w-4 mr-2 flex-shrink-0" />
 					Refresh
 				</button>
-				<button className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors">
-					<Download className="h-4 w-4 mr-2" />
+				<button className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors whitespace-nowrap">
+					<Download className="h-4 w-4 mr-2 flex-shrink-0" />
 					Export
 				</button>
 			</div>
