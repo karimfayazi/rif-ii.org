@@ -2658,7 +2658,7 @@ export default function DashboardPage() {
 		<DIKPanialaGISMapSection />
 
 		{/* Google Earth Pro Viewer Button */}
-		<div className="flex justify-center">
+		<div className="flex justify-start">
 			<Link 
 				href="/dashboard/remote-monitoring/google-earth-pro"
 				className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white font-medium rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
