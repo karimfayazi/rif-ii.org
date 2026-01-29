@@ -20,6 +20,7 @@ import {
 	Loader2,
 	CheckCircle
 } from "lucide-react";
+import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
 
@@ -351,27 +352,27 @@ export default function TrackingSheetPage() {
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">Tracking Sheet</h1>
-					<p className="text-gray-600 mt-2">Monitor project activities and progress</p>
+					<p className="text-sm text-gray-600 mt-1">Monitor project activities and progress</p>
 				</div>
-				<div className="flex items-center space-x-3">
+				<div className="flex items-center gap-3">
 					{isAdmin && !accessLoading && (
-						<a
+						<Link
 							href="/dashboard/tracking-sheet/add"
-							className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+							className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
 						>
-							<Plus className="h-4 w-4 mr-2" />
+							<Plus className="h-4 w-4 mr-2 flex-shrink-0" />
 							Add Record
-						</a>
+						</Link>
 					)}
 					<button
 						onClick={fetchTrackingData}
-						className="inline-flex items-center px-4 py-2 text-[#0b4d2b] bg-[#0b4d2b]/10 rounded-lg hover:bg-[#0b4d2b]/20 transition-colors"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
 					>
-						<RefreshCw className="h-4 w-4 mr-2" />
+						<RefreshCw className="h-4 w-4 mr-2 flex-shrink-0" />
 						Refresh
 					</button>
-					<button className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors">
-						<Download className="h-4 w-4 mr-2" />
+					<button className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors whitespace-nowrap">
+						<Download className="h-4 w-4 mr-2 flex-shrink-0" />
 						Export
 					</button>
 				</div>
