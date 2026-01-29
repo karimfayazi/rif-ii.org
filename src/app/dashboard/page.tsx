@@ -2669,13 +2669,13 @@ export default function DashboardPage() {
 			</Link>
 		</div>
 
-			{/* Progress % Section - Three Columns */}
-			<div className="space-y-6">
-			<div className="space-y-1">
-				<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">Project Tracking Progress (%)</h2>
-				<p className="text-sm text-gray-600 leading-relaxed">Monitor and track project completion across all outputs</p>
-			</div>
-		<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		{/* Progress % Section - Three Columns */}
+		<div className="space-y-3">
+		<div className="space-y-1">
+			<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">Project Tracking Progress (%)</h2>
+			<p className="text-sm text-gray-600 leading-relaxed">Monitor and track project completion across all outputs</p>
+		</div>
+	<div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
 			{/* First Chart - Output Progress */}
 			<div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
 				<h3 className="text-base font-medium text-gray-900 leading-snug mb-2 text-center">Output Progress</h3>
