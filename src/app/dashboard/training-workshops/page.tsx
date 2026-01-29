@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Chart, Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { KpiCard, KpiCardsGrid } from "@/components/dashboard";
 import {
 	Chart as ChartJS,
 	CategoryScale,
@@ -800,180 +801,70 @@ export default function TrainingWorkshopsDashboardPage() {
 				</div>
 			)}
 
-			{/* KPI Cards - Matching Training Page Layout */}
+			{/* KPI Cards - Using Shared Components */}
 			{kpis && (
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-					{/* Total Events */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
-									<GraduationCap className="h-5 w-5 text-blue-600" />
-								</div>
-								<p className="text-sm font-medium text-gray-700 truncate">
-									Total Events
-								</p>
-							</div>
-							<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
-								{formatNumber(kpis.totalEvents)}
-							</p>
-						</div>
-					</div>
-
-					{/* Total Participants (Reported) */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="p-2 bg-purple-50 rounded-lg flex-shrink-0">
-									<Users className="h-5 w-5 text-purple-600" />
-								</div>
-								<p className="text-sm font-medium text-gray-700 truncate">
-									Reported Participants
-								</p>
-							</div>
-							<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
-								{formatNumber(kpis.totalParticipants)}
-							</p>
-						</div>
-					</div>
-
-					{/* Unique Participants */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="p-2 bg-green-50 rounded-lg flex-shrink-0">
-									<UserCheck className="h-5 w-5 text-green-600" />
-								</div>
-								<p className="text-sm font-medium text-gray-700 truncate">
-									Unique Participants
-								</p>
-							</div>
-							<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
-								{formatNumber(kpis.registeredParticipants)}
-							</p>
-						</div>
-					</div>
-
-					{/* Male Participants */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="p-2 bg-green-50 rounded-lg flex-shrink-0">
-									<User className="h-5 w-5 text-green-600" />
-								</div>
-								<p className="text-sm font-medium text-gray-700 truncate">
-									Male
-								</p>
-							</div>
-							<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
-								{formatNumber(kpis.totalMale)}
-							</p>
-						</div>
-					</div>
-
-					{/* Female Participants */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="p-2 bg-pink-50 rounded-lg flex-shrink-0">
-									<UserCheck className="h-5 w-5 text-pink-600" />
-								</div>
-								<p className="text-sm font-medium text-gray-700 truncate">
-									Female
-								</p>
-							</div>
-							<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
-								{formatNumber(kpis.totalFemale)}
-							</p>
-						</div>
-					</div>
-
-					{/* Total Participants */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="p-2 bg-purple-50 rounded-lg flex-shrink-0">
-									<Users className="h-5 w-5 text-purple-600" />
-								</div>
-								<p className="text-sm font-medium text-gray-700 truncate">
-									Total Participant
-								</p>
-							</div>
-							<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
-								{formatNumber(kpis.totalParticipants + kpis.registeredParticipants)}
-							</p>
-						</div>
-					</div>
-
-					{/* Avg Participants per Event */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="p-2 bg-orange-50 rounded-lg flex-shrink-0">
-									<BarChart3 className="h-5 w-5 text-orange-600" />
-								</div>
-								<p className="text-sm font-medium text-gray-700 truncate">
-									Avg Participants/Event
-								</p>
-							</div>
-							<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
-								{formatDecimal(kpis.avgParticipantsPerEvent)}
-							</p>
-						</div>
-					</div>
-
-					{/* Avg Duration */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="p-2 bg-indigo-50 rounded-lg flex-shrink-0">
-									<Calendar className="h-5 w-5 text-indigo-600" />
-								</div>
-								<p className="text-sm font-medium text-gray-700 truncate">
-									Avg Duration
-								</p>
-							</div>
-							<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
-								{formatDecimal(kpis.avgDuration)}
-							</p>
-						</div>
-					</div>
-
-					{/* Pre Evaluation */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="p-2 bg-yellow-50 rounded-lg flex-shrink-0">
-									<Award className="h-5 w-5 text-yellow-600" />
-								</div>
-								<p className="text-sm font-medium text-gray-700 truncate">
-									Pre-Evaluation
-								</p>
-							</div>
-							<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
-								{formatDecimal(kpis.avgPreEvaluation)}
-							</p>
-						</div>
-					</div>
-
-					{/* Post Evaluation */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="p-2 bg-emerald-50 rounded-lg flex-shrink-0">
-									<Award className="h-5 w-5 text-emerald-600" />
-								</div>
-								<p className="text-sm font-medium text-gray-700 truncate">
-									Post-Evaluation
-								</p>
-							</div>
-							<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
-								{formatDecimal(kpis.avgPostEvaluation)}
-							</p>
-						</div>
-					</div>
-
-					{/* Evaluation Improvement */}
+				<KpiCardsGrid columns="4">
+					<KpiCard
+						title="Total Events"
+						value={formatNumber(kpis.totalEvents)}
+						icon={GraduationCap}
+						iconColor="blue"
+					/>
+					<KpiCard
+						title="Reported Participants"
+						value={formatNumber(kpis.totalParticipants)}
+						icon={Users}
+						iconColor="purple"
+					/>
+					<KpiCard
+						title="Unique Participants"
+						value={formatNumber(kpis.registeredParticipants)}
+						icon={UserCheck}
+						iconColor="green"
+					/>
+					<KpiCard
+						title="Male"
+						value={formatNumber(kpis.totalMale)}
+						icon={User}
+						iconColor="green"
+					/>
+					<KpiCard
+						title="Female"
+						value={formatNumber(kpis.totalFemale)}
+						icon={UserCheck}
+						iconColor="pink"
+					/>
+					<KpiCard
+						title="Total Participant"
+						value={formatNumber(kpis.totalParticipants + kpis.registeredParticipants)}
+						icon={Users}
+						iconColor="purple"
+					/>
+					<KpiCard
+						title="Avg Participants/Event"
+						value={formatDecimal(kpis.avgParticipantsPerEvent)}
+						icon={BarChart3}
+						iconColor="orange"
+					/>
+					<KpiCard
+						title="Avg Duration"
+						value={formatDecimal(kpis.avgDuration)}
+						icon={Calendar}
+						iconColor="indigo"
+					/>
+					<KpiCard
+						title="Pre-Evaluation"
+						value={formatDecimal(kpis.avgPreEvaluation)}
+						icon={Award}
+						iconColor="yellow"
+					/>
+					<KpiCard
+						title="Post-Evaluation"
+						value={formatDecimal(kpis.avgPostEvaluation)}
+						icon={Award}
+						iconColor="green"
+					/>
+					{/* Custom card for Improvement with conditional coloring */}
 					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
 						<div className="flex items-center justify-between gap-3">
 							<div className="flex items-center gap-3 min-w-0 flex-1">
@@ -989,7 +880,7 @@ export default function TrainingWorkshopsDashboardPage() {
 							</p>
 						</div>
 					</div>
-				</div>
+				</KpiCardsGrid>
 			)}
 
 			{/* Charts Section */}
