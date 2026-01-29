@@ -327,31 +327,31 @@ export default function PicturesPage() {
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">Pictures</h1>
-					<p className="text-gray-600 mt-1">Manage and view all uploaded pictures</p>
+					<p className="text-sm text-gray-600 mt-1">Manage and view all uploaded pictures</p>
 				</div>
-				<div className="flex items-center space-x-3">
+				<div className="flex items-center gap-3">
 					{(isAdmin || canUploadPictures) && (
 						<Link
 							href="/dashboard/pictures/upload"
-							className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm hover:shadow-md"
+							className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
 						>
-							<Upload className="h-4 w-4 mr-2" />
+							<Upload className="h-4 w-4 mr-2 flex-shrink-0" />
 							Upload Pictures
 						</Link>
 					)}
 					<button
 						onClick={() => setShowFilters(!showFilters)}
-						className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
 					>
-						<Filter className="h-4 w-4 mr-2" />
+						<Filter className="h-4 w-4 mr-2 flex-shrink-0" />
 						{showFilters ? 'Hide' : 'Show'} Filters
 					</button>
 					<button
 						onClick={fetchPictures}
 						disabled={loading}
-						className="inline-flex items-center px-4 py-2 text-sm font-medium text-[#0b4d2b] bg-[#0b4d2b]/10 rounded-lg hover:bg-[#0b4d2b]/20 transition-colors disabled:opacity-50"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
 					>
-						<RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+						<RefreshCw className={`h-4 w-4 mr-2 flex-shrink-0 ${loading ? 'animate-spin' : ''}`} />
 						Refresh
 					</button>
 				</div>
