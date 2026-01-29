@@ -2654,22 +2654,23 @@ export default function DashboardPage() {
 				<p className="text-sm text-gray-600 leading-relaxed">Welcome to the RIF-II MIS Dashboard</p>
 			</div>
 
-		{/* GIS Maps Section */}
-		<DIKPanialaGISMapSection />
+		{/* GIS Maps Section with Button and Progress Section */}
+		<div className="space-y-4">
+			<DIKPanialaGISMapSection />
 
-		{/* Google Earth Pro Viewer Button */}
-		<div className="flex justify-start">
-			<Link 
-				href="/dashboard/remote-monitoring/google-earth-pro"
-				className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white font-medium rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
-			>
-				<Layers className="h-5 w-5 mr-2" />
-				Google Earth Pro Viewer
-			</Link>
-		</div>
+			{/* Google Earth Pro Viewer Button */}
+			<div className="flex justify-start">
+				<Link 
+					href="/dashboard/remote-monitoring/google-earth-pro"
+					className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white font-medium rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
+				>
+					<Layers className="h-5 w-5 mr-2" />
+					Google Earth Pro Viewer
+				</Link>
+			</div>
 
-		{/* Progress % Section - Three Columns */}
-		<div className="space-y-6">
+			{/* Progress % Section - Three Columns */}
+			<div className="space-y-6">
 			<div className="space-y-1">
 				<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">Project Tracking Progress (%)</h2>
 				<p className="text-sm text-gray-600 leading-relaxed">Monitor and track project completion across all outputs</p>
@@ -2692,6 +2693,7 @@ export default function DashboardPage() {
 				<h3 className="text-base font-medium text-gray-900 leading-snug mb-2 text-center">District Wise</h3>
 				<DistrictWiseChart districtData={districtProgressSummary} />
 			</div>
+		</div>
 		</div>
 		</div>
 
