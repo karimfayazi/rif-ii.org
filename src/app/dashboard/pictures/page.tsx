@@ -370,12 +370,11 @@ export default function PicturesPage() {
 			
 			{/* Filters Panel */}
 			{showFilters && (
-				<div className="bg-white rounded-lg border border-gray-200 p-6">
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-						{/* Search */}
-						<div className="lg:col-span-3">
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<Search className="h-4 w-4 inline mr-1" />
+				<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg p-3">
+					<div className="space-y-3">
+						{/* Search - Full Width */}
+						<div>
+							<label className="block text-xs font-medium text-gray-700 mb-1">
 								Search (FileName or GroupName)
 							</label>
 							<input
@@ -383,128 +382,135 @@ export default function PicturesPage() {
 								value={filters.search}
 								onChange={(e) => handleFilterChange('search', e.target.value)}
 								placeholder="Search pictures..."
-								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+								className="w-full h-9 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 							/>
 						</div>
-						
-						{/* GroupName */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">Group Name</label>
-							<select
-								value={filters.groupName}
-								onChange={(e) => handleFilterChange('groupName', e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-							>
-								<option value="">All Groups</option>
-								{groupNames.map(g => (
-									<option key={g} value={g}>{g}</option>
-								))}
-							</select>
+
+						{/* Row 1: Group Name, Main Category, Sub Category, Uploaded By */}
+						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+							{/* GroupName */}
+							<div className="min-w-0">
+								<label className="block text-xs font-medium text-gray-700 mb-1">
+									Group Name
+								</label>
+								<select
+									value={filters.groupName}
+									onChange={(e) => handleFilterChange('groupName', e.target.value)}
+									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+								>
+									<option value="">All Groups</option>
+									{groupNames.map(g => (
+										<option key={g} value={g}>{g}</option>
+									))}
+								</select>
+							</div>
+							
+							{/* MainCategory */}
+							<div className="min-w-0">
+								<label className="block text-xs font-medium text-gray-700 mb-1">
+									Main Category
+								</label>
+								<select
+									value={filters.mainCategory}
+									onChange={(e) => handleFilterChange('mainCategory', e.target.value)}
+									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+								>
+									<option value="">All Categories</option>
+									{mainCategories.map(cat => (
+										<option key={cat} value={cat}>{cat}</option>
+									))}
+								</select>
+							</div>
+							
+							{/* SubCategory */}
+							<div className="min-w-0">
+								<label className="block text-xs font-medium text-gray-700 mb-1">
+									Sub Category
+								</label>
+								<select
+									value={filters.subCategory}
+									onChange={(e) => handleFilterChange('subCategory', e.target.value)}
+									disabled={!filters.mainCategory}
+									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+								>
+									<option value="">All Sub Categories</option>
+									{subCategories.map(sub => (
+										<option key={sub} value={sub}>{sub}</option>
+									))}
+								</select>
+							</div>
+							
+							{/* UploadedBy */}
+							<div className="min-w-0">
+								<label className="block text-xs font-medium text-gray-700 mb-1">
+									Uploaded By
+								</label>
+								<select
+									value={filters.uploadedBy}
+									onChange={(e) => handleFilterChange('uploadedBy', e.target.value)}
+									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+								>
+									<option value="">All Users</option>
+									{uploadedByList.map(user => (
+										<option key={user} value={user}>{user}</option>
+									))}
+								</select>
+							</div>
 						</div>
-						
-						{/* MainCategory */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">Main Category</label>
-							<select
-								value={filters.mainCategory}
-								onChange={(e) => handleFilterChange('mainCategory', e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-							>
-								<option value="">All Categories</option>
-								{mainCategories.map(cat => (
-									<option key={cat} value={cat}>{cat}</option>
-								))}
-							</select>
-						</div>
-						
-						{/* SubCategory */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">Sub Category</label>
-							<select
-								value={filters.subCategory}
-								onChange={(e) => handleFilterChange('subCategory', e.target.value)}
-								disabled={!filters.mainCategory}
-								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-							>
-								<option value="">All Sub Categories</option>
-								{subCategories.map(sub => (
-									<option key={sub} value={sub}>{sub}</option>
-								))}
-							</select>
-						</div>
-						
-						{/* UploadedBy */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<User className="h-4 w-4 inline mr-1" />
-								Uploaded By
-							</label>
-							<select
-								value={filters.uploadedBy}
-								onChange={(e) => handleFilterChange('uploadedBy', e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-							>
-								<option value="">All Users</option>
-								{uploadedByList.map(user => (
-									<option key={user} value={user}>{user}</option>
-								))}
-							</select>
-						</div>
-						
-						{/* UploadDate From */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<Calendar className="h-4 w-4 inline mr-1" />
-								Upload Date From
-							</label>
-							<input
-								type="date"
-								value={filters.uploadFrom}
-								onChange={(e) => handleFilterChange('uploadFrom', e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-							/>
-						</div>
-						
-						{/* UploadDate To */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<Calendar className="h-4 w-4 inline mr-1" />
-								Upload Date To
-							</label>
-							<input
-								type="date"
-								value={filters.uploadTo}
-								onChange={(e) => handleFilterChange('uploadTo', e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-							/>
-						</div>
-						
-						{/* EventDate From */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<Calendar className="h-4 w-4 inline mr-1" />
-								Event Date From
-							</label>
-							<input
-								type="date"
-								value={filters.eventFrom}
-								onChange={(e) => handleFilterChange('eventFrom', e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-							/>
-						</div>
-						
-						{/* EventDate To */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<Calendar className="h-4 w-4 inline mr-1" />
-								Event Date To
-							</label>
-							<input
-								type="date"
-								value={filters.eventTo}
-								onChange={(e) => handleFilterChange('eventTo', e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-							/>
+
+						{/* Row 2: Upload Date From, Upload Date To, Event Date From, Event Date To */}
+						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+							{/* UploadDate From */}
+							<div className="min-w-0">
+								<label className="block text-xs font-medium text-gray-700 mb-1">
+									Upload Date From
+								</label>
+								<input
+									type="date"
+									value={filters.uploadFrom}
+									onChange={(e) => handleFilterChange('uploadFrom', e.target.value)}
+									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+								/>
+							</div>
+							
+							{/* UploadDate To */}
+							<div className="min-w-0">
+								<label className="block text-xs font-medium text-gray-700 mb-1">
+									Upload Date To
+								</label>
+								<input
+									type="date"
+									value={filters.uploadTo}
+									onChange={(e) => handleFilterChange('uploadTo', e.target.value)}
+									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+								/>
+							</div>
+							
+							{/* EventDate From */}
+							<div className="min-w-0">
+								<label className="block text-xs font-medium text-gray-700 mb-1">
+									Event Date From
+								</label>
+								<input
+									type="date"
+									value={filters.eventFrom}
+									onChange={(e) => handleFilterChange('eventFrom', e.target.value)}
+									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+								/>
+							</div>
+							
+							{/* EventDate To */}
+							<div className="min-w-0">
+								<label className="block text-xs font-medium text-gray-700 mb-1">
+									Event Date To
+								</label>
+								<input
+									type="date"
+									value={filters.eventTo}
+									onChange={(e) => handleFilterChange('eventTo', e.target.value)}
+									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+								/>
+							</div>
 						</div>
 					</div>
 					
