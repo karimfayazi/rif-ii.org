@@ -24,7 +24,7 @@ import {
 	ChevronDown,
 	ChevronUp
 } from "lucide-react";
-import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
+import { Chart, Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
 	Chart as ChartJS,
@@ -37,7 +37,9 @@ import {
 	Title,
 	Tooltip,
 	Legend,
-	Filler
+	Filler,
+	BarController,
+	LineController
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
@@ -48,6 +50,8 @@ ChartJS.register(
 	LineElement,
 	PointElement,
 	ArcElement,
+	BarController,
+	LineController,
 	Title,
 	Tooltip,
 	Legend,
@@ -1016,7 +1020,8 @@ export default function TrainingWorkshopsDashboardPage() {
 									</CardHeader>
 									<CardContent className="pt-0">
 										<div className="h-[180px] w-full">
-											<Bar
+											<Chart
+												type="bar"
 												data={{
 													labels: (charts.eventsOverTime || []).map(d => d.month),
 													datasets: [
