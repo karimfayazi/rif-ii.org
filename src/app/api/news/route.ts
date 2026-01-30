@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import sql from 'mssql';
+import sql from "mssql";
+
+export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
 	try {
@@ -51,49 +54,67 @@ export async function GET(request: NextRequest) {
 			}
 		}
 
-		// Otherwise, fetch list of news articles
+		// Otherwise, fetch list of published news articles
 		let query = `
-			SELECT TOP (1000) 
+			SELECT TOP (1000)
 				[NewsID] AS newsId,
 				[Title] AS title,
 				[NewsDate] AS newsDate,
 				[BodyText] AS bodyText,
 				[ImageUrl] AS imageUrl,
-				[ImageCaption] AS imageCaption
+				[ImageCaption] AS imageCaption,
+				[PostedByName] AS postedByName
 			FROM [_rifiiorg_db].[rifiiorg].[tblMISNews]
-			WHERE 1=1
+			WHERE [IsPublished] = 1
 		`;
 
 		const request_obj = pool.request();
 
-		// Add filters if provided
 		if (search) {
 			query += ` AND [Title] LIKE @search`;
-			request_obj.input('search', sql.NVarChar, `%${search}%`);
+			request_obj.input("search", sql.NVarChar, `%${search}%`);
 		}
 		if (dateFrom) {
 			query += ` AND [NewsDate] >= @dateFrom`;
-			request_obj.input('dateFrom', sql.Date, dateFrom);
+			request_obj.input("dateFrom", sql.Date, dateFrom);
 		}
 		if (dateTo) {
 			query += ` AND [NewsDate] <= @dateTo`;
-			request_obj.input('dateTo', sql.Date, dateTo);
+			request_obj.input("dateTo", sql.Date, dateTo);
 		}
 
-		// Apply sorting
-		if (sort === 'oldest') {
+		if (sort === "oldest") {
 			query += ` ORDER BY [NewsDate] ASC, [NewsID] ASC`;
 		} else {
 			query += ` ORDER BY [NewsDate] DESC, [NewsID] DESC`;
 		}
 
 		const result = await request_obj.query(query);
-		const news = result.recordset || [];
-		
-		return NextResponse.json({
-			success: true,
-			data: news
-		});
+		const raw = (result.recordset || []) as Array<{
+			newsId: number;
+			title: string;
+			newsDate: Date | string;
+			bodyText: string | null;
+			imageUrl: string | null;
+			imageCaption: string | null;
+			postedByName: string | null;
+		}>;
+		const data = raw.map((row) => ({
+			newsId: row.newsId,
+			title: row.title,
+			newsDate:
+				row.newsDate instanceof Date
+					? row.newsDate.toISOString()
+					: typeof row.newsDate === "string"
+						? row.newsDate
+						: "",
+			bodyText: row.bodyText ?? "",
+			imageUrl: row.imageUrl ?? null,
+			imageCaption: row.imageCaption ?? null,
+			postedByName: row.postedByName ?? null,
+		}));
+
+		return NextResponse.json({ success: true, data });
 	} catch (error) {
 		console.error("Error fetching news:", error);
 		return NextResponse.json(

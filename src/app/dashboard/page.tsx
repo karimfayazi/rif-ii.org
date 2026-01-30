@@ -2431,8 +2431,7 @@ function TrainingGenderChart({ data }: { data: TrainingGraphData[] }) {
 				callbacks: {
 					label: function(context) {
 						const value = context.parsed;
-						const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-						return `${context.label}: ${value.toLocaleString()} (${percentage}%)`;
+						return `${context.label}: ${Number(value).toLocaleString()}`;
 					}
 				}
 			},
@@ -2444,8 +2443,7 @@ function TrainingGenderChart({ data }: { data: TrainingGraphData[] }) {
 					size: 11,
 				},
 				formatter: (value: number) => {
-					const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-					return `${value.toLocaleString()}\n(${percentage}%)`;
+					return Number(value).toLocaleString();
 				},
 			},
 		},
@@ -2468,9 +2466,6 @@ function TrainingGenderChart({ data }: { data: TrainingGraphData[] }) {
 			</div>
 		);
 	}
-
-	const malePercentage = Math.round((totalMale / total) * 100);
-	const femalePercentage = Math.round((totalFemale / total) * 100);
 
 	return (
 		<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
@@ -2716,6 +2711,8 @@ export default function DashboardPage() {
 	const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 	const [newsIndex, setNewsIndex] = useState(0);
 	const [isNewsAutoPlaying, setIsNewsAutoPlaying] = useState(true);
+	const [newsItems, setNewsItems] = useState<Array<{ id: number; title: string; date: string; image: string | null; category: string; description: string }>>([]);
+	const [newsLoading, setNewsLoading] = useState(true);
 	const [securityAlerts, setSecurityAlerts] = useState<Array<{id: number; incident_title: string; ReferenceNumber?: string}>>([]);
 	const [securityAlertsLoading, setSecurityAlertsLoading] = useState(false);
 
@@ -2729,6 +2726,7 @@ export default function DashboardPage() {
 		fetchDistrictProgressSummary();
 		fetchTrainingGraphs();
 		fetchSecurityAlerts();
+		fetchNews();
 	}, []);
 
 	const fetchSecurityAlerts = async () => {
@@ -2739,7 +2737,7 @@ export default function DashboardPage() {
 			
 			if (data.success && data.incidents) {
 				// Get only id, incident_title, and ReferenceNumber
-				const alerts = data.incidents.map((incident: any) => ({
+				const alerts = data.incidents.map((incident: { id: number; incident_title: string; ReferenceNumber?: string; 'Reference #'?: string }) => ({
 					id: incident.id,
 					incident_title: incident.incident_title,
 					ReferenceNumber: incident.ReferenceNumber || incident['Reference #']
@@ -2750,6 +2748,35 @@ export default function DashboardPage() {
 			console.error("Error fetching security alerts:", err);
 		} finally {
 			setSecurityAlertsLoading(false);
+		}
+	};
+
+	const fetchNews = async () => {
+		try {
+			setNewsLoading(true);
+			const response = await fetch('/api/news');
+			const result = await response.json();
+			if (result.success && Array.isArray(result.data)) {
+				const maxItems = 6;
+				const truncated = result.data.slice(0, maxItems).map((row: { newsId: number; title: string; newsDate: string; bodyText: string | null; imageUrl: string | null; imageCaption: string | null; postedByName: string | null }) => {
+					const desc = row.bodyText ?? '';
+					const description = desc.length > 200 ? desc.slice(0, 200).trim() + '...' : desc;
+					const dateStr = row.newsDate ? new Date(row.newsDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+					return {
+						id: row.newsId,
+						title: row.title ?? '',
+						date: dateStr,
+						image: row.imageUrl ?? null,
+						category: row.imageCaption ?? row.postedByName ?? 'News',
+						description,
+					};
+				});
+				setNewsItems(truncated);
+			}
+		} catch (err) {
+			console.error('Error fetching news:', err);
+		} finally {
+			setNewsLoading(false);
 		}
 	};
 
@@ -2766,50 +2793,6 @@ export default function DashboardPage() {
 			return () => clearInterval(interval);
 		}
 	}, [isAutoPlaying, pictures.length]);
-
-	// Dummy news data
-	const newsItems = [
-		{
-			id: 1,
-			title: "RIF-II Project Launches New Infrastructure Initiative",
-			description: "The Regional Infrastructure Fund announces a major new initiative to improve urban infrastructure across Khyber Pakhtunkhwa, focusing on sustainable development and community engagement.",
-			image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=400&fit=crop",
-			date: "January 15, 2025",
-			category: "Infrastructure"
-		},
-		{
-			id: 2,
-			title: "Capacity Building Workshop Successfully Completed",
-			description: "Over 200 participants from various districts attended the comprehensive training workshop on resource management and sustainable practices, marking a significant milestone in the project.",
-			image: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=400&fit=crop",
-			date: "January 12, 2025",
-			category: "Training"
-		},
-		{
-			id: 3,
-			title: "Community Engagement Program Reaches 10,000 Beneficiaries",
-			description: "The community engagement program has successfully reached over 10,000 beneficiaries across multiple districts, with positive feedback and high participation rates.",
-			image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&h=400&fit=crop",
-			date: "January 10, 2025",
-			category: "Community"
-		},
-		{
-			id: 4,
-			title: "New Water Management System Implemented in DIK District",
-			description: "A state-of-the-art water management system has been successfully implemented in DIK district, improving water supply and quality for thousands of residents.",
-			image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&h=400&fit=crop",
-			date: "January 8, 2025",
-			category: "Water Management"
-		},
-		{
-			id: 5,
-			title: "Partnership Agreement Signed with Local NGOs",
-			description: "RIF-II has signed strategic partnership agreements with five local NGOs to enhance project implementation and ensure better community outreach and support.",
-			image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=400&fit=crop",
-			date: "January 5, 2025",
-			category: "Partnerships"
-		}
-	];
 
 	useEffect(() => {
 		if (isNewsAutoPlaying && newsItems.length > 0) {
@@ -3341,7 +3324,7 @@ export default function DashboardPage() {
 								<Newspaper className="h-6 w-6 text-white" />
 						</div>
 							<div className="space-y-1">
-								<h2 className="text-2xl font-semibold text-white leading-snug tracking-tight">Latest News & Updates [Dummy]</h2>
+								<h2 className="text-2xl font-semibold text-white leading-snug tracking-tight">Latest News & Updates</h2>
 								<p className="text-sm text-green-100 leading-relaxed">Stay informed about our latest projects and initiatives</p>
 						</div>
 						</div>
@@ -3359,6 +3342,22 @@ export default function DashboardPage() {
 				</div>
 
 				<div className="relative overflow-hidden">
+					{newsLoading ? (
+						<div className="grid md:grid-cols-2 gap-6 p-6">
+							<div className="aspect-video bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg animate-pulse" />
+							<div className="flex flex-col justify-center space-y-4">
+								<div className="h-4 bg-gray-200 rounded w-1/3 animate-pulse" />
+								<div className="h-6 bg-gray-200 rounded w-full animate-pulse" />
+								<div className="h-4 bg-gray-200 rounded w-full animate-pulse" />
+								<div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse" />
+							</div>
+						</div>
+					) : newsItems.length === 0 ? (
+						<div className="p-12 text-center text-gray-500">
+							<Newspaper className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+							<p className="text-sm">No news available at the moment.</p>
+						</div>
+					) : (
 					<div 
 						className="flex transition-transform duration-700 ease-in-out"
 						style={{ transform: `translateX(-${newsIndex * 100}%)` }}
@@ -3369,15 +3368,21 @@ export default function DashboardPage() {
 									{/* News Image */}
 									<div className="relative overflow-hidden rounded-lg shadow-md">
 										<div className="aspect-video bg-gradient-to-br from-gray-200 to-gray-300 relative">
-											<img
-												src={news.image}
-												alt={news.title}
-												className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-												onError={(e) => {
-													const target = e.target as HTMLImageElement;
-													target.style.display = 'none';
-												}}
-											/>
+											{news.image ? (
+												<img
+													src={news.image}
+													alt={news.title}
+													className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+													onError={(e) => {
+														const target = e.target as HTMLImageElement;
+														target.style.display = 'none';
+													}}
+												/>
+											) : (
+												<div className="absolute inset-0 flex items-center justify-center">
+													<ImageIcon className="h-16 w-16 text-gray-400" />
+												</div>
+											)}
 											<div className="absolute top-4 left-4">
 												<span className="px-3 py-1 bg-[#0b4d2b] text-white text-xs font-semibold rounded-full shadow-lg">
 													{news.category}
@@ -3407,9 +3412,10 @@ export default function DashboardPage() {
 				</div>
 						))}
 			</div>
+					)}
 
 					{/* Navigation Arrows */}
-					{newsItems.length > 1 && (
+					{!newsLoading && newsItems.length > 1 && (
 						<>
 							<button
 								onClick={() => setNewsIndex((prev) => prev <= 0 ? newsItems.length - 1 : prev - 1)}
@@ -3427,7 +3433,7 @@ export default function DashboardPage() {
 					)}
 
 					{/* Dots Indicator */}
-					{newsItems.length > 1 && (
+					{!newsLoading && newsItems.length > 1 && (
 						<div className="flex justify-center space-x-2 p-4 bg-gray-50">
 							{newsItems.map((_, index) => (
 								<button
