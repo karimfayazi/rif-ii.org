@@ -3,13 +3,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { 
 	GraduationCap, 
-	Calendar, 
 	Users, 
 	TrendingUp, 
 	Filter, 
 	RefreshCw,
 	User,
 	UserCheck,
+	UserCircle2,
 	Award,
 	FileText,
 	Image as ImageIcon,
@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import { Chart, Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { KpiCard, KpiCardsGrid } from "@/components/dashboard";
 import {
 	Chart as ChartJS,
 	CategoryScale,
@@ -346,7 +345,31 @@ export default function TrainingWorkshopsDashboardPage() {
 		facilitator: ''
 	});
 	const [showFilters, setShowFilters] = useState(true);
+	const [showSummaryReports, setShowSummaryReports] = useState(true);
 	const [showEventsTable, setShowEventsTable] = useState(false);
+
+	// Summary-all: Events + Participants + Evaluation (single fetch)
+	type SummaryAllData = {
+		eventsSummary: {
+			totalEvents: number;
+			totalParticipants: number;
+			totalMale: number;
+			totalFemale: number;
+		};
+		participantsSummary: {
+			totalUniquePersons: number;
+			uniqueMale: number;
+			uniqueFemale: number;
+			repeatBreakdown: Array<{ attendedTimes: number | string; persons: number }>;
+		};
+		evaluationSummary: {
+			preEvaluation: number | null;
+			postEvaluation: number | null;
+			improvement: number | null;
+		};
+	};
+	const [summaryAllData, setSummaryAllData] = useState<SummaryAllData | null>(null);
+	const [summaryAllLoading, setSummaryAllLoading] = useState(true);
 
 	// Event details modal
 	const [selectedEvent, setSelectedEvent] = useState<TrainingEvent | null>(null);
@@ -382,6 +405,60 @@ export default function TrainingWorkshopsDashboardPage() {
 			}
 		} catch (error) {
 			console.error('Error fetching filter options:', error);
+		}
+	}, []);
+
+	// Fetch summary-all (Events + Participants + Evaluation in one call)
+	const fetchSummaryAll = useCallback(async () => {
+		try {
+			setSummaryAllLoading(true);
+			const response = await fetch("/api/training-workshops/summary-all", { cache: "no-store" });
+			const data = await response.json();
+			if (data.success && data.data) {
+				const d = data.data;
+				setSummaryAllData({
+					eventsSummary: {
+						totalEvents: Number(d.eventsSummary?.totalEvents) ?? 0,
+						totalParticipants: Number(d.eventsSummary?.totalParticipants) ?? 0,
+						totalMale: Number(d.eventsSummary?.totalMale) ?? 0,
+						totalFemale: Number(d.eventsSummary?.totalFemale) ?? 0,
+					},
+					participantsSummary: {
+						totalUniquePersons: Number(d.participantsSummary?.totalUniquePersons) ?? 0,
+						uniqueMale: Number(d.participantsSummary?.uniqueMale) ?? 0,
+						uniqueFemale: Number(d.participantsSummary?.uniqueFemale) ?? 0,
+						repeatBreakdown: Array.isArray(d.participantsSummary?.repeatBreakdown)
+							? d.participantsSummary.repeatBreakdown.map(
+									(r: { attendedTimes: number | string; persons: number }) => ({
+										attendedTimes: typeof r.attendedTimes === "number" ? r.attendedTimes : String(r.attendedTimes ?? "5+"),
+										persons: Number(r.persons) ?? 0,
+									})
+								)
+							: [],
+					},
+					evaluationSummary: {
+						preEvaluation:
+							d.evaluationSummary?.preEvaluation != null
+								? Number(d.evaluationSummary.preEvaluation)
+								: null,
+						postEvaluation:
+							d.evaluationSummary?.postEvaluation != null
+								? Number(d.evaluationSummary.postEvaluation)
+								: null,
+						improvement:
+							d.evaluationSummary?.improvement != null
+								? Number(d.evaluationSummary.improvement)
+								: null,
+					},
+				});
+			} else {
+				setSummaryAllData(null);
+			}
+		} catch (error) {
+			console.error("Error fetching summary-all:", error);
+			setSummaryAllData(null);
+		} finally {
+			setSummaryAllLoading(false);
 		}
 	}, []);
 
@@ -574,6 +651,10 @@ export default function TrainingWorkshopsDashboardPage() {
 	}, [fetchFilterOptions]);
 
 	useEffect(() => {
+		fetchSummaryAll();
+	}, [fetchSummaryAll]);
+
+	useEffect(() => {
 		fetchDashboardData();
 	}, [fetchDashboardData]);
 
@@ -669,6 +750,13 @@ export default function TrainingWorkshopsDashboardPage() {
 					<p className="text-sm text-gray-600 mt-1">Comprehensive analysis of training events and workshop activities</p>
 				</div>
 				<div className="flex items-center gap-3">
+					<button
+						onClick={() => setShowSummaryReports(!showSummaryReports)}
+						className="inline-flex items-center px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+					>
+						<BarChart3 className="h-4 w-4 mr-2" />
+						{showSummaryReports ? "Hide" : "Show"} Summary Reports
+					</button>
 					<button
 						onClick={() => setShowFilters(!showFilters)}
 						className="inline-flex items-center px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
@@ -801,86 +889,299 @@ export default function TrainingWorkshopsDashboardPage() {
 				</div>
 			)}
 
-			{/* KPI Cards - Using Shared Components */}
-			{kpis && (
-				<KpiCardsGrid columns="4">
-					<KpiCard
-						title="Total Events"
-						value={formatNumber(kpis.totalEvents)}
-						icon={GraduationCap}
-						iconColor="blue"
-					/>
-					<KpiCard
-						title="Reported Participants"
-						value={formatNumber(kpis.totalParticipants)}
-						icon={Users}
-						iconColor="purple"
-					/>
-					<KpiCard
-						title="Unique Participants"
-						value={formatNumber(kpis.registeredParticipants)}
-						icon={UserCheck}
-						iconColor="green"
-					/>
-					<KpiCard
-						title="Male"
-						value={formatNumber(kpis.totalMale)}
-						icon={User}
-						iconColor="green"
-					/>
-					<KpiCard
-						title="Female"
-						value={formatNumber(kpis.totalFemale)}
-						icon={UserCheck}
-						iconColor="pink"
-					/>
-					<KpiCard
-						title="Total Participant"
-						value={formatNumber(kpis.totalParticipants + kpis.registeredParticipants)}
-						icon={Users}
-						iconColor="purple"
-					/>
-					<KpiCard
-						title="Avg Participants/Event"
-						value={formatDecimal(kpis.avgParticipantsPerEvent)}
-						icon={BarChart3}
-						iconColor="orange"
-					/>
-					<KpiCard
-						title="Avg Duration"
-						value={formatDecimal(kpis.avgDuration)}
-						icon={Calendar}
-						iconColor="indigo"
-					/>
-					<KpiCard
-						title="Pre-Evaluation"
-						value={formatDecimal(kpis.avgPreEvaluation)}
-						icon={Award}
-						iconColor="yellow"
-					/>
-					<KpiCard
-						title="Post-Evaluation"
-						value={formatDecimal(kpis.avgPostEvaluation)}
-						icon={Award}
-						iconColor="green"
-					/>
-					{/* Custom card for Improvement with conditional coloring */}
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4 h-full">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
-								<div className="p-2 bg-teal-50 rounded-lg flex-shrink-0">
-									<TrendingUp className="h-5 w-5 text-teal-600" />
-								</div>
-								<p className="text-sm font-medium text-gray-700 truncate">
-									Improvement
-								</p>
-							</div>
-							<p className={`text-2xl font-semibold tabular-nums flex-shrink-0 ${kpis.evaluationImprovement >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-								{kpis.evaluationImprovement >= 0 ? '+' : ''}{formatDecimal(kpis.evaluationImprovement)}
-							</p>
-						</div>
+			{/* Summary: 3 cards in one row — Events, Participants, Evaluation */}
+			{showSummaryReports && (
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+				{/* Card 1: Events Summary */}
+				<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col h-full">
+					<div className="px-4 py-3 border-b border-gray-100">
+						<h2 className="text-base font-semibold text-gray-900">Events Summary</h2>
+						<p className="text-xs text-gray-500 mt-0.5">Totals from all training events</p>
 					</div>
-				</KpiCardsGrid>
+					<div className="p-4 flex-1 flex flex-col">
+						{summaryAllLoading ? (
+							<div className="flex flex-col gap-3">
+								{[1, 2, 3, 4].map((i) => (
+									<div key={i} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 animate-pulse">
+										<div className="flex items-center justify-between gap-3">
+											<div className="w-9 h-9 bg-gray-200 rounded-lg flex-shrink-0" />
+											<div className="h-8 bg-gray-200 rounded w-16 flex-shrink-0" />
+										</div>
+									</div>
+								))}
+							</div>
+						) : summaryAllData ? (
+							<div className="flex flex-col gap-3">
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4">
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-3 min-w-0 flex-1">
+											<div className="p-2 rounded-lg flex-shrink-0 bg-blue-50">
+												<GraduationCap className="h-5 w-5 text-blue-600" />
+											</div>
+											<p className="text-sm font-medium text-gray-700 truncate">Events</p>
+										</div>
+										<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">{summaryAllData.eventsSummary.totalEvents.toLocaleString()}</p>
+									</div>
+								</div>
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4">
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-3 min-w-0 flex-1">
+											<div className="p-2 rounded-lg flex-shrink-0 bg-purple-50">
+												<Users className="h-5 w-5 text-purple-600" />
+											</div>
+											<p className="text-sm font-medium text-gray-700 truncate">Participants</p>
+										</div>
+										<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">{summaryAllData.eventsSummary.totalParticipants.toLocaleString()}</p>
+									</div>
+								</div>
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4">
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-3 min-w-0 flex-1">
+											<div className="p-2 rounded-lg flex-shrink-0 bg-green-50">
+												<User className="h-5 w-5 text-green-600" />
+											</div>
+											<p className="text-sm font-medium text-gray-700 truncate">Male</p>
+										</div>
+										<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">{summaryAllData.eventsSummary.totalMale.toLocaleString()}</p>
+									</div>
+								</div>
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4">
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-3 min-w-0 flex-1">
+											<div className="p-2 rounded-lg flex-shrink-0 bg-pink-50">
+												<UserCircle2 className="h-5 w-5 text-pink-600" />
+											</div>
+											<p className="text-sm font-medium text-gray-700 truncate">Female</p>
+										</div>
+										<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">{summaryAllData.eventsSummary.totalFemale.toLocaleString()}</p>
+									</div>
+								</div>
+							</div>
+						) : (
+							<div className="flex flex-col gap-3">
+								{[["Events", "—"], ["Participants", "—"], ["Male", "—"], ["Female", "—"]].map(([label]) => (
+									<div key={label} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+										<p className="text-sm font-medium text-gray-700 truncate">{label}</p>
+										<p className="text-2xl font-semibold text-gray-500 flex-shrink-0">—</p>
+									</div>
+								))}
+							</div>
+						)}
+					</div>
+				</div>
+
+				{/* Card 2: Participants Summary */}
+				<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col h-full">
+					<div className="px-4 py-3 border-b border-gray-100">
+						<h2 className="text-base font-semibold text-gray-900">Participants Summary</h2>
+						<p className="text-xs text-gray-500 mt-0.5">Actual persons and repeat training (CNIC based)</p>
+					</div>
+					<div className="p-4 flex-1 flex flex-col">
+						{summaryAllLoading ? (
+							<div className="flex flex-col gap-3">
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 animate-pulse">
+									<div className="flex items-center justify-between gap-3">
+										<div className="w-9 h-9 bg-gray-200 rounded-lg flex-shrink-0" />
+										<div className="h-8 bg-gray-200 rounded w-16 flex-shrink-0" />
+									</div>
+								</div>
+								<div className="grid grid-cols-2 gap-3">
+									<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 animate-pulse">
+										<div className="flex items-center justify-between gap-3">
+											<div className="w-9 h-9 bg-gray-200 rounded-lg flex-shrink-0" />
+											<div className="h-8 bg-gray-200 rounded w-16 flex-shrink-0" />
+										</div>
+									</div>
+									<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 animate-pulse">
+										<div className="flex items-center justify-between gap-3">
+											<div className="w-9 h-9 bg-gray-200 rounded-lg flex-shrink-0" />
+											<div className="h-8 bg-gray-200 rounded w-16 flex-shrink-0" />
+										</div>
+									</div>
+								</div>
+							</div>
+						) : summaryAllData ? (
+							<>
+								<div className="flex flex-col gap-3">
+									{/* Row 1: Total Actual Persons */}
+									<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4">
+										<div className="flex items-center justify-between gap-3">
+											<div className="flex items-center gap-3 min-w-0 flex-1">
+												<div className="p-2 rounded-lg flex-shrink-0 bg-blue-50">
+													<Users className="h-5 w-5 text-blue-600" />
+												</div>
+												<p className="text-sm font-medium text-gray-700 truncate">Total Actual Persons</p>
+											</div>
+											<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">{summaryAllData.participantsSummary.totalUniquePersons.toLocaleString()}</p>
+										</div>
+									</div>
+									{/* Row 2: Actual Male and Actual Female */}
+									<div className="grid grid-cols-2 gap-3">
+										<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4">
+											<div className="flex items-center justify-between gap-3">
+												<div className="flex items-center gap-3 min-w-0 flex-1">
+													<div className="p-2 rounded-lg flex-shrink-0 bg-green-50">
+														<User className="h-5 w-5 text-green-600" />
+													</div>
+													<p className="text-sm font-medium text-gray-700 truncate">Actual Male</p>
+												</div>
+												<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">{summaryAllData.participantsSummary.uniqueMale.toLocaleString()}</p>
+											</div>
+										</div>
+										<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4">
+											<div className="flex items-center justify-between gap-3">
+												<div className="flex items-center gap-3 min-w-0 flex-1">
+													<div className="p-2 rounded-lg flex-shrink-0 bg-pink-50">
+														<UserCircle2 className="h-5 w-5 text-pink-600" />
+													</div>
+													<p className="text-sm font-medium text-gray-700 truncate">Actual Female</p>
+												</div>
+												<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">{summaryAllData.participantsSummary.uniqueFemale.toLocaleString()}</p>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div className="mt-3">
+									<h3 className="text-xs font-semibold text-gray-700 mb-2">Repeat Training Breakdown</h3>
+									{summaryAllData.participantsSummary.repeatBreakdown.length === 0 ? (
+										<p className="text-sm text-gray-500">No data.</p>
+									) : (
+										<table className="w-full text-sm border-collapse">
+											<thead>
+												<tr className="border-b border-gray-200">
+													<th className="text-left py-1.5 px-2 font-medium text-gray-600">Attended</th>
+													<th className="text-right py-1.5 px-2 font-medium text-gray-600">Persons</th>
+												</tr>
+											</thead>
+											<tbody>
+												{summaryAllData.participantsSummary.repeatBreakdown.map((row, idx) => (
+													<tr key={idx} className="border-b border-gray-100 last:border-0">
+														<td className="py-1.5 px-2 text-gray-900">
+															{typeof row.attendedTimes === "number" ? `${row.attendedTimes} time${row.attendedTimes === 1 ? "" : "s"}` : "5+ times"}
+														</td>
+														<td className="py-1.5 px-2 text-right text-gray-900 tabular-nums">{row.persons.toLocaleString()}</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									)}
+								</div>
+							</>
+						) : (
+							<div className="flex flex-col gap-3">
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+									<p className="text-sm font-medium text-gray-700">Total Actual Persons</p>
+									<p className="text-2xl font-semibold text-gray-500">—</p>
+								</div>
+								<div className="grid grid-cols-2 gap-3">
+									<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+										<p className="text-sm font-medium text-gray-700">Actual Male</p>
+										<p className="text-2xl font-semibold text-gray-500">—</p>
+									</div>
+									<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+										<p className="text-sm font-medium text-gray-700">Actual Female</p>
+										<p className="text-2xl font-semibold text-gray-500">—</p>
+									</div>
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
+
+				{/* Card 3: Evaluation Summary */}
+				<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col h-full">
+					<div className="px-4 py-3 border-b border-gray-100">
+						<h2 className="text-base font-semibold text-gray-900">Evaluation Summary</h2>
+						<p className="text-xs text-gray-500 mt-0.5">Average pre/post scores and improvement</p>
+					</div>
+					<div className="p-4 flex-1 flex flex-col">
+						{summaryAllLoading ? (
+							<div className="flex flex-col gap-3">
+								{[1, 2, 3].map((i) => (
+									<div key={i} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 animate-pulse">
+										<div className="flex items-center justify-between gap-3">
+											<div className="w-9 h-9 bg-gray-200 rounded-lg flex-shrink-0" />
+											<div className="h-8 bg-gray-200 rounded w-16 flex-shrink-0" />
+										</div>
+									</div>
+								))}
+							</div>
+						) : summaryAllData ? (
+							<div className="flex flex-col gap-3">
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4">
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-3 min-w-0 flex-1">
+											<div className="p-2 rounded-lg flex-shrink-0 bg-yellow-50">
+												<Award className="h-5 w-5 text-yellow-600" />
+											</div>
+											<p className="text-sm font-medium text-gray-700 truncate">Pre-Evaluation</p>
+										</div>
+										<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
+											{summaryAllData.evaluationSummary.preEvaluation != null
+												? Number(summaryAllData.evaluationSummary.preEvaluation).toFixed(2)
+												: "—"}
+										</p>
+									</div>
+								</div>
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4">
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-3 min-w-0 flex-1">
+											<div className="p-2 rounded-lg flex-shrink-0 bg-green-50">
+												<Award className="h-5 w-5 text-green-600" />
+											</div>
+											<p className="text-sm font-medium text-gray-700 truncate">Post-Evaluation</p>
+										</div>
+										<p className="text-2xl font-semibold text-gray-900 tabular-nums flex-shrink-0">
+											{summaryAllData.evaluationSummary.postEvaluation != null
+												? Number(summaryAllData.evaluationSummary.postEvaluation).toFixed(2)
+												: "—"}
+										</p>
+									</div>
+								</div>
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-4">
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-3 min-w-0 flex-1">
+											<div className="p-2 bg-teal-50 rounded-lg flex-shrink-0">
+												<TrendingUp className="h-5 w-5 text-teal-600" />
+											</div>
+											<p className="text-sm font-medium text-gray-700 truncate">Improvement</p>
+										</div>
+										<p
+											className={`text-2xl font-semibold tabular-nums flex-shrink-0 ${
+												summaryAllData.evaluationSummary.improvement != null
+													? summaryAllData.evaluationSummary.improvement >= 0
+														? "text-green-600"
+														: "text-red-600"
+													: "text-gray-500"
+											}`}
+										>
+											{summaryAllData.evaluationSummary.improvement != null
+												? (summaryAllData.evaluationSummary.improvement >= 0 ? "+" : "") +
+													Number(summaryAllData.evaluationSummary.improvement).toFixed(2)
+												: "—"}
+										</p>
+									</div>
+								</div>
+							</div>
+						) : (
+							<div className="flex flex-col gap-3">
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+									<p className="text-sm font-medium text-gray-700">Pre-Evaluation</p>
+									<p className="text-2xl font-semibold text-gray-500">—</p>
+								</div>
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+									<p className="text-sm font-medium text-gray-700">Post-Evaluation</p>
+									<p className="text-2xl font-semibold text-gray-500">—</p>
+								</div>
+								<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+									<p className="text-sm font-medium text-gray-700">Improvement</p>
+									<p className="text-2xl font-semibold text-gray-500">—</p>
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
 			)}
 
 			{/* Charts Section */}
