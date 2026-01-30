@@ -222,8 +222,24 @@ export default function UploadNewsPage() {
 			return;
 		}
 		
-		if (!userId || !username) {
-			setError("User authentication error. Please log in again.");
+		// Enhanced user validation with debugging
+		if (!userId || userId.trim() === '') {
+			console.error('[News Upload] User ID is missing or empty:', { userId, user, userProfile });
+			setError("User session not found. Please log in again.");
+			return;
+		}
+		
+		if (!username || username.trim() === '') {
+			console.error('[News Upload] Username is missing or empty:', { username, user, userProfile });
+			setError("User information not found. Please log in again.");
+			return;
+		}
+		
+		// Convert userId to number and validate
+		const userIdNum = parseInt(userId, 10);
+		if (isNaN(userIdNum) || userIdNum <= 0) {
+			console.error('[News Upload] Invalid user ID:', { userId, userIdNum });
+			setError("Invalid user ID. Please log in again.");
 			return;
 		}
 
@@ -242,15 +258,21 @@ export default function UploadNewsPage() {
 		try {
 			const payload = {
 				newsId: isEditMode ? parseInt(newsId!) : undefined,
-				title: formData.title,
+				title: formData.title.trim(),
 				newsDate: formData.newsDate,
-				bodyText: formData.bodyText,
-				imageUrl: formData.imageUrl || null,
-				imageCaption: formData.imageCaption || null,
-				postedByUserId: parseInt(userId),
-				postedByName: username,
+				bodyText: formData.bodyText.trim(),
+				imageUrl: formData.imageUrl?.trim() || null,
+				imageCaption: formData.imageCaption?.trim() || null,
+				postedByUserId: userIdNum,
+				postedByName: username.trim(),
 				isPublished: formData.isPublished
 			};
+			
+			// Debug logging
+			console.log('[News Upload] Submitting payload:', {
+				...payload,
+				bodyTextLength: payload.bodyText.length
+			});
 
 			const response = await fetch('/api/news/save', {
 				method: 'POST',
@@ -259,6 +281,8 @@ export default function UploadNewsPage() {
 			});
 
 			const result = await response.json();
+			
+			console.log('[News Upload] Server response:', result);
 
 			if (result.success) {
 				setSuccess(true);
@@ -274,7 +298,7 @@ export default function UploadNewsPage() {
 				? `Update failed: ${errorMessage}` 
 				: `Save failed: ${errorMessage}`
 			);
-			console.error('Submit error:', err);
+			console.error('[News Upload] Submit error:', err);
 		} finally {
 			setSubmitting(false);
 		}

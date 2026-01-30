@@ -5,6 +5,15 @@ import sql from 'mssql';
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
+		
+		// Debug logging
+		console.log('[News API] Received body:', {
+			...body,
+			bodyTextLength: body.bodyText?.length,
+			postedByUserIdType: typeof body.postedByUserId,
+			postedByNameType: typeof body.postedByName
+		});
+		
 		const {
 			newsId,
 			title,
@@ -17,12 +26,28 @@ export async function POST(request: NextRequest) {
 			isPublished
 		} = body;
 
-		// Validation
-		if (!title || !newsDate || !bodyText || !postedByUserId || !postedByName) {
+		// Enhanced validation with detailed error messages
+		const missingFields: string[] = [];
+		if (!title || title.trim() === '') missingFields.push('title');
+		if (!newsDate) missingFields.push('newsDate');
+		if (!bodyText || bodyText.trim() === '') missingFields.push('bodyText');
+		if (!postedByUserId || typeof postedByUserId !== 'number' || postedByUserId <= 0) missingFields.push('postedByUserId');
+		if (!postedByName || postedByName.trim() === '') missingFields.push('postedByName');
+		
+		if (missingFields.length > 0) {
+			console.error('[News API] Validation failed. Missing or invalid fields:', missingFields);
+			console.error('[News API] Received values:', {
+				title: title,
+				newsDate: newsDate,
+				bodyText: bodyText ? `${bodyText.substring(0, 50)}...` : 'empty',
+				postedByUserId: postedByUserId,
+				postedByName: postedByName
+			});
+			
 			return NextResponse.json(
 				{
 					success: false,
-					message: "Missing required fields: title, newsDate, bodyText, postedByUserId, postedByName"
+					message: `Missing or invalid required fields: ${missingFields.join(', ')}`
 				},
 				{ status: 400 }
 			);
@@ -76,6 +101,8 @@ export async function POST(request: NextRequest) {
 			request_obj.input('isPublished', sql.Bit, isPublished ? 1 : 0);
 
 			await request_obj.query(query);
+			
+			console.log('[News API] News article updated successfully:', newsId);
 
 			return NextResponse.json({
 				success: true,
@@ -107,6 +134,8 @@ export async function POST(request: NextRequest) {
 
 			const result = await request_obj.query(query);
 			const newNewsId = result.recordset[0]?.newsId;
+			
+			console.log('[News API] News article created successfully:', newNewsId);
 
 			return NextResponse.json({
 				success: true,
