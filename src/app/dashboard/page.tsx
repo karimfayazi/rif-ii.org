@@ -2274,7 +2274,19 @@ function TrainingEventsParticipantsChart({ data }: { data: TrainingGraphData[] }
 			tooltip: {
 				callbacks: {
 					label: function(context) {
-						return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
+						const label = context.dataset?.label ?? '';
+						const y = context.parsed?.y;
+
+						// Chart.js can return null for skipped points; handle it
+						if (y === null || y === undefined) return label ? `${label}: 0` : '0';
+
+						// y can be number in most cases
+						if (typeof y === 'number') {
+							return label ? `${label}: ${y.toLocaleString()}` : y.toLocaleString();
+						}
+
+						// fallback for unexpected types
+						return label ? `${label}: ${String(y)}` : String(y);
 					}
 				}
 			},
