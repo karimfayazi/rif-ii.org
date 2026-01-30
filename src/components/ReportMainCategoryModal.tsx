@@ -64,8 +64,15 @@ export default function ReportMainCategoryModal({
 	};
 
 	const handleAddCategory = async () => {
-		if (!newCategory.trim()) {
+		const trimmedCategory = newCategory.trim();
+		
+		if (!trimmedCategory) {
 			setError("Category name is required");
+			return;
+		}
+
+		if (trimmedCategory.length > 100) {
+			setError("Category name cannot exceed 100 characters");
 			return;
 		}
 
@@ -78,31 +85,86 @@ export default function ReportMainCategoryModal({
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ category: newCategory.trim() }),
+				body: JSON.stringify({ category: trimmedCategory }),
 			});
 
-			const data = await response.json();
+			// Parse JSON response
+			let data;
+			try {
+				data = await response.json();
+			} catch (parseError) {
+				const responseText = await response.text();
+				console.error("Failed to parse API response:", {
+					status: response.status,
+					statusText: response.statusText,
+					responseText,
+					parseError
+				});
+				setError("Server returned invalid response. Please check console for details.");
+				return;
+			}
 			
-			if (data.success) {
-				setCategories(prev => [...prev, data.category]);
+			// Handle successful response
+			if (response.ok && data.success && data.data) {
+				// Add new category to the list
+				const newCategoryObj: Category = {
+					MainCategoryID: data.data.mainCategoryId,
+					Category: data.data.category
+				};
+				
+				setCategories(prev => [...prev, newCategoryObj].sort((a, b) => 
+					a.Category.localeCompare(b.Category)
+				));
+				
 				setNewCategory("");
 				setSuccess("Category added successfully");
 				setTimeout(() => setSuccess(null), 3000);
-				if (onCategoryChange) onCategoryChange();
+				
+				// Notify parent component to refresh
+				if (onCategoryChange) {
+					onCategoryChange();
+				}
+				
+				// Auto-select the newly created category if callback provided
+				if (onCategorySelect) {
+					onCategorySelect(data.data.category);
+					// Close modal after a short delay to show success message
+					setTimeout(() => {
+						onClose();
+					}, 1500);
+				}
 			} else {
-				setError(data.message || "Failed to add category");
+				// Show specific error message from API
+				const errorMsg = data.message || data.error || "Failed to add category";
+				setError(errorMsg);
+				console.error("API error creating category:", {
+					status: response.status,
+					data,
+					category: trimmedCategory
+				});
 			}
 		} catch (err) {
-			setError("Error adding category");
-			console.error("Error adding category:", err);
+			console.error("Error adding category:", {
+				error: err,
+				message: err instanceof Error ? err.message : "Unknown error",
+				category: trimmedCategory
+			});
+			setError("Error adding category. Please check console for details.");
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	const handleUpdateCategory = async (id: number) => {
-		if (!editValue.trim()) {
+		const trimmedValue = editValue.trim();
+		
+		if (!trimmedValue) {
 			setError("Category name is required");
+			return;
+		}
+
+		if (trimmedValue.length > 100) {
+			setError("Category name cannot exceed 100 characters");
 			return;
 		}
 
@@ -117,7 +179,7 @@ export default function ReportMainCategoryModal({
 				},
 				body: JSON.stringify({ 
 					mainCategoryID: id, 
-					category: editValue.trim() 
+					category: trimmedValue
 				}),
 			});
 
@@ -127,9 +189,9 @@ export default function ReportMainCategoryModal({
 				setCategories(prev => 
 					prev.map(cat => 
 						cat.MainCategoryID === id 
-							? { ...cat, Category: editValue.trim() }
+							? { ...cat, Category: trimmedValue }
 							: cat
-					)
+					).sort((a, b) => a.Category.localeCompare(b.Category))
 				);
 				setEditingId(null);
 				setEditValue("");
@@ -140,7 +202,7 @@ export default function ReportMainCategoryModal({
 				setError(data.message || "Failed to update category");
 			}
 		} catch (err) {
-			setError("Error updating category");
+			setError("Error updating category. Please try again.");
 			console.error("Error updating category:", err);
 		} finally {
 			setLoading(false);
@@ -235,28 +297,52 @@ export default function ReportMainCategoryModal({
 					{hasManagePermission && (
 						<div className="mb-6">
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Category Name
+								Category Name <span className="text-red-500">*</span>
+								<span className="text-xs text-gray-500 ml-2">(Max 100 characters)</span>
 							</label>
 							<div className="flex items-center space-x-2">
 								<input
 									type="text"
 									value={newCategory}
-									onChange={(e) => setNewCategory(e.target.value)}
+									onChange={(e) => {
+										setNewCategory(e.target.value);
+										if (error && error.includes("Category name")) {
+											setError(null);
+										}
+									}}
+									maxLength={100}
 									placeholder="Enter category name"
 									className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-									onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
+									onKeyPress={(e) => {
+										if (e.key === 'Enter' && !loading && newCategory.trim()) {
+											handleAddCategory();
+										}
+									}}
+									disabled={loading}
 								/>
 								<button
 									onClick={handleAddCategory}
 									disabled={loading || !newCategory.trim()}
-									className="px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+									className="px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center whitespace-nowrap"
 								>
-									<Plus className="h-4 w-4 mr-1" />
-									Add
+									{loading ? (
+										<>
+											<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+											Saving...
+										</>
+									) : (
+										<>
+											<Plus className="h-4 w-4 mr-1" />
+											Add
+										</>
+									)}
 								</button>
-								{newCategory && (
+								{newCategory && !loading && (
 									<button
-										onClick={() => setNewCategory("")}
+										onClick={() => {
+											setNewCategory("");
+											setError(null);
+										}}
 										className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
 									>
 										Cancel
@@ -289,21 +375,42 @@ export default function ReportMainCategoryModal({
 											<input
 												type="text"
 												value={editValue}
-												onChange={(e) => setEditValue(e.target.value)}
-												className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-												onKeyPress={(e) => e.key === 'Enter' && handleUpdateCategory(category.MainCategoryID)}
+												onChange={(e) => {
+													setEditValue(e.target.value);
+													if (error && error.includes("Category name")) {
+														setError(null);
+													}
+												}}
+												maxLength={100}
+												disabled={loading}
+												className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100"
+												onKeyPress={(e) => {
+													if (e.key === 'Enter' && !loading && editValue.trim()) {
+														handleUpdateCategory(category.MainCategoryID);
+													}
+												}}
 											/>
 											<button
 												onClick={() => handleUpdateCategory(category.MainCategoryID)}
-												disabled={loading}
-												className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors flex items-center"
+												disabled={loading || !editValue.trim()}
+												className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center whitespace-nowrap"
 											>
-												<Save className="h-3.5 w-3.5 mr-1" />
-												Update
+												{loading ? (
+													<>
+														<div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white mr-1"></div>
+														Saving...
+													</>
+												) : (
+													<>
+														<Save className="h-3.5 w-3.5 mr-1" />
+														Update
+													</>
+												)}
 											</button>
 											<button
 												onClick={cancelEdit}
-												className="px-4 py-2 text-sm text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors flex items-center"
+												disabled={loading}
+												className="px-4 py-2 text-sm text-gray-700 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 rounded-lg transition-colors flex items-center"
 											>
 												<X className="h-3.5 w-3.5 mr-1" />
 												Cancel

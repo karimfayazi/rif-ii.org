@@ -29,6 +29,7 @@ import {
     Monitor,
     MoreHorizontal,
     Youtube,
+    Newspaper,
 } from "lucide-react";
 
 type SidebarProps = {
@@ -76,11 +77,12 @@ const GROUPS: NavGroup[] = [
 			{ label: "Important Documents", href: "/dashboard/documents", icon: FileText },
 			{ label: "Important links", href: "/dashboard/links", icon: Link2 },
 			{ label: "Tehsil Wise Progress", href: "/dashboard/tehsil-wise-progress", icon: MapPin },
-			{ label: "Photo Gallary", href: "/dashboard/pictures", icon: ImagePlus },
-			{ label: "Maps", href: "/dashboard/maps", icon: Map },
-			{ label: "Security Update", href: "/dashboard/security-updates", icon: Shield },
-			{ label: "Remote Monitoring", href: "/dashboard/remote-monitoring", icon: Monitor },
-			{ label: "More ...", href: "/dashboard/more", icon: MoreHorizontal },
+		{ label: "Photo Gallary", href: "/dashboard/pictures", icon: ImagePlus },
+		{ label: "Maps", href: "/dashboard/maps", icon: Map },
+		{ label: "Security Update", href: "/dashboard/security-updates", icon: Shield },
+		{ label: "Remote Monitoring", href: "/dashboard/remote-monitoring", icon: Monitor },
+		{ label: "News Section", href: "/dashboard/news", icon: Newspaper },
+		{ label: "More ...", href: "/dashboard/more", icon: MoreHorizontal },
 		],
 	},
 	{

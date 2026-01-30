@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import sql from "mssql";
 
 // GET - Fetch sub categories by main category ID
 export async function GET(request: NextRequest) {
@@ -14,16 +15,27 @@ export async function GET(request: NextRequest) {
 			}, { status: 400 });
 		}
 		
+		const mainCategoryIdNum = parseInt(mainCategoryID);
+		if (isNaN(mainCategoryIdNum)) {
+			return NextResponse.json({
+				success: false,
+				message: "Invalid Main Category ID"
+			}, { status: 400 });
+		}
+		
 		const pool = await getDb();
 		const query = `
-			SELECT TOP (1000) [SubCategoryID], [MainCategoryID], [SubCategory]
+			SELECT [SubCategoryID], [MainCategoryID], [SubCategory]
 			FROM [_rifiiorg_db].[dbo].[tblReportSubCategory]
-			WHERE [MainCategoryID] = @mainCategoryID
+			WHERE [MainCategoryID] IS NOT NULL 
+				AND [SubCategoryID] IS NOT NULL 
+				AND [SubCategory] IS NOT NULL
+				AND [MainCategoryID] = @mainCategoryID
 			ORDER BY [SubCategory]
 		`;
 		
 		const result = await pool.request()
-			.input('mainCategoryID', parseInt(mainCategoryID))
+			.input('mainCategoryID', sql.Int, mainCategoryIdNum)
 			.query(query);
 		
 		const subCategories = result.recordset || [];
@@ -48,70 +60,173 @@ export async function GET(request: NextRequest) {
 // POST - Create new sub category
 export async function POST(request: NextRequest) {
 	try {
-		const { mainCategoryID, subCategory } = await request.json();
+		const body = await request.json();
+		const { mainCategoryID, subCategory } = body;
 		
-		if (!mainCategoryID || !subCategory || subCategory.trim() === '') {
+		// Validate input
+		if (!mainCategoryID || typeof mainCategoryID !== 'number') {
 			return NextResponse.json({
 				success: false,
-				message: "Main Category ID and Sub Category name are required"
+				message: "Valid Main Category ID is required"
+			}, { status: 400 });
+		}
+
+		if (!subCategory || typeof subCategory !== 'string' || subCategory.trim() === '') {
+			return NextResponse.json({
+				success: false,
+				message: "Sub Category name is required"
+			}, { status: 400 });
+		}
+
+		const trimmedSubCategory = subCategory.trim();
+
+		// Validate max length
+		if (trimmedSubCategory.length > 255) {
+			return NextResponse.json({
+				success: false,
+				message: "Sub Category name cannot exceed 255 characters"
 			}, { status: 400 });
 		}
 
 		const pool = await getDb();
+		const transaction = pool.transaction();
 		
-		// Check if sub category already exists for this main category
-		const checkQuery = `
-			SELECT [SubCategoryID] 
-			FROM [_rifiiorg_db].[dbo].[tblReportSubCategory] 
-			WHERE [MainCategoryID] = @mainCategoryID AND [SubCategory] = @subCategory
-		`;
-		
-		const checkResult = await pool.request()
-			.input('mainCategoryID', mainCategoryID)
-			.input('subCategory', subCategory.trim())
-			.query(checkQuery);
+		try {
+			await transaction.begin();
 			
-		if (checkResult.recordset.length > 0) {
-			return NextResponse.json({
-				success: false,
-				message: "Sub Category already exists for this Main Category"
-			}, { status: 400 });
-		}
+			// Check if SubCategoryID is IDENTITY column
+			const checkIdentityQuery = `
+				SELECT COLUMNPROPERTY(OBJECT_ID('[dbo].[tblReportSubCategory]'), 'SubCategoryID', 'IsIdentity') AS IsIdentity;
+			`;
+			
+			const identityResult = await transaction.request().query(checkIdentityQuery);
+			const isIdentity = identityResult.recordset[0]?.IsIdentity === 1;
+			
+			// Check for duplicate (case-insensitive)
+			const checkDuplicateQuery = `
+				SELECT 1 AS [exists]
+				FROM [_rifiiorg_db].[dbo].[tblReportSubCategory]
+				WHERE [MainCategoryID] = @mainCategoryID 
+					AND LOWER(LTRIM(RTRIM([SubCategory]))) = LOWER(LTRIM(RTRIM(@subCategory)))
+			`;
+			
+			const duplicateResult = await transaction.request()
+				.input('mainCategoryID', sql.Int, mainCategoryID)
+				.input('subCategory', sql.NVarChar(255), trimmedSubCategory)
+				.query(checkDuplicateQuery);
+			
+			if (duplicateResult.recordset.length > 0) {
+				await transaction.rollback();
+				return NextResponse.json({
+					success: false,
+					message: "Sub category already exists for this main category"
+				}, { status: 409 });
+			}
+			
+			let result;
+			
+			if (isIdentity) {
+				// SubCategoryID is IDENTITY - let SQL Server auto-generate it
+				const insertQuery = `
+					INSERT INTO [_rifiiorg_db].[dbo].[tblReportSubCategory] ([MainCategoryID], [SubCategory])
+					OUTPUT INSERTED.[SubCategoryID] AS subCategoryId, 
+					       INSERTED.[MainCategoryID] AS mainCategoryId, 
+					       INSERTED.[SubCategory] AS subCategory
+					VALUES (@mainCategoryID, @subCategory);
+				`;
+				
+				result = await transaction.request()
+					.input('mainCategoryID', sql.Int, mainCategoryID)
+					.input('subCategory', sql.NVarChar(255), trimmedSubCategory)
+					.query(insertQuery);
+			} else {
+				// SubCategoryID is NOT IDENTITY - manually generate next ID
+				const manualInsertQuery = `
+					SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+					
+					DECLARE @NewId INT;
+					SELECT @NewId = ISNULL(MAX([SubCategoryID]), 0) + 1
+					FROM [_rifiiorg_db].[dbo].[tblReportSubCategory] WITH (UPDLOCK, HOLDLOCK);
 
-		// Insert new sub category using SCOPE_IDENTITY for reliability
-		const insertQuery = `
-			INSERT INTO [_rifiiorg_db].[dbo].[tblReportSubCategory] ([MainCategoryID], [SubCategory])
-			VALUES (@mainCategoryID, @subCategory);
+					INSERT INTO [_rifiiorg_db].[dbo].[tblReportSubCategory] ([SubCategoryID], [MainCategoryID], [SubCategory])
+					VALUES (@NewId, @mainCategoryID, @subCategory);
+
+					SELECT @NewId AS subCategoryId, @mainCategoryID AS mainCategoryId, @subCategory AS subCategory;
+				`;
+				
+				result = await transaction.request()
+					.input('mainCategoryID', sql.Int, mainCategoryID)
+					.input('subCategory', sql.NVarChar(255), trimmedSubCategory)
+					.query(manualInsertQuery);
+			}
 			
-			SELECT 
-				CAST(SCOPE_IDENTITY() AS INT) AS SubCategoryID,
-				@mainCategoryID AS MainCategoryID,
-				@subCategory AS SubCategory;
-		`;
-		
-		const result = await pool.request()
-			.input('mainCategoryID', mainCategoryID)
-			.input('subCategory', subCategory.trim())
-			.query(insertQuery);
+			await transaction.commit();
 			
-		const newSubCategory = result.recordset[0];
-		
-		// Verify we got a valid ID
-		if (!newSubCategory.SubCategoryID || newSubCategory.SubCategoryID === null) {
-			throw new Error('Failed to generate SubCategoryID - check database schema');
+			const newSubCategory = result.recordset[0];
+			
+			if (!newSubCategory || newSubCategory.subCategoryId == null) {
+				throw new Error('Failed to create sub category - no ID returned');
+			}
+			
+			return NextResponse.json({
+				success: true,
+				message: "Sub category created successfully",
+				data: {
+					subCategoryId: newSubCategory.subCategoryId,
+					mainCategoryId: newSubCategory.mainCategoryId,
+					subCategory: newSubCategory.subCategory
+				}
+			}, { status: 201 });
+			
+		} catch (txError) {
+			await transaction.rollback();
+			
+			// Log detailed SQL error information
+			console.error('Transaction error creating sub category:', {
+				error: txError,
+				message: txError instanceof Error ? txError.message : 'Unknown error',
+				code: (txError as any)?.code,
+				number: (txError as any)?.number,
+				state: (txError as any)?.state,
+				class: (txError as any)?.class,
+				lineNumber: (txError as any)?.lineNumber,
+				serverName: (txError as any)?.serverName,
+				procName: (txError as any)?.procName
+			});
+			
+			throw txError;
 		}
 		
-		return NextResponse.json({
-			success: true,
-			message: "Sub Category created successfully",
-			subCategory: newSubCategory
-		});
 	} catch (error) {
-		console.error("Error creating report sub category:", error);
+		console.error("Error creating report sub category:", {
+			error,
+			message: error instanceof Error ? error.message : "Unknown error",
+			stack: error instanceof Error ? error.stack : undefined,
+			code: (error as any)?.code,
+			number: (error as any)?.number,
+			name: error instanceof Error ? error.name : undefined
+		});
+		
+		// Provide more specific error message
+		let errorMessage = "Failed to create sub category";
+		if (error instanceof Error) {
+			if (error.message.includes('IDENTITY_INSERT')) {
+				errorMessage = "Database configuration error: Cannot insert explicit ID";
+			} else if (error.message.includes('duplicate') || error.message.includes('unique')) {
+				errorMessage = "Sub category already exists for this main category";
+			} else if (error.message.includes('permission') || error.message.includes('denied')) {
+				errorMessage = "Database permission error";
+			} else if (error.message.includes('timeout')) {
+				errorMessage = "Database connection timeout";
+			} else {
+				errorMessage = `Failed to create sub category: ${error.message}`;
+			}
+		}
+		
 		return NextResponse.json(
 			{
 				success: false,
-				message: "Failed to create sub category",
+				message: errorMessage,
 				error: error instanceof Error ? error.message : "Unknown error"
 			},
 			{ status: 500 }
@@ -122,12 +237,31 @@ export async function POST(request: NextRequest) {
 // PUT - Update sub category
 export async function PUT(request: NextRequest) {
 	try {
-		const { subCategoryID, subCategory } = await request.json();
+		const body = await request.json();
+		const { subCategoryID, subCategory } = body;
 		
-		if (!subCategoryID || !subCategory || subCategory.trim() === '') {
+		// Validate input
+		if (!subCategoryID || typeof subCategoryID !== 'number') {
 			return NextResponse.json({
 				success: false,
-				message: "Sub Category ID and name are required"
+				message: "Valid Sub Category ID is required"
+			}, { status: 400 });
+		}
+
+		if (!subCategory || typeof subCategory !== 'string' || subCategory.trim() === '') {
+			return NextResponse.json({
+				success: false,
+				message: "Sub Category name is required"
+			}, { status: 400 });
+		}
+
+		const trimmedSubCategory = subCategory.trim();
+
+		// Validate max length
+		if (trimmedSubCategory.length > 255) {
+			return NextResponse.json({
+				success: false,
+				message: "Sub Category name cannot exceed 255 characters"
 			}, { status: 400 });
 		}
 
@@ -153,16 +287,18 @@ export async function PUT(request: NextRequest) {
 		
 		const mainCategoryID = mainCategoryResult.recordset[0].MainCategoryID;
 		
-		// Check if sub category already exists for this main category (excluding current one)
+		// Check if sub category already exists for this main category (excluding current one) - case insensitive
 		const checkQuery = `
 			SELECT [SubCategoryID] 
 			FROM [_rifiiorg_db].[dbo].[tblReportSubCategory] 
-			WHERE [MainCategoryID] = @mainCategoryID AND [SubCategory] = @subCategory AND [SubCategoryID] != @subCategoryID
+			WHERE [MainCategoryID] = @mainCategoryID 
+				AND LOWER(LTRIM(RTRIM([SubCategory]))) = LOWER(LTRIM(RTRIM(@subCategory))) 
+				AND [SubCategoryID] != @subCategoryID
 		`;
 		
 		const checkResult = await pool.request()
 			.input('mainCategoryID', mainCategoryID)
-			.input('subCategory', subCategory.trim())
+			.input('subCategory', trimmedSubCategory)
 			.input('subCategoryID', subCategoryID)
 			.query(checkQuery);
 			
@@ -182,7 +318,7 @@ export async function PUT(request: NextRequest) {
 		`;
 		
 		const result = await pool.request()
-			.input('subCategory', subCategory.trim())
+			.input('subCategory', trimmedSubCategory)
 			.input('subCategoryID', subCategoryID)
 			.query(updateQuery);
 			
@@ -198,7 +334,11 @@ export async function PUT(request: NextRequest) {
 		return NextResponse.json({
 			success: true,
 			message: "Sub Category updated successfully",
-			subCategory: updatedSubCategory
+			subCategory: {
+				SubCategoryID: updatedSubCategory.SubCategoryID,
+				MainCategoryID: updatedSubCategory.MainCategoryID,
+				SubCategory: updatedSubCategory.SubCategory
+			}
 		});
 	} catch (error) {
 		console.error("Error updating report sub category:", error);

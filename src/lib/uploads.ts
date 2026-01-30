@@ -14,13 +14,13 @@ export type UploadProgress = {
 	percentage: number;
 };
 
-export type UploadFolder = 'reports' | 'documents' | 'pictures';
+export type UploadFolder = 'reports' | 'documents' | 'pictures' | 'news';
 
 /**
  * Get file type validation rules based on upload folder
  */
 function getFileTypeRules(folder: UploadFolder) {
-	if (folder === 'pictures') {
+	if (folder === 'pictures' || folder === 'news') {
 		return {
 			extensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
 			types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'],
@@ -82,14 +82,24 @@ export async function uploadToBlob(
 	}
 
 	try {
+		// Generate unique filename to avoid overwrites
+		const timestamp = Date.now();
+		const randomId = Math.random().toString(36).substring(2, 9);
+		const fileExtension = file.name.substring(file.name.lastIndexOf('.'));
+		const baseName = file.name.substring(0, file.name.lastIndexOf('.')).replace(/[^a-zA-Z0-9-_]/g, '_');
+		const uniqueFileName = `${timestamp}-${randomId}-${baseName}${fileExtension}`;
+
+		console.log('[Upload Client] Starting upload:', uniqueFileName);
+		
 		// Upload directly to Vercel Blob
-		const newBlob = await upload(file.name, file, {
-			access: folder === 'pictures' ? 'public' : 'public', // Can be changed to 'private' if needed
-			handleUploadUrl: `/api/blob/upload?folder=${folder}`,
+		const newBlob = await upload(uniqueFileName, file, {
+			access: 'public', // All uploads are public
+			handleUploadUrl: `/api/blob/upload?folder=${encodeURIComponent(folder)}`,
 			clientPayload: JSON.stringify({
 				size: file.size,
 				type: file.type,
-				folder: folder
+				folder: folder,
+				originalName: file.name
 			}),
 			onUploadProgress: onProgress ? (event) => {
 				onProgress({
@@ -100,6 +110,8 @@ export async function uploadToBlob(
 			} : undefined,
 		});
 
+		console.log('[Upload Client] Upload successful:', newBlob.url);
+
 		return {
 			url: newBlob.url,
 			pathname: newBlob.pathname,
@@ -108,9 +120,41 @@ export async function uploadToBlob(
 			originalName: file.name,
 		};
 	} catch (error) {
-		console.error('Upload error:', error);
+		console.error('[Upload Client] Upload error:', error);
+		
+		// Parse error message for better user feedback
+		let errorMessage = 'Unknown error';
+		
+		if (error instanceof Error) {
+			errorMessage = error.message;
+			
+			// Check for specific error patterns
+			if (errorMessage.includes('BLOB_READ_WRITE_TOKEN')) {
+				throw new Error(
+					'Upload is not configured. Please add BLOB_READ_WRITE_TOKEN to your environment variables. ' +
+					'For local development, add it to .env.local file. For production, add it to Vercel project settings.'
+				);
+			}
+			
+			if (errorMessage.includes('Failed to retrieve the client token')) {
+				throw new Error(
+					'Failed to connect to upload service. Please ensure BLOB_READ_WRITE_TOKEN is configured correctly in your environment variables.'
+				);
+			}
+			
+			if (errorMessage.includes('Access denied') || errorMessage.includes('Unauthorized')) {
+				throw new Error(
+					'You do not have permission to upload files. Please contact your administrator.'
+				);
+			}
+			
+			if (errorMessage.includes('not allowed') || errorMessage.includes('not supported')) {
+				throw new Error(errorMessage);
+			}
+		}
+		
 		throw new Error(
-			`Failed to upload "${file.name}": ${error instanceof Error ? error.message : 'Unknown error'}`
+			`Failed to upload "${file.name}": ${errorMessage}`
 		);
 	}
 }

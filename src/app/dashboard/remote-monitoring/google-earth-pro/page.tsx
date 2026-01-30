@@ -5,7 +5,7 @@ import {
 	ArrowLeft, Upload, Layers, Search, MapPin, Eye, EyeOff, 
 	Target, Sliders, Map as MapIcon, ChevronDown, ChevronRight,
 	Trash2, X, AlertCircle, CheckCircle, Loader2, GripVertical,
-	ZoomIn, Filter
+	ZoomIn, Filter, Maximize, Minimize
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -53,15 +53,36 @@ export default function GoogleEarthProViewerPage() {
 		title: string;
 		props: Record<string, any>;
 	}>({ visible: false, x: 0, y: 0, title: '', props: {} });
+	const [isFullscreen, setIsFullscreen] = useState(false);
 	
 	// Refs
 	const mapContainerRef = useRef<HTMLDivElement>(null);
+	const mapWrapperRef = useRef<HTMLDivElement>(null);
 	const mapInstanceRef = useRef<any>(null);
 	const layerRefsRef = useRef<{ [key: string]: any }>({});
 	const baseLayerRefsRef = useRef<{ [key: string]: any }>({});
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const rafIdRef = useRef<number | null>(null);
 	const pendingTooltipRef = useRef<{ x: number; y: number } | null>(null);
+	
+	// Toggle fullscreen
+	const toggleFullscreen = async () => {
+		if (!mapWrapperRef.current) return;
+		
+		try {
+			if (!isFullscreen) {
+				// Enter fullscreen
+				await mapWrapperRef.current.requestFullscreen();
+			} else {
+				// Exit fullscreen
+				if (document.fullscreenElement) {
+					await document.exitFullscreen();
+				}
+			}
+		} catch (error) {
+			console.error('Fullscreen error:', error);
+		}
+	};
 	
 	// Handle file upload
 	const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,6 +165,27 @@ export default function GoogleEarthProViewerPage() {
 			setUploading(false);
 		}
 	};
+	
+	// Listen to fullscreen changes
+	useEffect(() => {
+		const handleFullscreenChange = () => {
+			const isCurrentlyFullscreen = !!document.fullscreenElement;
+			setIsFullscreen(isCurrentlyFullscreen);
+			
+			// Trigger map resize after a short delay to ensure layout is updated
+			if (mapInstanceRef.current) {
+				setTimeout(() => {
+					mapInstanceRef.current.invalidateSize();
+				}, 150);
+			}
+		};
+		
+		document.addEventListener('fullscreenchange', handleFullscreenChange);
+		
+		return () => {
+			document.removeEventListener('fullscreenchange', handleFullscreenChange);
+		};
+	}, []);
 	
 	// Initialize map
 	useEffect(() => {
@@ -503,8 +545,9 @@ export default function GoogleEarthProViewerPage() {
 	};
 	
 	return (
-		<div className="flex flex-col h-screen bg-gray-50">
+		<div ref={mapWrapperRef} className={`flex flex-col bg-gray-50 ${isFullscreen ? 'fixed inset-0 z-[9999]' : 'h-screen'}`}>
 			{/* Header */}
+			{!isFullscreen && (
 			<div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
 				<div className="flex items-center justify-between gap-4">
 					<div className="flex items-center gap-4">
@@ -591,11 +634,12 @@ export default function GoogleEarthProViewerPage() {
 					</div>
 				)}
 			</div>
+			)}
 			
 			{/* Main Content */}
 			<div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
 				{/* Sidebar */}
-				{sidebarOpen && (
+				{!isFullscreen && sidebarOpen && (
 					<div className="w-full lg:w-[22%] lg:max-w-xs shrink-0 bg-white border-r border-gray-200 flex flex-col">
 						{/* Tabs */}
 						<div className="flex border-b border-gray-200">
@@ -784,6 +828,7 @@ export default function GoogleEarthProViewerPage() {
 				)}
 				
 				{/* Toggle Sidebar Button */}
+				{!isFullscreen && (
 				<button
 					onClick={() => setSidebarOpen(!sidebarOpen)}
 					className="absolute left-0 top-1/2 -translate-y-1/2 z-[1000] bg-white border border-gray-200 rounded-r-lg px-1 py-3 hover:bg-gray-50 transition-colors shadow-lg lg:left-[22%]"
@@ -795,9 +840,10 @@ export default function GoogleEarthProViewerPage() {
 						<ChevronRight className="h-4 w-4 text-gray-600" />
 					)}
 				</button>
+				)}
 				
 				{/* Map Container */}
-				<div className="flex-1 min-w-0 relative">
+				<div className={`flex-1 min-w-0 relative ${isFullscreen ? 'w-screen h-screen' : ''}`}>
 					{!mapLoaded && (
 						<div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-[999]">
 							<div className="text-center">
@@ -807,6 +853,25 @@ export default function GoogleEarthProViewerPage() {
 						</div>
 					)}
 					<div ref={mapContainerRef} className="w-full h-full" />
+					
+					{/* Fullscreen Button Overlay */}
+					<button
+						onClick={toggleFullscreen}
+						className="absolute top-4 right-4 z-[1001] bg-white border border-gray-300 rounded-lg px-4 py-2 shadow-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm font-medium text-gray-700"
+						title={isFullscreen ? 'Exit Fullscreen (ESC)' : 'Enter Fullscreen'}
+					>
+						{isFullscreen ? (
+							<>
+								<Minimize className="h-4 w-4" />
+								<span>Exit Full Screen</span>
+							</>
+						) : (
+							<>
+								<Maximize className="h-4 w-4" />
+								<span>Full Screen</span>
+							</>
+						)}
+					</button>
 					
 					{/* Hover Tooltip */}
 					{tooltip.visible && (

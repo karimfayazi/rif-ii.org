@@ -14,8 +14,8 @@ import { uploadMultipleToBlob, type BlobUploadResult } from "@/lib/uploads";
 type UploadFormData = {
 	reportTitle: string;
 	description: string;
-	mainCategory: string;
-	subCategory: string;
+	mainCategoryId: string; // Store ID as string to avoid float/int issues in <select>
+	subCategoryId: string;  // Store ID as string
 	eventDate: string;
 	uploadedBy: string;
 };
@@ -51,8 +51,8 @@ export default function ReportUploadPage({
 	const [formData, setFormData] = useState<UploadFormData>({
 		reportTitle: "",
 		description: "",
-		mainCategory: "",
-		subCategory: "",
+		mainCategoryId: "",
+		subCategoryId: "",
 		eventDate: "",
 		uploadedBy: ""
 	});
@@ -64,21 +64,31 @@ export default function ReportUploadPage({
 	const [error, setError] = useState<string | null>(null);
 	const [mainCategories, setMainCategories] = useState<Array<{ MainCategoryID: number; Category: string }>>([]);
 	const [subCategories, setSubCategories] = useState<Array<{ SubCategoryID: number; MainCategoryID: number; SubCategory: string }>>([]);
-	const [selectedMainCategoryID, setSelectedMainCategoryID] = useState<number | null>(null);
-	const [loadingCategories, setLoadingCategories] = useState(false);
+	const [loadingMainCategories, setLoadingMainCategories] = useState(false);
+	const [loadingSubCategories, setLoadingSubCategories] = useState(false);
 	const [loadingReport, setLoadingReport] = useState(false);
 	const [showMainCategoryModal, setShowMainCategoryModal] = useState(false);
 	const [showSubCategoryModal, setShowSubCategoryModal] = useState(false);
 
 	// Fetch sub categories when main category changes
-	const fetchSubCategories = async (mainCategoryID: number) => {
+	const fetchSubCategories = async (mainCategoryId: string) => {
+		if (!mainCategoryId || mainCategoryId === "") {
+			setSubCategories([]);
+			return;
+		}
+		
 		try {
-			setLoadingCategories(true);
-			const response = await fetch(`/api/reports/subcategories?mainCategoryID=${mainCategoryID}`);
+			setLoadingSubCategories(true);
+			const response = await fetch(`/api/reports/subcategories?mainCategoryID=${encodeURIComponent(mainCategoryId)}`);
 			const data = await response.json();
 			
 			if (data.success) {
-				setSubCategories(data.subCategories || []);
+				// Filter out any null or invalid entries
+				const validSubCategories = (data.subCategories || []).filter(
+					(sub: { SubCategoryID: number | null; MainCategoryID: number | null; SubCategory: string | null }) => 
+						sub.SubCategoryID != null && sub.MainCategoryID != null && sub.SubCategory
+				);
+				setSubCategories(validSubCategories);
 			} else {
 				setSubCategories([]);
 			}
@@ -86,7 +96,7 @@ export default function ReportUploadPage({
 			console.error("Error fetching sub categories:", err);
 			setSubCategories([]);
 		} finally {
-			setLoadingCategories(false);
+			setLoadingSubCategories(false);
 		}
 	};
 
@@ -104,6 +114,15 @@ export default function ReportUploadPage({
 			}));
 		}
 	}, [userProfile, user]);
+
+	// Store report data temporarily for edit mode
+	const [editModeReportData, setEditModeReportData] = useState<{
+		reportTitle: string;
+		description: string;
+		mainCategory: string;
+		subCategory: string;
+		eventDate: string;
+	} | null>(null);
 
 	// Fetch existing report data for editing
 	useEffect(() => {
@@ -139,38 +158,14 @@ export default function ReportUploadPage({
 						}
 					}
 					
-					// Populate form with existing data
-					setFormData({
+					// Store report data temporarily (with names from DB)
+					setEditModeReportData({
 						reportTitle: report.ReportTitle || "",
 						description: report.Description || "",
 						mainCategory: report.MainCategory || "",
 						subCategory: report.SubCategory || "",
-						eventDate: formattedDate,
-						uploadedBy: userProfile?.full_name || user?.name || ""
+						eventDate: formattedDate
 					});
-
-					// Find and set the main category ID to load sub categories
-					// Wait a bit for mainCategories to be populated if they're still loading
-					if (report.MainCategory) {
-						// Try to find immediately
-						let selectedCategory = mainCategories.find(cat => cat.Category === report.MainCategory);
-						
-						// If not found and mainCategories might still be loading, wait a moment
-						if (!selectedCategory && mainCategories.length === 0) {
-							// Wait for mainCategories to load
-							setTimeout(() => {
-								selectedCategory = mainCategories.find(cat => cat.Category === report.MainCategory);
-								if (selectedCategory) {
-									setSelectedMainCategoryID(selectedCategory.MainCategoryID);
-									fetchSubCategories(selectedCategory.MainCategoryID);
-								}
-							}, 500);
-						} else if (selectedCategory) {
-							setSelectedMainCategoryID(selectedCategory.MainCategoryID);
-							// Fetch sub categories for the selected main category
-							fetchSubCategories(selectedCategory.MainCategoryID);
-						}
-					}
 				} else {
 					setError(data.message || "Failed to load report data");
 				}
@@ -186,34 +181,65 @@ export default function ReportUploadPage({
 		if (isEditMode) {
 			fetchReportData();
 		}
-	}, [isEditMode, reportId, userProfile, user]);
+	}, [isEditMode, reportId]);
 	
-	// Update sub categories when main category is set and mainCategories are loaded
+	// Process edit mode data once categories are loaded
 	useEffect(() => {
-		if (isEditMode && formData.mainCategory && mainCategories.length > 0 && !subCategories.length) {
-			const selectedCategory = mainCategories.find(cat => cat.Category === formData.mainCategory);
-			if (selectedCategory && selectedCategory.MainCategoryID !== selectedMainCategoryID) {
-				setSelectedMainCategoryID(selectedCategory.MainCategoryID);
-				fetchSubCategories(selectedCategory.MainCategoryID);
-			}
+		if (!isEditMode || !editModeReportData || mainCategories.length === 0) return;
+		
+		const selectedMainCategory = mainCategories.find(cat => cat.Category === editModeReportData.mainCategory);
+		
+		if (selectedMainCategory && !formData.mainCategoryId) {
+			const mainCatId = String(selectedMainCategory.MainCategoryID);
+			
+			// Set form data with main category ID
+			setFormData(prev => ({
+				...prev,
+				reportTitle: editModeReportData.reportTitle,
+				description: editModeReportData.description,
+				mainCategoryId: mainCatId,
+				eventDate: editModeReportData.eventDate,
+				uploadedBy: userProfile?.full_name || user?.name || ""
+			}));
+			
+			// Fetch sub categories
+			fetchSubCategories(mainCatId);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [formData.mainCategory, mainCategories, isEditMode, selectedMainCategoryID]);
+	}, [isEditMode, editModeReportData, mainCategories, formData.mainCategoryId, userProfile, user]);
+	
+	// Set sub category ID once sub categories are loaded in edit mode
+	useEffect(() => {
+		if (!isEditMode || !editModeReportData || subCategories.length === 0 || formData.subCategoryId) return;
+		
+		const selectedSubCategory = subCategories.find(sub => sub.SubCategory === editModeReportData.subCategory);
+		
+		if (selectedSubCategory) {
+			setFormData(prev => ({
+				...prev,
+				subCategoryId: String(selectedSubCategory.SubCategoryID)
+			}));
+		}
+	}, [isEditMode, editModeReportData, subCategories, formData.subCategoryId]);
 
 	// Fetch main categories
 	const fetchMainCategories = async () => {
 		try {
-			setLoadingCategories(true);
+			setLoadingMainCategories(true);
 			const response = await fetch('/api/reports/categories');
 			const data = await response.json();
 			
 			if (data.success) {
-				setMainCategories(data.categories || []);
+				// Filter out any null or invalid entries
+				const validCategories = (data.categories || []).filter(
+					(cat: { MainCategoryID: number | null; Category: string | null }) => 
+						cat.MainCategoryID != null && cat.Category
+				);
+				setMainCategories(validCategories);
 			}
 		} catch (err) {
 			console.error("Error fetching main categories:", err);
 		} finally {
-			setLoadingCategories(false);
+			setLoadingMainCategories(false);
 		}
 	};
 
@@ -226,18 +252,17 @@ export default function ReportUploadPage({
 		const { name, value } = e.target;
 		
 		// If main category changes, fetch sub categories
-		if (name === 'mainCategory') {
-			const selectedCategory = mainCategories.find(cat => cat.Category === value);
-			setSelectedMainCategoryID(selectedCategory?.MainCategoryID || null);
-			setSubCategories([]); // Clear sub categories
+		if (name === 'mainCategoryId') {
+			setSubCategories([]); // Clear sub categories immediately
 			setFormData(prev => ({
 				...prev,
-				mainCategory: value,
-				subCategory: "" // Reset sub category
+				mainCategoryId: value,
+				subCategoryId: "" // Reset sub category when main category changes
 			}));
 			
-			if (selectedCategory?.MainCategoryID) {
-				fetchSubCategories(selectedCategory.MainCategoryID);
+			// Fetch sub categories for the new main category
+			if (value) {
+				fetchSubCategories(value);
 			}
 		} else {
 			setFormData(prev => ({
@@ -317,10 +342,22 @@ export default function ReportUploadPage({
 			return;
 		}
 
-		if (!formData.reportTitle || !formData.mainCategory || !formData.subCategory || !formData.eventDate || !formData.uploadedBy) {
+		if (!formData.reportTitle || !formData.mainCategoryId || !formData.subCategoryId || !formData.eventDate || !formData.uploadedBy) {
 			setError("Please fill in all required fields");
 			return;
 		}
+		
+		// Convert IDs to names for database storage
+		const selectedMainCategory = mainCategories.find(cat => String(cat.MainCategoryID) === formData.mainCategoryId);
+		const selectedSubCategory = subCategories.find(sub => String(sub.SubCategoryID) === formData.subCategoryId);
+		
+		if (!selectedMainCategory || !selectedSubCategory) {
+			setError("Invalid category selection");
+			return;
+		}
+		
+		const mainCategoryName = selectedMainCategory.Category;
+		const subCategoryName = selectedSubCategory.SubCategory;
 
 		setUploading(true);
 		setUploadStatus('uploading');
@@ -334,8 +371,8 @@ export default function ReportUploadPage({
 					const formDataToSend = new FormData();
 					formDataToSend.append('reportTitle', formData.reportTitle);
 					formDataToSend.append('description', formData.description);
-					formDataToSend.append('mainCategory', formData.mainCategory);
-					formDataToSend.append('subCategory', formData.subCategory);
+					formDataToSend.append('mainCategory', mainCategoryName);
+					formDataToSend.append('subCategory', subCategoryName);
 					formDataToSend.append('eventDate', formData.eventDate);
 					formDataToSend.append('uploadedBy', formData.uploadedBy);
 					formDataToSend.append('reportId', reportId || '');
@@ -378,8 +415,8 @@ export default function ReportUploadPage({
 						body: JSON.stringify({
 							reportTitle: formData.reportTitle,
 							description: formData.description,
-							mainCategory: formData.mainCategory,
-							subCategory: formData.subCategory,
+							mainCategory: mainCategoryName,
+							subCategory: subCategoryName,
 							eventDate: formData.eventDate
 						}),
 					});
@@ -431,8 +468,8 @@ export default function ReportUploadPage({
 					body: JSON.stringify({
 						reportTitle: formData.reportTitle,
 						description: formData.description,
-						mainCategory: formData.mainCategory,
-						subCategory: formData.subCategory,
+						mainCategory: mainCategoryName,
+						subCategory: subCategoryName,
 						eventDate: formData.eventDate,
 						uploadedBy: formData.uploadedBy,
 						files: uploadedBlobs
@@ -474,8 +511,8 @@ export default function ReportUploadPage({
 		setFormData({
 			reportTitle: "",
 			description: "",
-			mainCategory: "",
-			subCategory: "",
+			mainCategoryId: "",
+			subCategoryId: "",
 			eventDate: "",
 			uploadedBy: fullName // Preserve user's full name
 		});
@@ -484,7 +521,6 @@ export default function ReportUploadPage({
 		setUploadStatus('idle');
 		setUploadProgress(0);
 		setSubCategories([]);
-		setSelectedMainCategoryID(null);
 	};
 
 	// Show loading state while checking access or loading user data or loading report
@@ -597,16 +633,19 @@ export default function ReportUploadPage({
 								</label>
 								<div className="flex items-center space-x-2">
 									<select
-										name="mainCategory"
-										value={formData.mainCategory}
+										name="mainCategoryId"
+										value={formData.mainCategoryId}
 										onChange={handleInputChange}
-										disabled={loadingCategories}
+										disabled={loadingMainCategories}
 										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
 										required
 									>
 										<option value="">Select Main Category</option>
 										{mainCategories.map((category) => (
-											<option key={category.MainCategoryID} value={category.Category}>
+											<option 
+												key={`main-${category.MainCategoryID}`} 
+												value={String(category.MainCategoryID)}
+											>
 												{category.Category}
 											</option>
 										))}
@@ -628,24 +667,27 @@ export default function ReportUploadPage({
 								</label>
 								<div className="flex items-center space-x-2">
 									<select
-										name="subCategory"
-										value={formData.subCategory}
+										name="subCategoryId"
+										value={formData.subCategoryId}
 										onChange={handleInputChange}
-										disabled={!formData.mainCategory || loadingCategories || subCategories.length === 0}
+										disabled={!formData.mainCategoryId || loadingSubCategories}
 										className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
 										required
 									>
 										<option value="">
-											{!formData.mainCategory 
+											{!formData.mainCategoryId 
 												? "Select Main Category first" 
-												: loadingCategories 
-												? "Loading sub categories..." 
+												: loadingSubCategories 
+												? "Loading..." 
 												: subCategories.length === 0 
 												? "No sub categories available" 
 												: "Select Sub Category"}
 										</option>
 										{subCategories.map((subCategory) => (
-											<option key={subCategory.SubCategoryID} value={subCategory.SubCategory}>
+											<option 
+												key={`sub-${subCategory.SubCategoryID}-${subCategory.MainCategoryID}`} 
+												value={String(subCategory.SubCategoryID)}
+											>
 												{subCategory.SubCategory}
 											</option>
 										))}
@@ -653,11 +695,11 @@ export default function ReportUploadPage({
 									<button
 										type="button"
 										onClick={() => {
-											if (selectedMainCategoryID && formData.mainCategory) {
+											if (formData.mainCategoryId) {
 												setShowSubCategoryModal(true);
 											}
 										}}
-										disabled={!formData.mainCategory || !selectedMainCategoryID}
+										disabled={!formData.mainCategoryId}
 										className="px-3 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
 										title="Manage Sub Categories"
 									>
@@ -830,14 +872,15 @@ export default function ReportUploadPage({
 				isOpen={showMainCategoryModal}
 				onClose={() => setShowMainCategoryModal(false)}
 				onCategorySelect={(category) => {
-					setFormData(prev => ({
-						...prev,
-						mainCategory: category
-					}));
 					const selectedCategory = mainCategories.find(cat => cat.Category === category);
 					if (selectedCategory) {
-						setSelectedMainCategoryID(selectedCategory.MainCategoryID);
-						fetchSubCategories(selectedCategory.MainCategoryID);
+						const mainCatId = String(selectedCategory.MainCategoryID);
+						setFormData(prev => ({
+							...prev,
+							mainCategoryId: mainCatId,
+							subCategoryId: "" // Reset sub category
+						}));
+						fetchSubCategories(mainCatId);
 					}
 				}}
 				onCategoryChange={() => {
@@ -850,18 +893,21 @@ export default function ReportUploadPage({
 				isOpen={showSubCategoryModal}
 				onClose={() => setShowSubCategoryModal(false)}
 				onSubCategorySelect={(subCategory) => {
-					setFormData(prev => ({
-						...prev,
-						subCategory: subCategory
-					}));
-				}}
-				onSubCategoryChange={() => {
-					if (selectedMainCategoryID) {
-						fetchSubCategories(selectedMainCategoryID);
+					const selectedSubCategory = subCategories.find(sub => sub.SubCategory === subCategory);
+					if (selectedSubCategory) {
+						setFormData(prev => ({
+							...prev,
+							subCategoryId: String(selectedSubCategory.SubCategoryID)
+						}));
 					}
 				}}
-				mainCategoryID={selectedMainCategoryID}
-				mainCategoryName={formData.mainCategory || ""}
+				onSubCategoryChange={() => {
+					if (formData.mainCategoryId) {
+						fetchSubCategories(formData.mainCategoryId);
+					}
+				}}
+				mainCategoryID={formData.mainCategoryId ? parseInt(formData.mainCategoryId) : null}
+				mainCategoryName={mainCategories.find(cat => String(cat.MainCategoryID) === formData.mainCategoryId)?.Category || ""}
 			/>
 		</div>
 	);

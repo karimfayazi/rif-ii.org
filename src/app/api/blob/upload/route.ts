@@ -2,7 +2,7 @@ import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 
-type UploadFolder = 'reports' | 'documents' | 'pictures';
+type UploadFolder = 'reports' | 'documents' | 'pictures' | 'news';
 
 // Helper function to check if user can upload based on folder type
 async function checkUploadAccess(
@@ -20,6 +20,7 @@ async function checkUploadAccess(
 		// Map folder to permission field
 		const permissionField = folder === 'reports' ? 'Upload_Report' 
 			: folder === 'documents' ? 'Upload_Documents'
+			: folder === 'news' ? 'Upload_Report' // News uses same permission as reports
 			: 'Upload_Pictures';
 		
 		const accessQuery = `
@@ -70,7 +71,7 @@ async function checkUploadAccess(
 
 // Get allowed file extensions and content types based on folder
 function getAllowedFileTypes(folder: UploadFolder) {
-	if (folder === 'pictures') {
+	if (folder === 'pictures' || folder === 'news') {
 		return {
 			extensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
 			contentTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
@@ -99,12 +100,27 @@ function getAllowedFileTypes(folder: UploadFolder) {
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
 	try {
+		// Check if BLOB_READ_WRITE_TOKEN is configured
+		if (!process.env.BLOB_READ_WRITE_TOKEN) {
+			console.error('BLOB_READ_WRITE_TOKEN is not configured');
+			return NextResponse.json(
+				{
+					success: false,
+					error: 'Upload is not configured. BLOB_READ_WRITE_TOKEN environment variable is missing.',
+					hint: 'Add BLOB_READ_WRITE_TOKEN to your .env.local file for local development or Vercel project settings for production.'
+				},
+				{ status: 500 }
+			);
+		}
+
 		// Get folder type from query params
 		const { searchParams } = new URL(request.url);
 		const folder = (searchParams.get('folder') || 'reports') as UploadFolder;
 		
+		console.log('[Blob Upload] Request received for folder:', folder);
+		
 		// Validate folder type
-		if (!['reports', 'documents', 'pictures'].includes(folder)) {
+		if (!['reports', 'documents', 'pictures', 'news'].includes(folder)) {
 			return NextResponse.json(
 				{ success: false, message: 'Invalid folder type' },
 				{ status: 400 }
@@ -113,9 +129,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 		
 		// Check upload access based on folder type
 		const userId = getUserIdFromRequest(request);
+		console.log('[Blob Upload] User ID:', userId);
+		
 		const accessCheck = await checkUploadAccess(userId, folder);
 		
 		if (!accessCheck.canUpload) {
+			console.log('[Blob Upload] Access denied:', accessCheck.message);
 			return NextResponse.json(
 				{
 					success: false,
@@ -128,10 +147,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 		const body = (await request.json()) as HandleUploadBody;
 		const { extensions, contentTypes } = getAllowedFileTypes(folder);
 
+		console.log('[Blob Upload] Generating token for file upload');
+
 		const jsonResponse = await handleUpload({
 			body,
 			request,
 			onBeforeGenerateToken: async (pathname) => {
+				console.log('[Blob Upload] onBeforeGenerateToken called for:', pathname);
+				
 				// Validate file extension
 				const fileExtension = pathname.substring(pathname.lastIndexOf('.')).toLowerCase();
 				
@@ -147,28 +170,45 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 				const originalName = pathname.substring(pathname.lastIndexOf('/') + 1);
 				const sanitizedName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
 				
+				const finalPathname = `${folder}/${yearMonth}/${timestamp}-${randomId}-${sanitizedName}`;
+				console.log('[Blob Upload] Generated pathname:', finalPathname);
+				
 				// Return configuration for token generation
 				return {
 					allowedContentTypes: contentTypes,
 					maximumSizeInBytes: 100 * 1024 * 1024, // 100MB
 					tokenPayload: JSON.stringify({ userId, folder }),
-					pathname: `${folder}/${yearMonth}/${timestamp}-${randomId}-${sanitizedName}`,
+					pathname: finalPathname,
 				};
 			},
 			onUploadCompleted: async ({ blob, tokenPayload }) => {
-				console.log(`${folder} upload completed:`, blob.url);
+				console.log(`[Blob Upload] ${folder} upload completed:`, blob.url);
 			},
 		});
 
+		console.log('[Blob Upload] Token generated successfully');
 		return NextResponse.json(jsonResponse);
 	} catch (error) {
-		console.error('Blob upload error:', error);
+		console.error('[Blob Upload] Error:', error);
+		
+		// Provide more detailed error messages
+		let errorMessage = 'Upload token generation failed';
+		if (error instanceof Error) {
+			errorMessage = error.message;
+			
+			// Check for specific Vercel Blob errors
+			if (error.message.includes('BLOB_READ_WRITE_TOKEN')) {
+				errorMessage = 'Vercel Blob is not configured. Please add BLOB_READ_WRITE_TOKEN environment variable.';
+			}
+		}
+		
 		return NextResponse.json(
 			{
 				success: false,
-				message: error instanceof Error ? error.message : 'Upload token generation failed'
+				error: errorMessage,
+				details: error instanceof Error ? error.message : 'Unknown error'
 			},
-			{ status: 400 }
+			{ status: 500 }
 		);
 	}
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { MapPin, Building2, Layers, Droplet, Trash2, ChevronDown } from 'lucide-react';
+import { MapPin, Building2, Layers, Droplet, Trash2, ChevronDown, Maximize, Minimize } from 'lucide-react';
 
 type MapType = {
 	id: string;
@@ -41,11 +41,53 @@ function MultiLayerGISMapViewer({ maps, additionalMaps, activeLayers, onLayerTog
 		allMaps.current = [...maps, ...(additionalMaps || [])];
 	}, [maps, additionalMaps]);
 	const mapContainerRef = useRef<HTMLDivElement>(null);
+	const mapWrapperRef = useRef<HTMLDivElement>(null);
 	const mapInstanceRef = useRef<any>(null);
 	const layerRefsRef = useRef<{ [key: string]: any }>({});
 	const baseLayerRefsRef = useRef<{ street?: any; satellite?: any }>({});
 	const [mapLoaded, setMapLoaded] = useState(false);
 	const [mapError, setMapError] = useState<string | null>(null);
+	const [isFullscreen, setIsFullscreen] = useState(false);
+
+	// Toggle fullscreen
+	const toggleFullscreen = async () => {
+		if (!mapWrapperRef.current) return;
+		
+		try {
+			if (!isFullscreen) {
+				// Enter fullscreen
+				await mapWrapperRef.current.requestFullscreen();
+			} else {
+				// Exit fullscreen
+				if (document.fullscreenElement) {
+					await document.exitFullscreen();
+				}
+			}
+		} catch (error) {
+			console.error('Fullscreen error:', error);
+		}
+	};
+
+	// Listen to fullscreen changes
+	useEffect(() => {
+		const handleFullscreenChange = () => {
+			const isCurrentlyFullscreen = !!document.fullscreenElement;
+			setIsFullscreen(isCurrentlyFullscreen);
+			
+			// Trigger map resize after a short delay to ensure layout is updated
+			if (mapInstanceRef.current) {
+				setTimeout(() => {
+					mapInstanceRef.current.invalidateSize();
+				}, 150);
+			}
+		};
+		
+		document.addEventListener('fullscreenchange', handleFullscreenChange);
+		
+		return () => {
+			document.removeEventListener('fullscreenchange', handleFullscreenChange);
+		};
+	}, []);
 
 	useEffect(() => {
 		if (!mapContainerRef.current) return;
@@ -434,7 +476,10 @@ function MultiLayerGISMapViewer({ maps, additionalMaps, activeLayers, onLayerTog
 	}, [activeLayers]);
 
 	return (
-		<div className="relative w-full h-[600px] bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+		<div 
+			ref={mapWrapperRef}
+			className={`relative w-full bg-gray-100 rounded-lg overflow-hidden border border-gray-200 ${isFullscreen ? 'fixed inset-0 z-[9999] h-screen' : 'h-[600px]'}`}
+		>
 			{mapError && (
 				<div className="absolute top-4 left-4 right-4 bg-red-50 border border-red-200 rounded-lg p-3 z-[1000]">
 					<p className="text-sm text-red-600">{mapError}</p>
@@ -449,6 +494,25 @@ function MultiLayerGISMapViewer({ maps, additionalMaps, activeLayers, onLayerTog
 				</div>
 			)}
 			<div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
+			
+			{/* Fullscreen Button Overlay */}
+			<button
+				onClick={toggleFullscreen}
+				className="absolute top-4 right-4 z-[1001] bg-white border border-gray-300 rounded-lg px-4 py-2 shadow-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm font-medium text-gray-700"
+				title={isFullscreen ? 'Exit Fullscreen (ESC)' : 'Enter Fullscreen'}
+			>
+				{isFullscreen ? (
+					<>
+						<Minimize className="h-4 w-4" />
+						<span>Exit Full Screen</span>
+					</>
+				) : (
+					<>
+						<Maximize className="h-4 w-4" />
+						<span>Full Screen</span>
+					</>
+				)}
+			</button>
 		</div>
 	);
 }

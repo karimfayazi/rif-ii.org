@@ -1397,43 +1397,6 @@ type TrainingGraphData = {
 	TotalParticipants: number;
 };
 
-type OverallStats = {
-	totalTrainings: number;
-	totalDays: number;
-	totalMale: number;
-	totalFemale: number;
-	totalParticipants: number;
-};
-
-type BreakdownRow = {
-	eventType?: string;
-	district?: string;
-	totalTrainings: number;
-	totalDays: number;
-	totalMale: number;
-	totalFemale: number;
-	totalParticipants: number;
-};
-
-type DashboardResponse = 
-	| {
-			success: true;
-			overall: OverallStats;
-			byEventType: BreakdownRow[];
-			byDistrict: BreakdownRow[];
-		}
-	| {
-			success: false;
-			message?: string;
-		};
-
-type DashboardData = {
-	success: true;
-	overall: OverallStats;
-	byEventType: BreakdownRow[];
-	byDistrict: BreakdownRow[];
-};
-
 // Embedded GIS Online Maps Component Types
 type EmbeddedMapType = {
 	id: string;
@@ -2243,6 +2206,486 @@ function DistrictWiseChart({ districtData }: { districtData: Array<{ District: s
 	);
 }
 
+// Training Chart Components
+function TrainingEventsParticipantsChart({ data }: { data: TrainingGraphData[] }) {
+	const [chartType, setChartType] = useState<ChartType>('bar');
+
+	const aggregatedData = data.reduce((acc, item) => {
+		const eventName = (item.EventType || '').toLowerCase().trim();
+		// Categorize into Workshop or Training based on event name
+		let category = 'Other';
+		if (eventName.includes('workshop')) {
+			category = 'Workshop';
+		} else if (eventName.includes('training')) {
+			category = 'Training';
+		}
+		
+		if (!acc[category]) {
+			acc[category] = { eventCount: 0, participantCount: 0 };
+		}
+		acc[category].eventCount += 1;
+		acc[category].participantCount += item.TotalParticipants;
+		return acc;
+	}, {} as Record<string, { eventCount: number; participantCount: number }>);
+
+	// Ensure unique labels and sort them: Training, Workshop, then Other
+	const labelOrder = ['Training', 'Workshop', 'Other'];
+	const labels = labelOrder.filter(label => aggregatedData[label]);
+	const eventCounts = labels.map(label => aggregatedData[label].eventCount);
+	const participantCounts = labels.map(label => aggregatedData[label].participantCount);
+
+	const chartData = {
+		labels,
+		datasets: [
+			{
+				label: '# of Events',
+				data: eventCounts,
+				backgroundColor: 'rgba(99, 102, 241, 0.8)', // Indigo
+				borderColor: 'rgba(99, 102, 241, 1)',
+				borderWidth: 1,
+				yAxisID: 'y',
+			},
+			{
+				label: '# of Participants',
+				data: participantCounts,
+				backgroundColor: 'rgba(245, 158, 11, 0.8)', // Amber
+				borderColor: 'rgba(245, 158, 11, 1)',
+				borderWidth: 1,
+				yAxisID: 'y1',
+			},
+		],
+	};
+
+	const options: ChartOptions<'bar'> = {
+		responsive: true,
+		maintainAspectRatio: false,
+		interaction: {
+			mode: 'index' as const,
+			intersect: false,
+		},
+		plugins: {
+			legend: {
+				position: 'top' as const,
+				labels: {
+					font: { size: 11 },
+					padding: 8,
+				},
+			},
+			tooltip: {
+				callbacks: {
+					label: function(context) {
+						return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
+					}
+				}
+			},
+			datalabels: {
+				display: true,
+				color: '#fff',
+				font: {
+					weight: 'bold' as const,
+					size: 10,
+				},
+				formatter: (value: number) => value.toLocaleString(),
+			},
+		},
+		scales: {
+			y: {
+				type: 'linear' as const,
+				display: true,
+				position: 'left' as const,
+				title: {
+					display: true,
+					text: 'Events Count',
+					font: { size: 11 },
+				},
+			},
+			y1: {
+				type: 'linear' as const,
+				display: true,
+				position: 'right' as const,
+				title: {
+					display: true,
+					text: 'Participants Count',
+					font: { size: 11 },
+				},
+				grid: {
+					drawOnChartArea: false,
+				},
+			},
+			x: {
+				ticks: {
+					font: { size: 11, weight: 'bold' as const },
+				},
+			},
+		},
+	};
+
+	if (labels.length === 0) {
+		return (
+			<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+				<div className="p-4 border-b border-gray-100">
+					<h3 className="text-base font-semibold text-gray-900">
+						Events & Participants
+					</h3>
+					<p className="text-xs text-gray-500 mt-0.5">By event type</p>
+				</div>
+				<div className="p-4">
+					<div className="flex items-center justify-center h-64 text-sm text-gray-500">
+						No data available
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	const totalEvents = eventCounts.reduce((sum, count) => sum + count, 0);
+	const totalParticipants = participantCounts.reduce((sum, count) => sum + count, 0);
+
+	return (
+		<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+			{/* Card Header */}
+			<div className="px-4 pt-4 pb-3 border-b border-gray-100">
+				<div className="flex items-start justify-between">
+					<div className="flex-1">
+						<h3 className="text-base font-semibold text-gray-900">
+							Events & Participants
+						</h3>
+						<p className="text-xs text-gray-500 mt-0.5">By event type</p>
+					</div>
+					<div className="flex gap-2 text-xs">
+						<span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded font-medium">
+							{totalEvents} Events
+						</span>
+						<span className="px-2 py-1 bg-amber-50 text-amber-700 rounded font-medium">
+							{totalParticipants.toLocaleString()} Participants
+						</span>
+					</div>
+				</div>
+			</div>
+			{/* Chart Content */}
+			<div className="p-4">
+				<DynamicChartRenderer chartType={chartType} data={chartData} options={options} height="214px" />
+			</div>
+			{/* Chart Footer - Switcher Buttons */}
+			<div className="px-4 pb-4 pt-2 border-t border-gray-100 flex justify-center">
+				<ChartTypeSwitcher 
+					chartId="training-events-participants"
+					currentType={chartType} 
+					onTypeChange={setChartType}
+				/>
+			</div>
+		</div>
+	);
+}
+
+function TrainingGenderChart({ data }: { data: TrainingGraphData[] }) {
+	const [chartType, setChartType] = useState<ChartType>('pie');
+
+	const totalMale = data.reduce((sum, item) => sum + item.TotalMale, 0);
+	const totalFemale = data.reduce((sum, item) => sum + item.TotalFemale, 0);
+	const total = totalMale + totalFemale;
+
+	const chartData = {
+		labels: ['Male', 'Female'],
+		datasets: [
+			{
+				label: 'Participants',
+				data: [totalMale, totalFemale],
+				backgroundColor: [
+					'rgba(14, 165, 233, 0.8)', // Sky Blue
+					'rgba(236, 72, 153, 0.8)', // Pink
+				],
+				borderColor: [
+					'rgba(14, 165, 233, 1)',
+					'rgba(236, 72, 153, 1)',
+				],
+				borderWidth: 1,
+			},
+		],
+	};
+
+	const options: ChartOptions<'pie'> = {
+		responsive: true,
+		maintainAspectRatio: false,
+		plugins: {
+			legend: {
+				position: 'bottom' as const,
+				labels: {
+					font: { size: 11 },
+					padding: 10,
+				},
+			},
+			tooltip: {
+				callbacks: {
+					label: function(context) {
+						const value = context.parsed;
+						const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+						return `${context.label}: ${value.toLocaleString()} (${percentage}%)`;
+					}
+				}
+			},
+			datalabels: {
+				display: true,
+				color: '#fff',
+				font: {
+					weight: 'bold' as const,
+					size: 11,
+				},
+				formatter: (value: number) => {
+					const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+					return `${value.toLocaleString()}\n(${percentage}%)`;
+				},
+			},
+		},
+	};
+
+	if (total === 0) {
+		return (
+			<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+				<div className="p-4 border-b border-gray-100">
+					<h3 className="text-base font-semibold text-gray-900">
+						Actual Participants
+					</h3>
+					<p className="text-xs text-gray-500 mt-0.5">Male vs Female participants</p>
+				</div>
+				<div className="p-4">
+					<div className="flex items-center justify-center h-64 text-sm text-gray-500">
+						No data available
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	const malePercentage = Math.round((totalMale / total) * 100);
+	const femalePercentage = Math.round((totalFemale / total) * 100);
+
+	return (
+		<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+			{/* Card Header */}
+			<div className="px-4 pt-4 pb-3 border-b border-gray-100">
+				<div className="flex items-start justify-between">
+					<div className="flex-1">
+						<h3 className="text-base font-semibold text-gray-900">
+							Actual Participants
+						</h3>
+						<p className="text-xs text-gray-500 mt-0.5">Male vs Female participants</p>
+					</div>
+					<div className="text-right">
+						<div className="text-xs font-medium text-gray-900">{total.toLocaleString()}</div>
+						<div className="text-xs text-gray-500">Total</div>
+					</div>
+				</div>
+			</div>
+			{/* Chart Content */}
+			<div className="p-4">
+				<DynamicChartRenderer chartType={chartType} data={chartData} options={options} height="214px" />
+			</div>
+			{/* Chart Footer - Switcher Buttons */}
+			<div className="px-4 pb-4 pt-2 border-t border-gray-100 flex justify-center">
+				<ChartTypeSwitcher 
+					chartId="training-gender"
+					currentType={chartType} 
+					onTypeChange={setChartType}
+				/>
+			</div>
+		</div>
+	);
+}
+
+function TrainingOrganizationChart({ data }: { data: TrainingGraphData[] }) {
+	const [chartType, setChartType] = useState<ChartType>('horizontal-bar');
+	const [orgData, setOrgData] = useState<Array<{ organization: string; participantCount: number }>>([]);
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		const fetchOrgData = async () => {
+			try {
+				const response = await fetch('/api/training/organization-stats');
+				const result = await response.json();
+				
+				if (result.success && result.organizationStats) {
+					// Take top 10 organizations and sort by count
+					const topOrgs = result.organizationStats
+						.slice(0, 10)
+						.sort((a: { participantCount: number }, b: { participantCount: number }) => 
+							b.participantCount - a.participantCount
+						);
+					setOrgData(topOrgs);
+				}
+				setLoading(false);
+			} catch (err) {
+				console.error('Error fetching org data:', err);
+				setLoading(false);
+			}
+		};
+		fetchOrgData();
+	}, []);
+
+	const labels = orgData.map(item => item.organization);
+	const counts = orgData.map(item => item.participantCount);
+
+	// Define color palette for different organizations
+	const organizationColors = [
+		{ bg: 'rgba(59, 130, 246, 0.8)', border: 'rgba(59, 130, 246, 1)' },   // Blue
+		{ bg: 'rgba(16, 185, 129, 0.8)', border: 'rgba(16, 185, 129, 1)' },   // Emerald
+		{ bg: 'rgba(249, 115, 22, 0.8)', border: 'rgba(249, 115, 22, 1)' },   // Orange
+		{ bg: 'rgba(168, 85, 247, 0.8)', border: 'rgba(168, 85, 247, 1)' },   // Purple
+		{ bg: 'rgba(236, 72, 153, 0.8)', border: 'rgba(236, 72, 153, 1)' },   // Pink
+		{ bg: 'rgba(234, 179, 8, 0.8)', border: 'rgba(234, 179, 8, 1)' },     // Yellow
+		{ bg: 'rgba(20, 184, 166, 0.8)', border: 'rgba(20, 184, 166, 1)' },   // Teal
+		{ bg: 'rgba(239, 68, 68, 0.8)', border: 'rgba(239, 68, 68, 1)' },     // Red
+		{ bg: 'rgba(99, 102, 241, 0.8)', border: 'rgba(99, 102, 241, 1)' },   // Indigo
+		{ bg: 'rgba(132, 204, 22, 0.8)', border: 'rgba(132, 204, 22, 1)' },   // Lime
+	];
+
+	const backgroundColors = orgData.map((_, index) => 
+		organizationColors[index % organizationColors.length].bg
+	);
+	const borderColors = orgData.map((_, index) => 
+		organizationColors[index % organizationColors.length].border
+	);
+
+	const chartData = {
+		labels,
+		datasets: [
+			{
+				label: 'Participants',
+				data: counts,
+				backgroundColor: backgroundColors,
+				borderColor: borderColors,
+				borderWidth: 1,
+			},
+		],
+	};
+
+	const options: ChartOptions<'bar'> = {
+		indexAxis: chartType === 'horizontal-bar' ? 'y' as const : 'x' as const,
+		responsive: true,
+		maintainAspectRatio: false,
+		plugins: {
+			legend: {
+				display: false,
+			},
+			tooltip: {
+				callbacks: {
+					label: function(context) {
+						return `Participants: ${context.parsed.x || context.parsed.y}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+					}
+				}
+			},
+			datalabels: {
+				display: true,
+				color: '#fff',
+				font: {
+					weight: 'bold' as const,
+					size: 10,
+				},
+				formatter: (value: number) => value.toLocaleString(),
+				anchor: 'center' as const,
+				align: 'center' as const,
+			},
+		},
+		scales: {
+			x: {
+				beginAtZero: true,
+				title: {
+					display: chartType === 'horizontal-bar',
+					text: 'Number of Participants',
+					font: { size: 11 },
+				},
+				ticks: {
+					font: { size: 11 },
+				},
+			},
+			y: {
+				beginAtZero: true,
+				title: {
+					display: chartType !== 'horizontal-bar',
+					text: 'Number of Participants',
+					font: { size: 11 },
+				},
+				ticks: {
+					font: { size: 10 },
+					maxRotation: chartType !== 'horizontal-bar' ? 45 : 0,
+					minRotation: 0,
+				},
+			},
+		},
+	};
+
+	if (loading) {
+		return (
+			<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+				<div className="p-4 border-b border-gray-100">
+					<h3 className="text-base font-semibold text-gray-900">
+						Organization Participation
+					</h3>
+					<p className="text-xs text-gray-500 mt-0.5">By department/organization</p>
+				</div>
+				<div className="p-4">
+					<div className="flex items-center justify-center h-64 text-sm text-gray-500">
+						<Loader2 className="h-6 w-6 animate-spin mr-2" />
+						Loading organization data...
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	if (orgData.length === 0) {
+		return (
+			<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+				<div className="p-4 border-b border-gray-100">
+					<h3 className="text-base font-semibold text-gray-900">
+						Organization Participation
+					</h3>
+					<p className="text-xs text-gray-500 mt-0.5">By department/organization</p>
+				</div>
+				<div className="p-4">
+					<div className="flex items-center justify-center h-64 text-sm text-gray-500">
+						No organization data available
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	const totalOrgParticipants = counts.reduce((sum, count) => sum + count, 0);
+
+	return (
+		<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+			{/* Card Header */}
+			<div className="px-4 pt-4 pb-3 border-b border-gray-100">
+				<div className="flex items-start justify-between">
+					<div className="flex-1">
+						<h3 className="text-base font-semibold text-gray-900">
+							Organization Participation
+						</h3>
+						<p className="text-xs text-gray-500 mt-0.5">By department/organization</p>
+					</div>
+					<div className="text-right">
+						<div className="text-xs font-medium text-gray-900">{totalOrgParticipants.toLocaleString()}</div>
+						<div className="text-xs text-gray-500">Total</div>
+					</div>
+				</div>
+			</div>
+			{/* Chart Content */}
+			<div className="p-4">
+				<DynamicChartRenderer chartType={chartType} data={chartData} options={options} height="214px" />
+			</div>
+			{/* Chart Footer - Switcher Buttons */}
+			<div className="px-4 pb-4 pt-2 border-t border-gray-100 flex justify-center">
+				<ChartTypeSwitcher 
+					chartId="training-organization"
+					currentType={chartType} 
+					onTypeChange={setChartType}
+				/>
+			</div>
+		</div>
+	);
+}
+
 export default function DashboardPage() {
 	const router = useRouter();
 	const [pictures, setPictures] = useState<PictureData[]>([]);
@@ -2252,10 +2695,7 @@ export default function DashboardPage() {
 	const [activityProgress, setActivityProgress] = useState<ActivityProgress[]>([]);
 	const [sectorProgress, setSectorProgress] = useState<SectorProgress[]>([]);
 	const [districtProgressSummary, setDistrictProgressSummary] = useState<DistrictProgressSummary[]>([]);
-	const [trainingDashboardData, setTrainingDashboardData] = useState<DashboardData | null>(null);
 	const [trainingGraphData, setTrainingGraphData] = useState<TrainingGraphData[]>([]);
-	const [selectedEventType, setSelectedEventType] = useState<BreakdownRow | null>(null);
-	const [selectedDistrict, setSelectedDistrict] = useState<BreakdownRow | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -2275,23 +2715,9 @@ export default function DashboardPage() {
 		fetchActivityProgress();
 		fetchSectorProgress();
 		fetchDistrictProgressSummary();
-		fetchTrainingDashboard();
 		fetchTrainingGraphs();
 		fetchSecurityAlerts();
 	}, []);
-
-	const fetchTrainingDashboard = async () => {
-		try {
-			const res = await fetch("/api/training/dashboard");
-			const json = await res.json() as DashboardResponse;
-			if (!json.success) {
-				throw new Error(json.message ?? "Failed to load dashboard data");
-			}
-			setTrainingDashboardData(json);
-		} catch (err) {
-			console.error("Error fetching training dashboard:", err);
-		}
-	};
 
 	const fetchSecurityAlerts = async () => {
 		try {
@@ -2314,18 +2740,6 @@ export default function DashboardPage() {
 			setSecurityAlertsLoading(false);
 		}
 	};
-
-	function getMaxValue(rows: BreakdownRow[], field: keyof BreakdownRow): number {
-		return rows.reduce((max, row) => {
-			const value = (row[field] as number) || 0;
-			return value > max ? value : max;
-		}, 0);
-	}
-
-	function getPercentage(part: number, total: number): string {
-		if (!total || total <= 0) return "0%";
-		return `${Math.round((part / total) * 100)}%`;
-	}
 
 	useEffect(() => {
 		if (isAutoPlaying && pictures.length > 3) {
@@ -2697,67 +3111,23 @@ export default function DashboardPage() {
 		</div>
 		</div>
 
-			{/* Training Dashboard Summary Cards */}
-			{trainingDashboardData && (
+			{/* Training, Capacity Building & Awareness Section */}
+			{trainingGraphData.length > 0 && (
 				<div className="space-y-6">
 					<div className="space-y-1">
 						<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">Training, Capacity Building & Awareness</h2>
-						<p className="text-sm text-gray-600 leading-relaxed">Overview of trainings, days and participants (event type wise and district wise).</p>
 					</div>
 
-					{/* Overall cards */}
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-						<div className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 text-white shadow-md">
-							<p className="text-xs uppercase tracking-wide opacity-80">
-								Total Trainings
-							</p>
-							<p className="mt-2 text-2xl font-semibold">
-								{trainingDashboardData.overall.totalTrainings.toLocaleString()}
-							</p>
-						</div>
+					{/* Three Chart Cards - Responsive Grid */}
+					<div className="grid gap-[21px] grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+						{/* Chart 1: Events and Participants by EventType */}
+						<TrainingEventsParticipantsChart data={trainingGraphData} />
 
-						<div className="rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 p-4 text-white shadow-md">
-							<p className="text-xs uppercase tracking-wide opacity-80">
-								Total Days
-							</p>
-							<p className="mt-2 text-2xl font-semibold">
-								{trainingDashboardData.overall.totalDays.toLocaleString()}
-							</p>
-						</div>
+						{/* Chart 2: Male vs Female Participants */}
+						<TrainingGenderChart data={trainingGraphData} />
 
-						<div className="rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 text-white shadow-md">
-							<p className="text-xs uppercase tracking-wide opacity-80">
-								Total Male / Female
-							</p>
-							<div className="mt-2 space-y-0.5 text-sm">
-								<p className="font-semibold">
-									<span>{trainingDashboardData.overall.totalMale.toLocaleString()}</span>
-									<span className="mx-1 text-xs font-normal opacity-80">/</span>
-									<span>{trainingDashboardData.overall.totalFemale.toLocaleString()}</span>
-								</p>
-								<p className="text-[11px] text-indigo-100">
-									{getPercentage(
-										trainingDashboardData.overall.totalMale,
-										trainingDashboardData.overall.totalParticipants
-									)}{" "}
-									Male /{" "}
-									{getPercentage(
-										trainingDashboardData.overall.totalFemale,
-										trainingDashboardData.overall.totalParticipants
-									)}{" "}
-									Female
-								</p>
-							</div>
-						</div>
-
-						<div className="rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 p-4 text-white shadow-md">
-							<p className="text-xs uppercase tracking-wide opacity-80">
-								Total Participants
-							</p>
-							<p className="mt-2 text-2xl font-semibold">
-								{trainingDashboardData.overall.totalParticipants.toLocaleString()}
-							</p>
-						</div>
+						{/* Chart 3: Organization-wise Participants */}
+						<TrainingOrganizationChart data={trainingGraphData} />
 					</div>
 				</div>
 			)}
