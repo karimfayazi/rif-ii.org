@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Calendar, Folder, Image as ImageIcon, Extern
 import Link from "next/link";
 import Image from "next/image";
 import DIKPanialaGISMapSection from '@/components/DIKPanialaGISMap';
+import NewsModal, { type NewsItem } from '@/components/news/NewsModal';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import {
 	Chart as ChartJS,
@@ -98,43 +99,13 @@ interface DynamicChartRendererProps {
 
 function DynamicChartRenderer({ chartType, data, options, height = '280px' }: DynamicChartRendererProps) {
 	if (chartType === 'pie') {
-		// Pie chart
+		// Pie chart: use parent options (e.g. TrainingGenderChart passes counts, no %)
 		const pieOptions: ChartOptions<'pie'> = {
 			responsive: true,
 			maintainAspectRatio: true,
 			aspectRatio: 1.2,
-			plugins: {
-				legend: {
-					display: true,
-					position: 'right',
-					labels: {
-						boxWidth: 12,
-						padding: 10,
-						font: {
-							size: 10,
-						}
-					}
-				},
-				tooltip: {
-					callbacks: {
-						label: function(context) {
-							const label = context.label || '';
-							const value = context.parsed || 0;
-							return `${label}: ${value}%`;
-						}
-					}
-				},
-				datalabels: {
-					color: '#fff',
-					font: {
-						weight: 'bold',
-						size: 10,
-					},
-					formatter: (value) => `${value}%`,
-				}
-			}
+			...(options as ChartOptions<'pie'>),
 		};
-		
 		return (
 			<div style={{ height }}>
 				<Pie data={data as any} options={pieOptions} plugins={[ChartDataLabels] as any} />
@@ -2711,8 +2682,20 @@ export default function DashboardPage() {
 	const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 	const [newsIndex, setNewsIndex] = useState(0);
 	const [isNewsAutoPlaying, setIsNewsAutoPlaying] = useState(true);
-	const [newsItems, setNewsItems] = useState<Array<{ id: number; title: string; date: string; image: string | null; category: string; description: string }>>([]);
+	const [newsItems, setNewsItems] = useState<Array<{
+		id: number;
+		title: string;
+		date: string;
+		image: string | null;
+		category: string;
+		description: string;
+		bodyText: string;
+		newsDate: string;
+		imageCaption?: string | null;
+		postedByName?: string | null;
+	}>>([]);
 	const [newsLoading, setNewsLoading] = useState(true);
+	const [selectedNewsModal, setSelectedNewsModal] = useState<NewsItem | null>(null);
 	const [securityAlerts, setSecurityAlerts] = useState<Array<{id: number; incident_title: string; ReferenceNumber?: string}>>([]);
 	const [securityAlertsLoading, setSecurityAlertsLoading] = useState(false);
 
@@ -2769,6 +2752,10 @@ export default function DashboardPage() {
 						image: row.imageUrl ?? null,
 						category: row.imageCaption ?? row.postedByName ?? 'News',
 						description,
+						bodyText: desc,
+						newsDate: row.newsDate ?? '',
+						imageCaption: row.imageCaption ?? null,
+						postedByName: row.postedByName ?? null,
 					};
 				});
 				setNewsItems(truncated);
@@ -3403,7 +3390,18 @@ export default function DashboardPage() {
 										<p className="text-sm text-gray-600 leading-relaxed">
 											{news.description}
 										</p>
-										<button className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white font-medium rounded-lg hover:bg-[#0a3d24] transition-colors w-fit">
+										<button
+											onClick={() => setSelectedNewsModal({
+												newsId: news.id,
+												title: news.title,
+												newsDate: news.newsDate,
+												bodyText: news.bodyText,
+												imageUrl: news.image ?? null,
+												imageCaption: news.imageCaption ?? null,
+												postedByName: news.postedByName ?? null,
+											})}
+											className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white font-medium rounded-lg hover:bg-[#0a3d24] transition-colors w-fit"
+										>
 											Read More
 											<ExternalLink className="ml-2 h-4 w-4" />
 										</button>
@@ -3450,6 +3448,13 @@ export default function DashboardPage() {
 					)}
 				</div>
 			</div>
+
+			{/* News Read More Modal */}
+			<NewsModal
+				open={selectedNewsModal !== null}
+				onClose={() => setSelectedNewsModal(null)}
+				news={selectedNewsModal}
+			/>
 
 			{/* RIF-II Security Alert Section */}
 			<div className="bg-gradient-to-br from-white to-red-50 rounded-xl border border-red-200 shadow-lg overflow-hidden">

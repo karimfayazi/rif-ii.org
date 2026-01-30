@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Newspaper, Download, Calendar, Search, RotateCcw, Filter, Upload, RefreshCw, Eye, AlertCircle, Loader2, CheckCircle, X } from "lucide-react";
+import { Newspaper, Download, Calendar, RotateCcw, Filter, Upload, RefreshCw, Eye, AlertCircle, Loader2, CheckCircle, Trash2 } from "lucide-react";
 import Link from "next/link";
+import NewsModal, { formatNewsDate, type NewsItem } from "@/components/news/NewsModal";
+import { useAccess } from "@/hooks/useAccess";
+import { useAuth } from "@/hooks/useAuth";
 
 type NewsData = {
 	newsId: number;
@@ -11,9 +14,14 @@ type NewsData = {
 	bodyText?: string | null;
 	imageUrl?: string | null;
 	imageCaption?: string | null;
+	postedByName?: string | null;
 };
 
 export default function NewsPage() {
+	const { user, getUserId } = useAuth();
+	const userId = user?.id ?? user?.username ?? getUserId() ?? null;
+	const { accessDelete, loading: accessLoading } = useAccess(userId);
+
 	const [news, setNews] = useState<NewsData[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
@@ -23,6 +31,8 @@ export default function NewsPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
 	const [viewModal, setViewModal] = useState<{ show: boolean; news: NewsData | null }>({ show: false, news: null });
+	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; news: NewsData | null }>({ show: false, news: null });
+	const [deleting, setDeleting] = useState(false);
 
 	useEffect(() => {
 		fetchNews();
@@ -70,6 +80,34 @@ export default function NewsPage() {
 		}, 0);
 	};
 
+	const handleDelete = async () => {
+		if (!deleteConfirm.news?.newsId) return;
+		const newsId = deleteConfirm.news.newsId;
+		try {
+			setDeleting(true);
+			const response = await fetch(`/api/news/${newsId}`, { method: "DELETE" });
+			const data = await response.json();
+			if (data.success) {
+				setDeleteConfirm({ show: false, news: null });
+				setSuccess("News article deleted successfully");
+				setError(null);
+				setNews((prev) => prev.filter((item) => item.newsId !== newsId));
+				setTimeout(() => setSuccess(null), 3000);
+			} else {
+				setError(data.message ?? "Failed to delete news article");
+				setSuccess(null);
+				setDeleteConfirm({ show: false, news: null });
+			}
+		} catch (err) {
+			console.error("Error deleting news:", err);
+			setError("Error deleting news article");
+			setSuccess(null);
+			setDeleteConfirm({ show: false, news: null });
+		} finally {
+			setDeleting(false);
+		}
+	};
+
 	const handleExport = () => {
 		if (news.length === 0) {
 			alert("No news to export");
@@ -104,40 +142,19 @@ export default function NewsPage() {
 	};
 
 	const formatDate = (dateString: string) => {
-		if (!dateString) return "N/A";
-		try {
-			const date = new Date(dateString);
-			return date.toLocaleDateString('en-US', {
-				year: 'numeric',
-				month: 'short',
-				day: 'numeric'
-			});
-		} catch {
-			return dateString;
-		}
+		const formatted = formatNewsDate(dateString);
+		return formatted === "-" ? "N/A" : formatted;
 	};
 
-	const formatBodyText = (text: string | null | undefined) => {
-		if (!text) return null;
-		
-		// Split by double newlines for paragraphs, or single newlines
-		const paragraphs = text.split(/\n\n+/);
-		
-		return paragraphs.map((para, idx) => {
-			// Replace single newlines with <br/>
-			const lines = para.split('\n').filter(line => line.trim());
-			return (
-				<p key={idx} className="mb-3 text-gray-700 leading-relaxed">
-					{lines.map((line, lineIdx) => (
-						<span key={lineIdx}>
-							{line}
-							{lineIdx < lines.length - 1 && <br />}
-						</span>
-					))}
-				</p>
-			);
-		});
-	};
+	const newsToModalItem = (item: NewsData): NewsItem => ({
+		newsId: item.newsId,
+		title: item.title ?? "",
+		newsDate: item.newsDate,
+		bodyText: item.bodyText ?? "",
+		imageUrl: item.imageUrl ?? null,
+		imageCaption: item.imageCaption ?? null,
+		postedByName: item.postedByName ?? null,
+	});
 
 	if (loading && news.length === 0) {
 		return (
@@ -331,7 +348,7 @@ export default function NewsPage() {
 						>
 							<div className="flex flex-col lg:flex-row lg:items-center p-3 gap-2">
 								{/* Left Section: Icon and Title */}
-								<div className="flex items-center space-x-3 lg:w-[50%] min-w-0">
+								<div className="flex items-center space-x-3 lg:w-[40%] min-w-0">
 									<div className="flex-shrink-0">
 										<div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
 											<Newspaper className="h-5 w-5 text-blue-600" />
@@ -350,8 +367,18 @@ export default function NewsPage() {
 									</div>
 								</div>
 
-								{/* Middle Section: News ID */}
-								<div className="flex items-center lg:w-[30%] px-0 lg:px-4 flex-shrink-0 border-t lg:border-t-0 lg:border-l lg:border-r border-gray-200 pt-2 lg:pt-0">
+								{/* Middle Section: News Date */}
+								<div className="flex items-center lg:w-[20%] px-0 lg:px-4 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-gray-200 pt-2 lg:pt-0">
+									<div className="flex flex-col w-full">
+										<span className="text-xs font-medium text-gray-500 mb-0.5 text-left">News Date</span>
+										<span className="text-xs text-gray-900 text-left">
+											{formatNewsDate(item.newsDate)}
+										</span>
+									</div>
+								</div>
+
+								{/* News ID */}
+								<div className="flex items-center lg:w-[20%] px-0 lg:px-4 flex-shrink-0 border-t lg:border-t-0 lg:border-l lg:border-r border-gray-200 pt-2 lg:pt-0">
 									<div className="flex flex-col w-full">
 										<span className="text-xs font-medium text-gray-500 mb-0.5 text-left">News ID</span>
 										<span className="text-xs text-gray-900 text-left">
@@ -360,8 +387,8 @@ export default function NewsPage() {
 									</div>
 								</div>
 
-								{/* Right Section: Action Button */}
-								<div className="flex items-center justify-end lg:w-[20%] flex-shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-200">
+								{/* Right Section: Actions */}
+								<div className="flex items-center justify-end gap-2 lg:w-[20%] flex-shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-200">
 									<button
 										onClick={() => setViewModal({ show: true, news: item })}
 										className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200 whitespace-nowrap"
@@ -369,6 +396,16 @@ export default function NewsPage() {
 										<Eye className="h-3.5 w-3.5 mr-1" />
 										View
 									</button>
+									{!accessLoading && accessDelete && (
+										<button
+											onClick={() => setDeleteConfirm({ show: true, news: item })}
+											className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border border-red-200 whitespace-nowrap"
+											title="Delete news article"
+										>
+											<Trash2 className="h-3.5 w-3.5 mr-1" />
+											Delete
+										</button>
+									)}
 								</div>
 							</div>
 						</div>
@@ -385,75 +422,63 @@ export default function NewsPage() {
 			)}
 
 			{/* View Modal */}
-			{viewModal.show && viewModal.news && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-					<div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full my-8 transform transition-all">
-						{/* Modal Header */}
-						<div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-t-xl">
-							<div className="flex items-start justify-between">
-								<div className="flex items-start">
-									<div className="p-2 bg-white/20 rounded-lg mr-4 flex-shrink-0">
-										<Newspaper className="h-6 w-6" />
-									</div>
-									<div className="flex-1">
-										<h2 className="text-2xl font-bold mb-2">{viewModal.news.title}</h2>
-										<div className="flex items-center text-blue-100 text-sm">
-											<Calendar className="h-4 w-4 mr-2" />
-											<span>{formatDate(viewModal.news.newsDate)}</span>
-											<span className="mx-2">•</span>
-											<span>News ID: #{viewModal.news.newsId}</span>
-										</div>
-									</div>
+			<NewsModal
+				open={viewModal.show}
+				onClose={() => setViewModal({ show: false, news: null })}
+				news={viewModal.news ? newsToModalItem(viewModal.news) : null}
+			/>
+
+			{/* Delete Confirmation Modal */}
+			{deleteConfirm.show && deleteConfirm.news && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+						<div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl">
+							<div className="flex items-center">
+								<div className="p-2 bg-white/20 rounded-lg mr-4">
+									<Trash2 className="h-6 w-6" />
 								</div>
-								<button
-									onClick={() => setViewModal({ show: false, news: null })}
-									className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors flex-shrink-0"
-								>
-									<X className="h-5 w-5" />
-								</button>
+								<div>
+									<h2 className="text-xl font-bold">Confirm Delete</h2>
+									<p className="text-red-100 text-sm mt-1">This action cannot be undone</p>
+								</div>
 							</div>
 						</div>
-
-						{/* Modal Content */}
-						<div className="p-6 max-h-[600px] overflow-y-auto">
-							{/* Image */}
-							{viewModal.news.imageUrl && (
-								<div className="mb-6">
-									<img 
-										src={viewModal.news.imageUrl} 
-										alt={viewModal.news.imageCaption || viewModal.news.title}
-										className="w-full h-auto rounded-lg shadow-md"
-										onError={(e) => {
-											e.currentTarget.style.display = 'none';
-										}}
-									/>
-									{viewModal.news.imageCaption && (
-										<p className="text-sm text-gray-500 italic mt-2 text-center">
-											{viewModal.news.imageCaption}
-										</p>
-									)}
-								</div>
-							)}
-
-							{/* Body Text */}
-							<div className="prose prose-sm max-w-none">
-								{viewModal.news.bodyText ? (
-									<div className="text-gray-700 leading-relaxed">
-										{formatBodyText(viewModal.news.bodyText)}
-									</div>
-								) : (
-									<p className="text-gray-500 italic">No content available</p>
-								)}
+						<div className="p-6">
+							<p className="text-gray-700 mb-3">Are you sure you want to delete this news article?</p>
+							<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+								<p className="text-sm font-medium text-gray-500 mb-1">Title</p>
+								<p className="text-base font-semibold text-gray-900 line-clamp-2">{deleteConfirm.news.title}</p>
+								<p className="text-xs text-gray-500 mt-2">#{deleteConfirm.news.newsId}</p>
+							</div>
+							<div className="mt-4 flex items-start gap-2 rounded-lg bg-yellow-50 border border-yellow-200 p-3">
+								<AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+								<p className="text-sm text-yellow-800">This will permanently remove the article from the database.</p>
 							</div>
 						</div>
-
-						{/* Modal Footer */}
-						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end border-t border-gray-200">
+						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3 border-t border-gray-200">
 							<button
-								onClick={() => setViewModal({ show: false, news: null })}
-								className="px-6 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium shadow-sm"
+								onClick={() => setDeleteConfirm({ show: false, news: null })}
+								disabled={deleting}
+								className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium disabled:opacity-50"
 							>
-								Close
+								Cancel
+							</button>
+							<button
+								onClick={handleDelete}
+								disabled={deleting}
+								className="inline-flex items-center px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{deleting ? (
+									<>
+										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										Deleting...
+									</>
+								) : (
+									<>
+										<Trash2 className="h-4 w-4 mr-2" />
+										Yes, Delete
+									</>
+								)}
 							</button>
 						</div>
 					</div>
