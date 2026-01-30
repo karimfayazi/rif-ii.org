@@ -26,13 +26,18 @@ export async function POST(request: NextRequest) {
 			isPublished
 		} = body;
 
-		// Enhanced validation with detailed error messages
+		// Enhanced validation - postedByUserId is now username (string)
 		const missingFields: string[] = [];
 		if (!title || title.trim() === '') missingFields.push('title');
 		if (!newsDate) missingFields.push('newsDate');
 		if (!bodyText || bodyText.trim() === '') missingFields.push('bodyText');
-		if (!postedByUserId || typeof postedByUserId !== 'number' || postedByUserId <= 0) missingFields.push('postedByUserId');
-		if (!postedByName || postedByName.trim() === '') missingFields.push('postedByName');
+		
+		// Validate postedByUserId as string (username)
+		const userIdStr = String(postedByUserId ?? '').trim();
+		if (!userIdStr) missingFields.push('postedByUserId (username)');
+		
+		// postedByName is optional but should be string if provided
+		const userNameStr = postedByName ? String(postedByName).trim() : null;
 		
 		if (missingFields.length > 0) {
 			console.error('[News API] Validation failed. Missing or invalid fields:', missingFields);
@@ -41,15 +46,18 @@ export async function POST(request: NextRequest) {
 				newsDate: newsDate,
 				bodyText: bodyText ? `${bodyText.substring(0, 50)}...` : 'empty',
 				postedByUserId: postedByUserId,
+				postedByUserIdType: typeof postedByUserId,
 				postedByName: postedByName
 			});
 			
 			return NextResponse.json(
 				{
 					success: false,
-					message: `Missing or invalid required fields: ${missingFields.join(', ')}`
+					message: missingFields.includes('postedByUserId (username)') 
+						? 'Session expired. Please log in again.'
+						: `Missing or invalid required fields: ${missingFields.join(', ')}`
 				},
-				{ status: 400 }
+				{ status: missingFields.includes('postedByUserId (username)') ? 401 : 400 }
 			);
 		}
 
@@ -128,8 +136,8 @@ export async function POST(request: NextRequest) {
 			request_obj.input('bodyText', sql.NVarChar(sql.MAX), bodyText);
 			request_obj.input('imageUrl', sql.NVarChar(500), imageUrl || null);
 			request_obj.input('imageCaption', sql.NVarChar(255), imageCaption || null);
-			request_obj.input('postedByUserId', sql.Int, postedByUserId);
-			request_obj.input('postedByName', sql.NVarChar(255), postedByName);
+			request_obj.input('postedByUserId', sql.NVarChar(150), userIdStr);      // STRING username
+			request_obj.input('postedByName', sql.NVarChar(150), userNameStr);      // STRING display name
 			request_obj.input('isPublished', sql.Bit, isPublished ? 1 : 0);
 
 			const result = await request_obj.query(query);

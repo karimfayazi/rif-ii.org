@@ -222,24 +222,18 @@ export default function UploadNewsPage() {
 			return;
 		}
 		
-		// Enhanced user validation with debugging
-		if (!userId || userId.trim() === '') {
-			console.error('[News Upload] User ID is missing or empty:', { userId, user, userProfile });
-			setError("User session not found. Please log in again.");
+		// Enhanced user validation - userId is now username (string)
+		const postedByUserId = (userId ?? '').toString().trim();
+		if (!postedByUserId) {
+			console.error('[News Upload] Username is missing or empty:', { userId, user, userProfile });
+			setError("Session expired. Please log in again.");
 			return;
 		}
 		
-		if (!username || username.trim() === '') {
-			console.error('[News Upload] Username is missing or empty:', { username, user, userProfile });
+		const postedByName = (username ?? '').toString().trim();
+		if (!postedByName) {
+			console.error('[News Upload] User display name is missing:', { username, user, userProfile });
 			setError("User information not found. Please log in again.");
-			return;
-		}
-		
-		// Convert userId to number and validate
-		const userIdNum = parseInt(userId, 10);
-		if (isNaN(userIdNum) || userIdNum <= 0) {
-			console.error('[News Upload] Invalid user ID:', { userId, userIdNum });
-			setError("Invalid user ID. Please log in again.");
 			return;
 		}
 
@@ -263,8 +257,8 @@ export default function UploadNewsPage() {
 				bodyText: formData.bodyText.trim(),
 				imageUrl: formData.imageUrl?.trim() || null,
 				imageCaption: formData.imageCaption?.trim() || null,
-				postedByUserId: userIdNum,
-				postedByName: username.trim(),
+				postedByUserId: postedByUserId,  // STRING username
+				postedByName: postedByName,      // STRING display name
 				isPublished: formData.isPublished
 			};
 			
