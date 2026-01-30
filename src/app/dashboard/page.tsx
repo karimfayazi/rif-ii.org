@@ -2695,6 +2695,7 @@ export default function DashboardPage() {
 		postedByName?: string | null;
 	}>>([]);
 	const [newsLoading, setNewsLoading] = useState(true);
+	const [newsImageErrors, setNewsImageErrors] = useState<Record<number, boolean>>({});
 	const [selectedNewsModal, setSelectedNewsModal] = useState<NewsItem | null>(null);
 	const [securityAlerts, setSecurityAlerts] = useState<Array<{id: number; incident_title: string; ReferenceNumber?: string}>>([]);
 	const [securityAlertsLoading, setSecurityAlertsLoading] = useState(false);
@@ -2758,14 +2759,15 @@ export default function DashboardPage() {
 						postedByName: row.postedByName ?? null,
 					};
 				});
-				setNewsItems(truncated);
-			}
-		} catch (err) {
-			console.error('Error fetching news:', err);
-		} finally {
-			setNewsLoading(false);
-		}
-	};
+								setNewsItems(truncated);
+								setNewsImageErrors({}); // reset image error state when news list changes
+							}
+						} catch (err) {
+							console.error('Error fetching news:', err);
+						} finally {
+							setNewsLoading(false);
+						}
+					};
 
 	useEffect(() => {
 		if (isAutoPlaying && pictures.length > 3) {
@@ -3355,21 +3357,27 @@ export default function DashboardPage() {
 									{/* News Image */}
 									<div className="relative overflow-hidden rounded-lg shadow-md">
 										<div className="aspect-video bg-gradient-to-br from-gray-200 to-gray-300 relative">
-											{news.image ? (
-												<img
-													src={news.image}
-													alt={news.title}
-													className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-													onError={(e) => {
-														const target = e.target as HTMLImageElement;
-														target.style.display = 'none';
-													}}
-												/>
-											) : (
-												<div className="absolute inset-0 flex items-center justify-center">
-													<ImageIcon className="h-16 w-16 text-gray-400" />
-												</div>
-											)}
+											{(() => {
+												const imageSrc = news.image ? getImageUrl(news.image) : '';
+												const showPlaceholder = !imageSrc || newsImageErrors[news.id];
+												if (showPlaceholder) {
+													return (
+														<div className="absolute inset-0 flex items-center justify-center">
+															<ImageIcon className="h-16 w-16 text-gray-400" />
+														</div>
+													);
+												}
+												return (
+													<img
+														src={imageSrc}
+														alt={news.title}
+														className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+														onError={() => {
+															setNewsImageErrors((prev) => ({ ...prev, [news.id]: true }));
+														}}
+													/>
+												);
+											})()}
 											<div className="absolute top-4 left-4">
 												<span className="px-3 py-1 bg-[#0b4d2b] text-white text-xs font-semibold rounded-full shadow-lg">
 													{news.category}

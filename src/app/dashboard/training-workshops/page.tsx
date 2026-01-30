@@ -344,8 +344,8 @@ export default function TrainingWorkshopsDashboardPage() {
 		eventType: '',
 		facilitator: ''
 	});
-	const [showFilters, setShowFilters] = useState(true);
-	const [showSummaryReports, setShowSummaryReports] = useState(true);
+	const [showFilters, setShowFilters] = useState(false);
+	const [showSummaryReports, setShowSummaryReports] = useState(false);
 	const [showEventsTable, setShowEventsTable] = useState(false);
 
 	// Summary-all: Events + Participants + Evaluation (single fetch)
