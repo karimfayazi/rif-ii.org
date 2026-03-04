@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Search, Globe, FileText, RotateCcw } from "lucide-react";
+import {
+	ExternalLink,
+	Search,
+	Plus,
+	Pencil,
+	Trash2,
+	X,
+	Loader2,
+	CheckCircle,
+	AlertCircle,
+} from "lucide-react";
 
 type LinkData = {
 	LinkID: number;
@@ -10,11 +20,30 @@ type LinkData = {
 	Url: string;
 };
 
+const URL_REGEX = /^https?:\/\/.+/i;
+
+function validateUrl(url: string): boolean {
+	return URL_REGEX.test(url.trim());
+}
+
 export default function LinksPage() {
 	const [links, setLinks] = useState<LinkData[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [error, setError] = useState<string | null>(null);
+	const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+	const [modalOpen, setModalOpen] = useState(false);
+	const [editingLink, setEditingLink] = useState<LinkData | null>(null);
+	const [formTitle, setFormTitle] = useState("");
+	const [formDescription, setFormDescription] = useState("");
+	const [formUrl, setFormUrl] = useState("");
+	const [formErrors, setFormErrors] = useState<{ title?: string; url?: string }>({});
+	const [saving, setSaving] = useState(false);
+	const [saveError, setSaveError] = useState<string | null>(null);
+
+	const [deleteConfirm, setDeleteConfirm] = useState<LinkData | null>(null);
+	const [deleting, setDeleting] = useState(false);
 
 	useEffect(() => {
 		fetchLinks();
@@ -23,9 +52,10 @@ export default function LinksPage() {
 	const fetchLinks = async () => {
 		try {
 			setLoading(true);
+			setError(null);
 			const response = await fetch("/api/links");
 			const data = await response.json();
-			
+
 			if (data.success) {
 				setLinks(data.links || []);
 			} else {
@@ -39,12 +69,132 @@ export default function LinksPage() {
 		}
 	};
 
-	const filteredLinks = links.filter(link =>
-		link.Title.toLowerCase().includes(searchTerm.toLowerCase())
+	const filteredLinks = links.filter(
+		(link) =>
+			link.Title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			(link.Description || "").toLowerCase().includes(searchTerm.toLowerCase())
 	);
 
+	const openAddModal = () => {
+		setEditingLink(null);
+		setFormTitle("");
+		setFormDescription("");
+		setFormUrl("");
+		setFormErrors({});
+		setSaveError(null);
+		setModalOpen(true);
+	};
+
+	const openEditModal = (link: LinkData) => {
+		setEditingLink(link);
+		setFormTitle(link.Title);
+		setFormDescription(link.Description || "");
+		setFormUrl(link.Url);
+		setFormErrors({});
+		setSaveError(null);
+		setModalOpen(true);
+	};
+
+	const closeModal = () => {
+		if (!saving) {
+			setModalOpen(false);
+			setEditingLink(null);
+			setFormTitle("");
+			setFormDescription("");
+			setFormUrl("");
+			setFormErrors({});
+			setSaveError(null);
+		}
+	};
+
+	const validateForm = (): boolean => {
+		const err: { title?: string; url?: string } = {};
+		if (!formTitle.trim()) err.title = "Title is required";
+		if (!formUrl.trim()) err.url = "Url is required";
+		else if (!validateUrl(formUrl)) err.url = "Url must start with http:// or https://";
+		setFormErrors(err);
+		return Object.keys(err).length === 0;
+	};
+
+	const handleSave = async () => {
+		if (!validateForm()) return;
+		setSaving(true);
+		setSaveError(null);
+		try {
+			if (editingLink) {
+				const response = await fetch(`/api/links/${editingLink.LinkID}`, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						Title: formTitle.trim(),
+						Description: formDescription.trim() || null,
+						Url: formUrl.trim(),
+					}),
+				});
+				const data = await response.json();
+				if (data.success) {
+					closeModal();
+					setSuccessMessage("Link updated successfully");
+					setTimeout(() => setSuccessMessage(null), 3000);
+					await fetchLinks();
+				} else {
+					setSaveError(data.message || "Failed to update link");
+				}
+			} else {
+				const response = await fetch("/api/links", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						Title: formTitle.trim(),
+						Description: formDescription.trim() || null,
+						Url: formUrl.trim(),
+					}),
+				});
+				const data = await response.json();
+				if (data.success) {
+					closeModal();
+					setSuccessMessage("Link created successfully");
+					setTimeout(() => setSuccessMessage(null), 3000);
+					await fetchLinks();
+				} else {
+					setSaveError(data.message || "Failed to create link");
+				}
+			}
+		} catch (err) {
+			setSaveError("Something went wrong. Please try again.");
+			console.error("Save link error:", err);
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const handleDelete = async () => {
+		if (!deleteConfirm) return;
+		setDeleting(true);
+		setError(null);
+		try {
+			const response = await fetch(`/api/links/${deleteConfirm.LinkID}`, {
+				method: "DELETE",
+			});
+			const data = await response.json();
+			if (data.success) {
+				setDeleteConfirm(null);
+				setSuccessMessage("Link deleted successfully");
+				setTimeout(() => setSuccessMessage(null), 3000);
+				await fetchLinks();
+			} else {
+				setError(data.message || "Failed to delete link");
+			}
+		} catch (err) {
+			setError("Failed to delete link. Please try again.");
+			console.error("Delete link error:", err);
+		} finally {
+			setDeleting(false);
+		}
+	};
+
 	const openLink = (url: string) => {
-		window.open(url, '_blank', 'noopener,noreferrer');
+		window.open(url, "_blank", "noopener,noreferrer");
 	};
 
 	if (loading) {
@@ -55,28 +205,8 @@ export default function LinksPage() {
 					<p className="text-gray-600 mt-2">Access important resources and external links</p>
 				</div>
 				<div className="flex items-center justify-center py-12">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0b4d2b]"></div>
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0b4d2b]" />
 					<span className="ml-3 text-gray-600">Loading links...</span>
-				</div>
-			</div>
-		);
-	}
-
-	if (error) {
-		return (
-			<div className="space-y-6">
-				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Important Links</h1>
-					<p className="text-gray-600 mt-2">Access important resources and external links</p>
-				</div>
-				<div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-					<p className="text-red-600">{error}</p>
-					<button
-						onClick={fetchLinks}
-						className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-					>
-						Try Again
-					</button>
 				</div>
 			</div>
 		);
@@ -84,129 +214,272 @@ export default function LinksPage() {
 
 	return (
 		<div className="space-y-6">
-			<div>
-				<h1 className="text-2xl font-bold text-gray-900">Important Links</h1>
-				<p className="text-gray-600 mt-2">Access important resources and external links</p>
+			{/* Header + Add Link + Search */}
+			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+				<div>
+					<h1 className="text-2xl font-bold text-gray-900">Important Links</h1>
+					<p className="text-gray-600 mt-2">Access important resources and external links</p>
+				</div>
+				<div className="flex items-center gap-3">
+					<button
+						type="button"
+						onClick={openAddModal}
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
+					>
+						<Plus className="h-4 w-4 mr-2" />
+						Add Link
+					</button>
+					<div className="relative w-full sm:w-64">
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+						<input
+							type="text"
+							placeholder="Search by title or description..."
+							value={searchTerm}
+							onChange={(e) => setSearchTerm(e.target.value)}
+							className="w-full h-10 pl-9 pr-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+						/>
+					</div>
+				</div>
 			</div>
 
-			{/* Search Filter */}
-			<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg p-6">
-				<div className="flex items-center justify-between mb-4">
-					<div>
-						<h3 className="text-lg font-semibold text-gray-900">Search Links</h3>
-						<p className="text-sm text-gray-600">Find specific links by title</p>
+			{/* Success message */}
+			{successMessage && (
+				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+					<div className="flex items-center">
+						<CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+						<p className="text-green-800 font-medium">{successMessage}</p>
 					</div>
-					<div className="flex items-center space-x-4">
-						<div className="flex items-center space-x-2">
-							<div className="h-2 w-2 bg-green-500 rounded-full"></div>
-							<span className="text-xs text-gray-500 font-medium">Live Search</span>
-						</div>
-						<button
-							onClick={() => setSearchTerm("")}
-							disabled={!searchTerm}
-							className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-						>
-							<RotateCcw className="h-3 w-3 mr-1" />
-							Reset
-						</button>
-					</div>
-				</div>
-				
-				<div className="relative group">
-					<input
-						type="text"
-						placeholder="Type to search links by title..."
-						value={searchTerm}
-						onChange={(e) => setSearchTerm(e.target.value)}
-						className="w-full px-4 py-4 text-gray-900 placeholder-gray-500 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#0b4d2b]/20 focus:border-[#0b4d2b] focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
-					/>
-					{searchTerm && (
-						<button
-							onClick={() => setSearchTerm("")}
-							className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-						>
-							<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-							</svg>
-						</button>
-					)}
-				</div>
-				
-				{searchTerm && (
-					<div className="mt-4 flex items-center justify-between">
-						<div className="flex items-center space-x-2">
-							<div className="h-1.5 w-1.5 bg-[#0b4d2b] rounded-full animate-pulse"></div>
-							<span className="text-sm text-gray-600">
-								Searching for: <span className="font-medium text-gray-900">&ldquo;{searchTerm}&rdquo;</span>
-							</span>
-						</div>
-						<div className="text-xs text-gray-500">
-							{filteredLinks.length} result{filteredLinks.length !== 1 ? 's' : ''} found
-						</div>
-					</div>
-				)}
-			</div>
-
-			{/* Links Grid */}
-			{filteredLinks.length === 0 ? (
-				<div className="bg-gray-50 rounded-lg border border-gray-200 p-12 text-center">
-					<Globe className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-					<h3 className="text-lg font-medium text-gray-900 mb-2">
-						{searchTerm ? "No links found" : "No links available"}
-					</h3>
-					<p className="text-gray-600">
-						{searchTerm ? "Try adjusting your search terms" : "Links will appear here once they are added"}
-					</p>
-				</div>
-			) : (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					{filteredLinks.map((link) => (
-						<div
-							key={link.LinkID}
-							className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
-							onClick={() => openLink(link.Url)}
-						>
-							<div className="p-6">
-								<div className="flex items-start justify-between mb-4">
-									<div className="flex-1">
-										<h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#0b4d2b] transition-colors line-clamp-2">
-											{link.Title}
-										</h3>
-									</div>
-									<ExternalLink className="h-5 w-5 text-gray-400 group-hover:text-[#0b4d2b] transition-colors flex-shrink-0 ml-2" />
-								</div>
-								
-								{link.Description && (
-									<p className="text-gray-600 text-sm mb-4 line-clamp-3">
-										{link.Description}
-									</p>
-								)}
-								
-								<div className="flex items-center justify-between">
-									<div className="flex items-center text-xs text-gray-500">
-										<Globe className="h-3 w-3 mr-1" />
-										<span className="truncate max-w-[200px]">
-											{new URL(link.Url).hostname}
-										</span>
-									</div>
-									<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-										Click to open
-									</span>
-								</div>
-							</div>
-						</div>
-					))}
+					<button
+						type="button"
+						onClick={() => setSuccessMessage(null)}
+						className="text-green-600 hover:text-green-800 transition-colors"
+					>
+						<X className="h-5 w-5" />
+					</button>
 				</div>
 			)}
 
-			{/* Results Count */}
-			{filteredLinks.length > 0 && (
-				<div className="text-center text-sm text-gray-500">
-					Showing {filteredLinks.length} of {links.length} links
-					{searchTerm && ` matching "${searchTerm}"`}
+			{/* Error message */}
+			{error && (
+				<div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+					<div className="flex items-center">
+						<AlertCircle className="h-5 w-5 text-red-600 mr-3" />
+						<p className="text-red-800 font-medium">{error}</p>
+					</div>
+					<button
+						type="button"
+						onClick={() => setError(null)}
+						className="text-red-600 hover:text-red-800 transition-colors"
+					>
+						<X className="h-5 w-5" />
+					</button>
+				</div>
+			)}
+
+			{/* Table */}
+			<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+				<div className="overflow-x-auto">
+					<table className="w-full">
+						<thead className="bg-gray-50 border-b border-gray-200">
+							<tr>
+								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									Title
+								</th>
+								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									Description
+								</th>
+								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									Url
+								</th>
+								<th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+									Actions
+								</th>
+							</tr>
+						</thead>
+						<tbody className="bg-white divide-y divide-gray-200">
+							{filteredLinks.length === 0 ? (
+								<tr>
+									<td colSpan={4} className="px-4 py-12 text-center text-gray-600">
+										{searchTerm ? "No links match your search." : "No links yet. Click Add Link to create one."}
+									</td>
+								</tr>
+							) : (
+								filteredLinks.map((link) => (
+									<tr key={link.LinkID} className="hover:bg-gray-50">
+										<td className="px-4 py-3 text-sm font-medium text-gray-900">{link.Title}</td>
+										<td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
+											{link.Description || "—"}
+										</td>
+										<td className="px-4 py-3 text-sm">
+											<a
+												href={link.Url}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-[#0b4d2b] hover:underline inline-flex items-center gap-1"
+											>
+												{link.Url}
+												<ExternalLink className="h-3 w-3 flex-shrink-0" />
+											</a>
+										</td>
+										<td className="px-4 py-3 text-right">
+											<div className="flex items-center justify-end gap-2">
+												<button
+													type="button"
+													onClick={() => openEditModal(link)}
+													className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+												>
+													<Pencil className="h-3 w-3 mr-1" />
+													Edit
+												</button>
+												<button
+													type="button"
+													onClick={() => setDeleteConfirm(link)}
+													className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+												>
+													<Trash2 className="h-3 w-3 mr-1" />
+													Delete
+												</button>
+											</div>
+										</td>
+									</tr>
+								))
+							)}
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			{/* Add/Edit Modal */}
+			{modalOpen && (
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+						<div className="flex items-center justify-between p-4 border-b border-gray-200">
+							<h2 className="text-lg font-semibold text-gray-900">
+								{editingLink ? "Edit Link" : "Add Link"}
+							</h2>
+							<button
+								type="button"
+								onClick={closeModal}
+								disabled={saving}
+								className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+							>
+								<X className="h-5 w-5" />
+							</button>
+						</div>
+						<div className="p-4 space-y-4">
+							{saveError && (
+								<div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+									{saveError}
+								</div>
+							)}
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">
+									Title <span className="text-red-500">*</span>
+								</label>
+								<input
+									type="text"
+									value={formTitle}
+									onChange={(e) => setFormTitle(e.target.value)}
+									className="w-full h-10 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+									placeholder="Link title"
+								/>
+								{formErrors.title && (
+									<p className="mt-1 text-sm text-red-600">{formErrors.title}</p>
+								)}
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+								<textarea
+									value={formDescription}
+									onChange={(e) => setFormDescription(e.target.value)}
+									rows={2}
+									className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+									placeholder="Optional description"
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">
+									Url <span className="text-red-500">*</span>
+								</label>
+								<input
+									type="url"
+									value={formUrl}
+									onChange={(e) => setFormUrl(e.target.value)}
+									className="w-full h-10 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+									placeholder="https://example.com"
+								/>
+								{formErrors.url && (
+									<p className="mt-1 text-sm text-red-600">{formErrors.url}</p>
+								)}
+							</div>
+						</div>
+						<div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+							<button
+								type="button"
+								onClick={closeModal}
+								disabled={saving}
+								className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+							>
+								Cancel
+							</button>
+							<button
+								type="button"
+								onClick={handleSave}
+								disabled={saving}
+								className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{saving ? (
+									<>
+										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										Saving...
+									</>
+								) : (
+									"Save"
+								)}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Delete confirmation */}
+			{deleteConfirm && (
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+						<h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Link</h3>
+						<p className="text-gray-600 mb-4">
+							Are you sure you want to delete this link?
+						</p>
+						<p className="text-sm font-medium text-gray-700 mb-1">{deleteConfirm.Title}</p>
+						<p className="text-xs text-gray-500 truncate mb-6">{deleteConfirm.Url}</p>
+						<div className="flex justify-end gap-3">
+							<button
+								type="button"
+								onClick={() => setDeleteConfirm(null)}
+								disabled={deleting}
+								className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+							>
+								Cancel
+							</button>
+							<button
+								type="button"
+								onClick={handleDelete}
+								disabled={deleting}
+								className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{deleting ? (
+									<>
+										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										Deleting...
+									</>
+								) : (
+									"Delete"
+								)}
+							</button>
+						</div>
+					</div>
 				</div>
 			)}
 		</div>
 	);
 }
-

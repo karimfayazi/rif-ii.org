@@ -3,8 +3,13 @@ import { getDb } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
 	try {
+		const { searchParams } = new URL(request.url);
+		const main = searchParams.get("main");
+		const sub = searchParams.get("sub");
+
 		const pool = await getDb();
-		const query = `
+
+		let query = `
 			SELECT 
 				[GroupName],
 				COUNT(*) AS [PictureCount],
@@ -15,22 +20,39 @@ export async function GET(request: NextRequest) {
 						AND (P2.[IsActive] = 1 OR P2.[IsActive] IS NULL)
 						AND P2.[FilePath] IS NOT NULL
 						AND P2.[FilePath] != ''
+						${main ? "AND P2.[MainCategory] = @main" : ""}
+						${sub ? "AND P2.[SubCategory] = @sub" : ""}
 					ORDER BY P2.[UploadDate] DESC
 				) AS [ThumbnailImage]
 			FROM [_rifiiorg_db].[dbo].[tblPictures] P
 			WHERE ([IsActive] = 1 OR [IsActive] IS NULL)
 				AND [GroupName] IS NOT NULL
 				AND [GroupName] != ''
+		`;
+
+		const requestObj = pool.request();
+
+		if (main) {
+			query += ` AND [MainCategory] = @main`;
+			requestObj.input("main", main);
+		}
+
+		if (sub) {
+			query += ` AND [SubCategory] = @sub`;
+			requestObj.input("sub", sub);
+		}
+
+		query += `
 			GROUP BY [GroupName]
 			ORDER BY [GroupName]
 		`;
 
-		const result = await pool.request().query(query);
+		const result = await requestObj.query(query);
 		const groups = result.recordset || [];
 		
 		return NextResponse.json({
 			success: true,
-			groups: groups
+			groups
 		});
 	} catch (error) {
 		console.error("Error fetching picture groups:", error);
@@ -44,4 +66,3 @@ export async function GET(request: NextRequest) {
 		);
 	}
 }
-

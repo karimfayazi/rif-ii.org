@@ -28,11 +28,12 @@ export default function LoginPage() {
 			});
 			
 			const data = await res.json().catch(() => ({}));
-			
+
 			if (!res.ok) {
-				throw new Error(data?.message || "Login failed");
+				setError(data?.message || "Login failed");
+				return;
 			}
-			
+
 			// Store user data in localStorage for fallback
 			if (data.user) {
 				localStorage.setItem('userData', JSON.stringify(data.user));

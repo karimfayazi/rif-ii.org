@@ -42,6 +42,29 @@ type FilterState = {
 	pageSize: number;
 };
 
+type DrilldownLevel = "main" | "sub" | "group" | "grid";
+
+type MainCategorySummary = {
+	MainCategory: string | null;
+	TotalPictures: number;
+	TotalSubCategories: number;
+	TotalGroups: number;
+	ThumbnailImage: string | null;
+};
+
+type SubCategorySummary = {
+	SubCategory: string | null;
+	TotalPictures: number;
+	TotalGroups: number;
+	ThumbnailImage: string | null;
+};
+
+type GroupSummary = {
+	GroupName: string | null;
+	PictureCount: number;
+	ThumbnailImage: string | null;
+};
+
 export default function PicturesPage() {
 	const { user, getUserId } = useAuth();
 	const userId = user?.id || user?.username || getUserId() || null;
@@ -65,6 +88,18 @@ export default function PicturesPage() {
 	const [subCategories, setSubCategories] = useState<string[]>([]);
 	const [uploadedByList, setUploadedByList] = useState<string[]>([]);
 	
+	// Drill-down explorer state
+	const [drillLevel, setDrillLevel] = useState<DrilldownLevel>("main");
+	const [selectedMain, setSelectedMain] = useState<string | null>(null);
+	const [selectedSub, setSelectedSub] = useState<string | null>(null);
+	const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+	const [mainCategorySummaries, setMainCategorySummaries] = useState<MainCategorySummary[]>([]);
+	const [subCategorySummaries, setSubCategorySummaries] = useState<SubCategorySummary[]>([]);
+	const [groupSummaries, setGroupSummaries] = useState<GroupSummary[]>([]);
+	const [drillPictures, setDrillPictures] = useState<PictureRow[]>([]);
+	const [drillLoading, setDrillLoading] = useState(false);
+	const [drillSearch, setDrillSearch] = useState("");
+	
 	// Initialize filters from URL or defaults
 	const [filters, setFilters] = useState<FilterState>(() => ({
 		search: searchParams.get('search') || '',
@@ -86,6 +121,11 @@ export default function PicturesPage() {
 	// Fetch filter options
 	useEffect(() => {
 		fetchFilterOptions();
+	}, []);
+	
+	// Load main categories for drill-down explorer
+	useEffect(() => {
+		fetchMainCategoriesForExplorer();
 	}, []);
 	
 	// Fetch pictures when filters change
@@ -125,6 +165,98 @@ export default function PicturesPage() {
 			}
 		} catch (err) {
 			console.error("Error fetching filter options:", err);
+		}
+	};
+	
+	const fetchMainCategoriesForExplorer = async () => {
+		try {
+			setDrillLoading(true);
+			const response = await fetch('/api/pictures/main');
+			const data = await response.json();
+			
+			if (!response.ok || data.success === false) {
+				console.error("Error fetching main categories for explorer:", data.message || data.error);
+				return;
+			}
+			
+			const items: MainCategorySummary[] = data.mainCategories || [];
+			setMainCategorySummaries(items);
+		} catch (err) {
+			console.error("Error fetching main categories for explorer:", err);
+		} finally {
+			setDrillLoading(false);
+		}
+	};
+	
+	const fetchSubCategoriesForExplorer = async (mainCategory: string) => {
+		try {
+			setDrillLoading(true);
+			const params = new URLSearchParams();
+			params.append('main', mainCategory);
+			
+			const response = await fetch(`/api/pictures/sub?${params.toString()}`);
+			const data = await response.json();
+			
+			if (!response.ok || data.success === false) {
+				console.error("Error fetching sub-categories for explorer:", data.message || data.error);
+				return;
+			}
+			
+			const items: SubCategorySummary[] = data.subCategories || [];
+			setSubCategorySummaries(items);
+		} catch (err) {
+			console.error("Error fetching sub-categories for explorer:", err);
+		} finally {
+			setDrillLoading(false);
+		}
+	};
+	
+	const fetchGroupsForExplorer = async (mainCategory: string, subCategory: string) => {
+		try {
+			setDrillLoading(true);
+			const params = new URLSearchParams();
+			params.append('main', mainCategory);
+			params.append('sub', subCategory);
+			
+			const response = await fetch(`/api/pictures/groups?${params.toString()}`);
+			const data = await response.json();
+			
+			if (!response.ok || data.success === false) {
+				console.error("Error fetching groups for explorer:", data.message || data.error);
+				return;
+			}
+			
+			const items: GroupSummary[] = data.groups || [];
+			setGroupSummaries(items);
+		} catch (err) {
+			console.error("Error fetching groups for explorer:", err);
+		} finally {
+			setDrillLoading(false);
+		}
+	};
+	
+	const fetchPicturesForExplorer = async (mainCategory: string, subCategory: string, groupName: string) => {
+		try {
+			setDrillLoading(true);
+			const params = new URLSearchParams();
+			params.append('main', mainCategory);
+			params.append('sub', subCategory);
+			params.append('group', groupName);
+			
+			const response = await fetch(`/api/pictures/list?${params.toString()}`);
+			const data = await response.json();
+			
+			if (!response.ok || data.success === false) {
+				console.error("Error fetching pictures for explorer:", data.message || data.error);
+				return;
+			}
+			
+			const items: PictureRow[] = data.pictures || [];
+			setDrillPictures(items);
+		} catch (err) {
+			console.error("Error fetching pictures for explorer:", err);
+		} finally {
+			setDrillLoading(false);
 		}
 	};
 	
@@ -234,6 +366,108 @@ export default function PicturesPage() {
 		router.replace('/dashboard/pictures', { scroll: false });
 	};
 	
+	// Drill-down handlers
+	const handleMainClick = (mainCategory: string) => {
+		setDrillLevel("sub");
+		setSelectedMain(mainCategory);
+		setSelectedSub(null);
+		setSelectedGroup(null);
+		setDrillSearch("");
+		fetchSubCategoriesForExplorer(mainCategory);
+	};
+	
+	const handleSubClick = (subCategory: string) => {
+		if (!selectedMain) return;
+		setDrillLevel("group");
+		setSelectedSub(subCategory);
+		setSelectedGroup(null);
+		setDrillSearch("");
+		fetchGroupsForExplorer(selectedMain, subCategory);
+	};
+	
+	const handleGroupClick = (groupName: string) => {
+		if (!selectedMain || !selectedSub) return;
+		setDrillLevel("grid");
+		setSelectedGroup(groupName);
+		setDrillSearch("");
+		fetchPicturesForExplorer(selectedMain, selectedSub, groupName);
+	};
+	
+	const handleDrillBack = () => {
+		if (drillLevel === "sub") {
+			setDrillLevel("main");
+			setSelectedMain(null);
+			setSelectedSub(null);
+			setSelectedGroup(null);
+			setDrillSearch("");
+		} else if (drillLevel === "group") {
+			setDrillLevel("sub");
+			setSelectedSub(null);
+			setSelectedGroup(null);
+			setDrillSearch("");
+		} else if (drillLevel === "grid") {
+			setDrillLevel("group");
+			setSelectedGroup(null);
+			setDrillSearch("");
+		}
+	};
+	
+	const drillBreadcrumbItems = [
+		{ label: "Home", onClick: () => router.push("/dashboard") },
+		{
+			label: "Pictures",
+			onClick: () => {
+				setDrillLevel("main");
+				setSelectedMain(null);
+				setSelectedSub(null);
+				setSelectedGroup(null);
+				setDrillSearch("");
+				fetchMainCategoriesForExplorer();
+			},
+		},
+		...(selectedMain
+			? [
+					{
+						label: selectedMain,
+						onClick: () => {
+							setDrillLevel("sub");
+							setSelectedSub(null);
+							setSelectedGroup(null);
+							setDrillSearch("");
+							fetchSubCategoriesForExplorer(selectedMain);
+						},
+					},
+				]
+			: []),
+		...(selectedSub
+			? [
+					{
+						label: selectedSub,
+						onClick: () => {
+							if (!selectedMain) return;
+							setDrillLevel("group");
+							setSelectedGroup(null);
+							setDrillSearch("");
+							fetchGroupsForExplorer(selectedMain, selectedSub);
+						},
+					},
+				]
+			: []),
+		...(selectedGroup
+			? [
+					{
+						label: selectedGroup,
+						onClick: () => {
+							if (!selectedMain || !selectedSub || !selectedGroup) return;
+							setDrillLevel("grid");
+							setDrillSearch("");
+							fetchPicturesForExplorer(selectedMain, selectedSub, selectedGroup);
+						},
+					},
+				]
+			: []),
+	];
+	
 	const getImageUrl = (filePath: string | null) => {
 		if (!filePath) return '';
 		
@@ -287,6 +521,26 @@ export default function PicturesPage() {
 	};
 	
 	const totalPages = Math.ceil(total / filters.pageSize);
+	
+	const normalizedDrillSearch = drillSearch.toLowerCase();
+	
+	const filteredMainCategories = mainCategorySummaries.filter(item =>
+		(item.MainCategory || "").toLowerCase().includes(normalizedDrillSearch)
+	);
+	
+	const filteredSubCategories = subCategorySummaries.filter(item =>
+		(item.SubCategory || "").toLowerCase().includes(normalizedDrillSearch)
+	);
+	
+	const filteredGroups = groupSummaries.filter(item =>
+		(item.GroupName || "").toLowerCase().includes(normalizedDrillSearch)
+	);
+	
+	const filteredDrillPictures = drillPictures.filter(picture => {
+		const name = (picture.FileName || "").toLowerCase();
+		const group = (picture.GroupName || "").toLowerCase();
+		return name.includes(normalizedDrillSearch) || group.includes(normalizedDrillSearch);
+	});
 	
 	const canDelete = isAdmin || accessDelete;
 	
@@ -356,15 +610,240 @@ export default function PicturesPage() {
 					</button>
 				</div>
 			</div>
-			
-			{/* Summary Card */}
-			<div className="bg-white rounded-lg border border-gray-200 p-6">
-				<div className="flex items-center justify-between">
-					<div>
-						<p className="text-sm font-medium text-gray-600">Total Pictures</p>
-						<p className="text-2xl font-bold text-gray-900 mt-1">{total}</p>
+			{/* Drill-down Explorer */}
+			<div className="bg-white rounded-lg border border-gray-200 p-4 md:p-5 space-y-4">
+				<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+					<div className="flex items-center flex-wrap gap-1 text-sm text-gray-600">
+						{drillBreadcrumbItems.map((item, index) => (
+							<div key={`${item.label}-${index}`} className="flex items-center">
+								{index > 0 && <ChevronRight className="h-3 w-3 mx-1 text-gray-400" />}
+								<button
+									type="button"
+									onClick={item.onClick}
+									className={`hover:text-[#0b4d2b] transition-colors ${
+										index === drillBreadcrumbItems.length - 1 ? "font-semibold text-gray-900" : ""
+									}`}
+								>
+									{item.label}
+								</button>
+							</div>
+						))}
 					</div>
-					<FileImage className="h-8 w-8 text-[#0b4d2b]" />
+					<div className="flex items-center gap-2">
+						{drillLevel !== "main" && (
+							<button
+								type="button"
+								onClick={handleDrillBack}
+								className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+							>
+								<ChevronLeft className="h-4 w-4 mr-1" />
+								Back
+							</button>
+						)}
+						<div className="relative w-full md:w-64">
+							<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+							<input
+								type="text"
+								value={drillSearch}
+								onChange={(e) => setDrillSearch(e.target.value)}
+								placeholder={
+									drillLevel === "main"
+										? "Search main categories..."
+										: drillLevel === "sub"
+										? "Search sub-categories..."
+										: drillLevel === "group"
+										? "Search groups..."
+										: "Search pictures..."
+								}
+								className="w-full h-9 pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							/>
+						</div>
+					</div>
+				</div>
+				
+				<div>
+					{drillLoading ? (
+						<div className="py-10 flex items-center justify-center">
+							<div className="flex items-center">
+								<Loader2 className="h-5 w-5 animate-spin text-[#0b4d2b] mr-2" />
+								<span className="text-gray-600">
+									{drillLevel === "main"
+										? "Loading categories..."
+										: drillLevel === "sub"
+										? "Loading sub-categories..."
+										: drillLevel === "group"
+										? "Loading groups..."
+										: "Loading pictures..."}
+								</span>
+							</div>
+						</div>
+					) : drillLevel === "main" ? (
+						filteredMainCategories.length === 0 ? (
+							<div className="py-10 text-center">
+								<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+								<p className="text-gray-600">No main categories found</p>
+							</div>
+						) : (
+							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+								{filteredMainCategories.map((item) => (
+									<button
+										key={item.MainCategory || "uncategorized"}
+										type="button"
+										onClick={() => item.MainCategory && handleMainClick(item.MainCategory)}
+										className="group flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-[#0b4d2b] transition-all overflow-hidden"
+									>
+										{item.ThumbnailImage && (
+											<div className="h-28 w-full overflow-hidden bg-gray-100">
+												<img
+													src={getImageUrl(item.ThumbnailImage)}
+													alt={item.MainCategory || "Main category"}
+													className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+												/>
+											</div>
+										)}
+										<div className="flex-1 p-4 flex flex-col justify-between">
+											<div className="flex items-center justify-between mb-2">
+												<p className="text-sm font-semibold text-gray-900 truncate">
+													{item.MainCategory || "Uncategorized"}
+												</p>
+												<span className="text-xs font-medium text-[#0b4d2b] bg-[#0b4d2b]/10 px-2 py-0.5 rounded-full">
+													{item.TotalPictures} pictures
+												</span>
+											</div>
+											<div className="flex items-center justify-between text-xs text-gray-500">
+												<span>{item.TotalSubCategories} sub-categories</span>
+												<span>{item.TotalGroups} groups</span>
+											</div>
+										</div>
+									</button>
+								))}
+							</div>
+						)
+					) : drillLevel === "sub" ? (
+						filteredSubCategories.length === 0 ? (
+							<div className="py-10 text-center">
+								<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+								<p className="text-gray-600">No sub-categories found for this main category</p>
+							</div>
+						) : (
+							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+								{filteredSubCategories.map((item) => (
+									<button
+										key={item.SubCategory || "nosub"}
+										type="button"
+										onClick={() => item.SubCategory && handleSubClick(item.SubCategory)}
+										className="group flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-[#0b4d2b] transition-all overflow-hidden"
+									>
+										{item.ThumbnailImage && (
+											<div className="h-28 w-full overflow-hidden bg-gray-100">
+												<img
+													src={getImageUrl(item.ThumbnailImage)}
+													alt={item.SubCategory || "Sub-category"}
+													className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+												/>
+											</div>
+										)}
+										<div className="flex-1 p-4 flex flex-col justify-between">
+											<div className="flex items-center justify-between mb-2">
+												<p className="text-sm font-semibold text-gray-900 truncate">
+													{item.SubCategory || "No sub-category"}
+												</p>
+												<span className="text-xs font-medium text-[#0b4d2b] bg-[#0b4d2b]/10 px-2 py-0.5 rounded-full">
+													{item.TotalPictures} pictures
+												</span>
+											</div>
+											<div className="flex items-center justify-between text-xs text-gray-500">
+												<span>{item.TotalGroups} groups</span>
+											</div>
+										</div>
+									</button>
+								))}
+							</div>
+						)
+					) : drillLevel === "group" ? (
+						filteredGroups.length === 0 ? (
+							<div className="py-10 text-center">
+								<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+								<p className="text-gray-600">No groups found for this sub-category</p>
+							</div>
+						) : (
+							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+								{filteredGroups.map((item) => (
+									<button
+										key={item.GroupName || "nogroup"}
+										type="button"
+										onClick={() => item.GroupName && handleGroupClick(item.GroupName)}
+										className="group flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-[#0b4d2b] transition-all overflow-hidden"
+									>
+										{item.ThumbnailImage && (
+											<div className="h-28 w-full overflow-hidden bg-gray-100">
+												<img
+													src={getImageUrl(item.ThumbnailImage)}
+													alt={item.GroupName || "Group"}
+													className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+												/>
+											</div>
+										)}
+										<div className="flex-1 p-4 flex flex-col justify-between">
+											<div className="flex items-center justify-between mb-2">
+												<p className="text-sm font-semibold text-gray-900 truncate">
+													{item.GroupName || "No group name"}
+												</p>
+												<span className="text-xs font-medium text-[#0b4d2b] bg-[#0b4d2b]/10 px-2 py-0.5 rounded-full">
+													{item.PictureCount} pictures
+												</span>
+											</div>
+										</div>
+									</button>
+								))}
+							</div>
+						)
+					) : filteredDrillPictures.length === 0 ? (
+						<div className="py-10 text-center">
+							<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+							<p className="text-gray-600">No pictures found for this group</p>
+						</div>
+					) : (
+						<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+							{filteredDrillPictures.map((picture) => (
+								<div
+									key={picture.PictureID}
+									className="group relative flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden cursor-pointer"
+									onClick={() => setViewModal(picture)}
+								>
+									<div className="relative h-36 w-full overflow-hidden bg-gray-100">
+										{picture.FilePath && (
+											<img
+												src={getImageUrl(picture.FilePath)}
+												alt={picture.FileName || "Picture"}
+												className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+											/>
+										)}
+										<div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+											<span className="inline-flex items-center px-3 py-1 text-xs font-medium text-white bg-black/60 rounded-full">
+												<Eye className="h-3 w-3 mr-1" />
+												View
+											</span>
+										</div>
+									</div>
+									<div className="flex-1 p-3 flex flex-col justify-between">
+										<div>
+											<p className="text-xs font-semibold text-gray-900 truncate mb-1">
+												{picture.FileName || "Untitled picture"}
+											</p>
+											<p className="text-[11px] text-gray-500 truncate">
+												{picture.GroupName || "No group name"}
+											</p>
+										</div>
+										<div className="mt-2 flex items-center justify-between text-[11px] text-gray-500">
+											<span>{formatDate(picture.EventDate || picture.UploadDate)}</span>
+											<span>{formatFileSize(picture.FileSizeKB)}</span>
+										</div>
+									</div>
+								</div>
+							))}
+						</div>
+					)}
 				</div>
 			</div>
 			
