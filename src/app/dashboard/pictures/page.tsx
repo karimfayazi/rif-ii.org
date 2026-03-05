@@ -1,15 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { 
-	Search, Filter, RefreshCw, Eye, X, Calendar, User, FileImage, 
-	ChevronLeft, ChevronRight, ArrowUpDown, CheckCircle, XCircle,
-	ExternalLink, Download, Trash2, AlertCircle, Loader2, Upload
+import {
+	Filter, RefreshCw, Eye, X, Calendar, User, FileImage,
+	CheckCircle, ExternalLink, Trash2, AlertCircle, Loader2, Upload
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
 import Link from "next/link";
+
+type SummaryRow = {
+	GroupName: string | null;
+	MainCategory: string | null;
+	SubCategory: string | null;
+	PictureCount: number;
+	LatestUploadDate: string | null;
+	LatestEventDate: string | null;
+};
 
 type PictureRow = {
 	PictureID: number;
@@ -23,6 +31,14 @@ type PictureRow = {
 	UploadDate: string | null;
 	IsActive: boolean | null;
 	EventDate: string | null;
+};
+
+type GalleryModalState = {
+	groupName: string | null;
+	mainCategory: string | null;
+	subCategory: string | null;
+	pictures: PictureRow[];
+	loading: boolean;
 };
 
 type FilterState = {
@@ -42,65 +58,30 @@ type FilterState = {
 	pageSize: number;
 };
 
-type DrilldownLevel = "main" | "sub" | "group" | "grid";
-
-type MainCategorySummary = {
-	MainCategory: string | null;
-	TotalPictures: number;
-	TotalSubCategories: number;
-	TotalGroups: number;
-	ThumbnailImage: string | null;
-};
-
-type SubCategorySummary = {
-	SubCategory: string | null;
-	TotalPictures: number;
-	TotalGroups: number;
-	ThumbnailImage: string | null;
-};
-
-type GroupSummary = {
-	GroupName: string | null;
-	PictureCount: number;
-	ThumbnailImage: string | null;
-};
-
 export default function PicturesPage() {
 	const { user, getUserId } = useAuth();
 	const userId = user?.id || user?.username || getUserId() || null;
 	const { isAdmin, accessDelete, canUploadPictures, loading: accessLoading } = useAccess(userId);
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	
-	const [pictures, setPictures] = useState<PictureRow[]>([]);
+
+	const [summaryData, setSummaryData] = useState<SummaryRow[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [total, setTotal] = useState(0);
+	const [totalPictures, setTotalPictures] = useState(0);
+
+	const [galleryModal, setGalleryModal] = useState<GalleryModalState | null>(null);
 	const [viewModal, setViewModal] = useState<PictureRow | null>(null);
-	const [showFilters, setShowFilters] = useState(false);
 	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; picture: PictureRow | null }>({ show: false, picture: null });
 	const [deleting, setDeleting] = useState(false);
 	const [successMessage, setSuccessMessage] = useState<string | null>(null);
-	
-	// Filter options (populated from API)
+	const [showFilters, setShowFilters] = useState(false);
+
 	const [groupNames, setGroupNames] = useState<string[]>([]);
 	const [mainCategories, setMainCategories] = useState<string[]>([]);
 	const [subCategories, setSubCategories] = useState<string[]>([]);
 	const [uploadedByList, setUploadedByList] = useState<string[]>([]);
-	
-	// Drill-down explorer state
-	const [drillLevel, setDrillLevel] = useState<DrilldownLevel>("main");
-	const [selectedMain, setSelectedMain] = useState<string | null>(null);
-	const [selectedSub, setSelectedSub] = useState<string | null>(null);
-	const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-	const [mainCategorySummaries, setMainCategorySummaries] = useState<MainCategorySummary[]>([]);
-	const [subCategorySummaries, setSubCategorySummaries] = useState<SubCategorySummary[]>([]);
-	const [groupSummaries, setGroupSummaries] = useState<GroupSummary[]>([]);
-	const [drillPictures, setDrillPictures] = useState<PictureRow[]>([]);
-	const [drillLoading, setDrillLoading] = useState(false);
-	const [drillSearch, setDrillSearch] = useState("");
-	
-	// Initialize filters from URL or defaults
+
 	const [filters, setFilters] = useState<FilterState>(() => ({
 		search: searchParams.get('search') || '',
 		groupName: searchParams.get('groupName') || '',
@@ -112,176 +93,35 @@ export default function PicturesPage() {
 		uploadTo: searchParams.get('uploadTo') || '',
 		eventFrom: searchParams.get('eventFrom') || '',
 		eventTo: searchParams.get('eventTo') || '',
-		sortBy: searchParams.get('sortBy') || 'UploadDate',
+		sortBy: searchParams.get('sortBy') || 'LatestUploadDate',
 		sortDir: (searchParams.get('sortDir') as 'asc' | 'desc') || 'desc',
 		page: parseInt(searchParams.get('page') || '1'),
 		pageSize: parseInt(searchParams.get('pageSize') || '20'),
 	}));
-	
-	// Fetch filter options
+
+	const canDelete = isAdmin || accessDelete;
+
+	const apiFilterKey = JSON.stringify({
+		s: filters.search, g: filters.groupName, m: filters.mainCategory,
+		sc: filters.subCategory, u: filters.uploadedBy, a: filters.isActive,
+		uf: filters.uploadFrom, ut: filters.uploadTo, ef: filters.eventFrom, et: filters.eventTo,
+	});
+
 	useEffect(() => {
-		fetchFilterOptions();
-	}, []);
-	
-	// Load main categories for drill-down explorer
+		fetchSummary();
+	}, [apiFilterKey]);
+
+	const allFilterKey = JSON.stringify(filters);
 	useEffect(() => {
-		fetchMainCategoriesForExplorer();
-	}, []);
-	
-	// Fetch pictures when filters change
-	useEffect(() => {
-		fetchPictures();
 		updateURL();
-	}, [filters]);
-	
-	// Update subcategories when main category changes
-	useEffect(() => {
-		if (filters.mainCategory) {
-			fetchSubCategories(filters.mainCategory);
-		} else {
-			setSubCategories([]);
-		}
-		if (!filters.mainCategory) {
-			setFilters(prev => ({ ...prev, subCategory: '' }));
-		}
-	}, [filters.mainCategory]);
-	
-	const fetchFilterOptions = async () => {
-		try {
-			// Fetch distinct values for dropdowns
-			const pool = await fetch('/api/pictures?pageSize=1000');
-			const data = await pool.json();
-			
-			if (data.data) {
-				const uniqueGroups = [...new Set(data.data.map((p: PictureRow) => p.GroupName).filter(Boolean))] as string[];
-				const uniqueMainCats = [...new Set(data.data.map((p: PictureRow) => p.MainCategory).filter(Boolean))] as string[];
-				const uniqueSubCats = [...new Set(data.data.map((p: PictureRow) => p.SubCategory).filter(Boolean))] as string[];
-				const uniqueUploaders = [...new Set(data.data.map((p: PictureRow) => p.UploadedBy).filter(Boolean))] as string[];
-				
-				setGroupNames(uniqueGroups.sort());
-				setMainCategories(uniqueMainCats.sort());
-				setSubCategories(uniqueSubCats.sort());
-				setUploadedByList(uniqueUploaders.sort());
-			}
-		} catch (err) {
-			console.error("Error fetching filter options:", err);
-		}
-	};
-	
-	const fetchMainCategoriesForExplorer = async () => {
-		try {
-			setDrillLoading(true);
-			const response = await fetch('/api/pictures/main');
-			const data = await response.json();
-			
-			if (!response.ok || data.success === false) {
-				console.error("Error fetching main categories for explorer:", data.message || data.error);
-				return;
-			}
-			
-			const items: MainCategorySummary[] = data.mainCategories || [];
-			setMainCategorySummaries(items);
-		} catch (err) {
-			console.error("Error fetching main categories for explorer:", err);
-		} finally {
-			setDrillLoading(false);
-		}
-	};
-	
-	const fetchSubCategoriesForExplorer = async (mainCategory: string) => {
-		try {
-			setDrillLoading(true);
-			const params = new URLSearchParams();
-			params.append('main', mainCategory);
-			
-			const response = await fetch(`/api/pictures/sub?${params.toString()}`);
-			const data = await response.json();
-			
-			if (!response.ok || data.success === false) {
-				console.error("Error fetching sub-categories for explorer:", data.message || data.error);
-				return;
-			}
-			
-			const items: SubCategorySummary[] = data.subCategories || [];
-			setSubCategorySummaries(items);
-		} catch (err) {
-			console.error("Error fetching sub-categories for explorer:", err);
-		} finally {
-			setDrillLoading(false);
-		}
-	};
-	
-	const fetchGroupsForExplorer = async (mainCategory: string, subCategory: string) => {
-		try {
-			setDrillLoading(true);
-			const params = new URLSearchParams();
-			params.append('main', mainCategory);
-			params.append('sub', subCategory);
-			
-			const response = await fetch(`/api/pictures/groups?${params.toString()}`);
-			const data = await response.json();
-			
-			if (!response.ok || data.success === false) {
-				console.error("Error fetching groups for explorer:", data.message || data.error);
-				return;
-			}
-			
-			const items: GroupSummary[] = data.groups || [];
-			setGroupSummaries(items);
-		} catch (err) {
-			console.error("Error fetching groups for explorer:", err);
-		} finally {
-			setDrillLoading(false);
-		}
-	};
-	
-	const fetchPicturesForExplorer = async (mainCategory: string, subCategory: string, groupName: string) => {
-		try {
-			setDrillLoading(true);
-			const params = new URLSearchParams();
-			params.append('main', mainCategory);
-			params.append('sub', subCategory);
-			params.append('group', groupName);
-			
-			const response = await fetch(`/api/pictures/list?${params.toString()}`);
-			const data = await response.json();
-			
-			if (!response.ok || data.success === false) {
-				console.error("Error fetching pictures for explorer:", data.message || data.error);
-				return;
-			}
-			
-			const items: PictureRow[] = data.pictures || [];
-			setDrillPictures(items);
-		} catch (err) {
-			console.error("Error fetching pictures for explorer:", err);
-		} finally {
-			setDrillLoading(false);
-		}
-	};
-	
-	const fetchSubCategories = async (mainCategory: string) => {
-		try {
-			const response = await fetch(`/api/pictures?mainCategory=${encodeURIComponent(mainCategory)}&pageSize=1000`);
-			const data = await response.json();
-			
-			if (data.data) {
-				const uniqueSubCats = [...new Set(data.data.map((p: PictureRow) => p.SubCategory).filter(Boolean))] as string[];
-				setSubCategories(uniqueSubCats.sort());
-			}
-		} catch (err) {
-			console.error("Error fetching subcategories:", err);
-		}
-	};
-	
-	const fetchPictures = async () => {
+	}, [allFilterKey]);
+
+	const fetchSummary = async () => {
 		try {
 			setLoading(true);
 			setError(null);
-			
+
 			const params = new URLSearchParams();
-			params.append('page', filters.page.toString());
-			params.append('pageSize', filters.pageSize.toString());
 			if (filters.search) params.append('search', filters.search);
 			if (filters.groupName) params.append('groupName', filters.groupName);
 			if (filters.mainCategory) params.append('mainCategory', filters.mainCategory);
@@ -292,27 +132,32 @@ export default function PicturesPage() {
 			if (filters.uploadTo) params.append('uploadTo', filters.uploadTo);
 			if (filters.eventFrom) params.append('eventFrom', filters.eventFrom);
 			if (filters.eventTo) params.append('eventTo', filters.eventTo);
-			params.append('sortBy', filters.sortBy);
-			params.append('sortDir', filters.sortDir);
-			
-			const response = await fetch(`/api/pictures?${params.toString()}`);
+
+			const response = await fetch(`/api/pictures/summary-list?${params.toString()}`);
 			const data = await response.json();
-			
+
 			if (data.error) {
 				setError(data.message || data.error);
 				return;
 			}
-			
-			setPictures(data.data || []);
-			setTotal(data.total || 0);
+
+			setSummaryData(data.data || []);
+			setTotalPictures(data.totalPictures || 0);
+
+			if (data.filters) {
+				setGroupNames(data.filters.groupNames || []);
+				setMainCategories(data.filters.mainCategories || []);
+				setSubCategories(data.filters.subCategories || []);
+				setUploadedByList(data.filters.uploadedByList || []);
+			}
 		} catch (err) {
-			console.error("Error fetching pictures:", err);
+			console.error("Error fetching summary:", err);
 			setError("Failed to load pictures. Please try again.");
 		} finally {
 			setLoading(false);
 		}
 	};
-	
+
 	const updateURL = () => {
 		const params = new URLSearchParams();
 		if (filters.search) params.set('search', filters.search);
@@ -325,243 +170,159 @@ export default function PicturesPage() {
 		if (filters.uploadTo) params.set('uploadTo', filters.uploadTo);
 		if (filters.eventFrom) params.set('eventFrom', filters.eventFrom);
 		if (filters.eventTo) params.set('eventTo', filters.eventTo);
-		if (filters.sortBy !== 'UploadDate') params.set('sortBy', filters.sortBy);
+		if (filters.sortBy !== 'LatestUploadDate') params.set('sortBy', filters.sortBy);
 		if (filters.sortDir !== 'desc') params.set('sortDir', filters.sortDir);
 		if (filters.page !== 1) params.set('page', filters.page.toString());
 		if (filters.pageSize !== 20) params.set('pageSize', filters.pageSize.toString());
-		
+
 		router.replace(`/dashboard/pictures?${params.toString()}`, { scroll: false });
 	};
-	
+
 	const handleFilterChange = (key: keyof FilterState, value: any) => {
-		setFilters(prev => ({ ...prev, [key]: value, page: 1 })); // Reset to page 1 on filter change
+		setFilters(prev => {
+			const next: FilterState = { ...prev, [key]: value };
+			if (key !== 'page') next.page = 1;
+			if (key === 'mainCategory' && value !== prev.mainCategory) next.subCategory = '';
+			return next;
+		});
 	};
-	
+
+	const resetFilters = () => {
+		setFilters({
+			search: '', groupName: '', mainCategory: '', subCategory: '',
+			uploadedBy: '', isActive: 'all', uploadFrom: '', uploadTo: '',
+			eventFrom: '', eventTo: '', sortBy: 'LatestUploadDate', sortDir: 'desc',
+			page: 1, pageSize: 20,
+		});
+		router.replace('/dashboard/pictures', { scroll: false });
+	};
+
 	const handleSort = (column: string) => {
 		setFilters(prev => ({
 			...prev,
 			sortBy: column,
 			sortDir: prev.sortBy === column && prev.sortDir === 'asc' ? 'desc' : 'asc',
-			page: 1
+			page: 1,
 		}));
 	};
-	
-	const resetFilters = () => {
-		setFilters({
-			search: '',
-			groupName: '',
-			mainCategory: '',
-			subCategory: '',
-			uploadedBy: '',
-			isActive: 'all',
-			uploadFrom: '',
-			uploadTo: '',
-			eventFrom: '',
-			eventTo: '',
-			sortBy: 'UploadDate',
-			sortDir: 'desc',
-			page: 1,
-			pageSize: 20,
+
+	const parseDate105 = (d: string | null): number => {
+		if (!d) return 0;
+		const parts = d.split('-');
+		if (parts.length !== 3) return 0;
+		return parseInt(parts[2] + parts[1] + parts[0]);
+	};
+
+	const sortedData = useMemo(() => {
+		const sorted = [...summaryData];
+		sorted.sort((a, b) => {
+			let cmp = 0;
+			switch (filters.sortBy) {
+				case 'GroupName':
+					cmp = (a.GroupName || '').localeCompare(b.GroupName || ''); break;
+				case 'MainCategory':
+					cmp = (a.MainCategory || '').localeCompare(b.MainCategory || ''); break;
+				case 'SubCategory':
+					cmp = (a.SubCategory || '').localeCompare(b.SubCategory || ''); break;
+				case 'PictureCount':
+					cmp = a.PictureCount - b.PictureCount; break;
+				case 'LatestUploadDate':
+					cmp = parseDate105(a.LatestUploadDate) - parseDate105(b.LatestUploadDate); break;
+				case 'LatestEventDate':
+					cmp = parseDate105(a.LatestEventDate) - parseDate105(b.LatestEventDate); break;
+				default:
+					cmp = parseDate105(a.LatestUploadDate) - parseDate105(b.LatestUploadDate);
+			}
+			return filters.sortDir === 'asc' ? cmp : -cmp;
 		});
-		router.replace('/dashboard/pictures', { scroll: false });
-	};
-	
-	// Drill-down handlers
-	const handleMainClick = (mainCategory: string) => {
-		setDrillLevel("sub");
-		setSelectedMain(mainCategory);
-		setSelectedSub(null);
-		setSelectedGroup(null);
-		setDrillSearch("");
-		fetchSubCategoriesForExplorer(mainCategory);
-	};
-	
-	const handleSubClick = (subCategory: string) => {
-		if (!selectedMain) return;
-		setDrillLevel("group");
-		setSelectedSub(subCategory);
-		setSelectedGroup(null);
-		setDrillSearch("");
-		fetchGroupsForExplorer(selectedMain, subCategory);
-	};
-	
-	const handleGroupClick = (groupName: string) => {
-		if (!selectedMain || !selectedSub) return;
-		setDrillLevel("grid");
-		setSelectedGroup(groupName);
-		setDrillSearch("");
-		fetchPicturesForExplorer(selectedMain, selectedSub, groupName);
-	};
-	
-	const handleDrillBack = () => {
-		if (drillLevel === "sub") {
-			setDrillLevel("main");
-			setSelectedMain(null);
-			setSelectedSub(null);
-			setSelectedGroup(null);
-			setDrillSearch("");
-		} else if (drillLevel === "group") {
-			setDrillLevel("sub");
-			setSelectedSub(null);
-			setSelectedGroup(null);
-			setDrillSearch("");
-		} else if (drillLevel === "grid") {
-			setDrillLevel("group");
-			setSelectedGroup(null);
-			setDrillSearch("");
+		return sorted;
+	}, [summaryData, filters.sortBy, filters.sortDir]);
+
+	const startIdx = (filters.page - 1) * filters.pageSize;
+	const totalPages = Math.max(1, Math.ceil(sortedData.length / filters.pageSize));
+	const paginatedData = useMemo(() => {
+		return sortedData.slice(startIdx, startIdx + filters.pageSize);
+	}, [sortedData, startIdx, filters.pageSize]);
+
+	const openGallery = async (row: SummaryRow) => {
+		setGalleryModal({
+			groupName: row.GroupName,
+			mainCategory: row.MainCategory,
+			subCategory: row.SubCategory,
+			pictures: [],
+			loading: true,
+		});
+
+		try {
+			const params = new URLSearchParams();
+			if (row.GroupName) params.append('groupName', row.GroupName);
+			if (row.MainCategory) params.append('mainCategory', row.MainCategory);
+			if (row.SubCategory) params.append('subCategory', row.SubCategory);
+
+			const response = await fetch(`/api/pictures/details?${params.toString()}`);
+			const data = await response.json();
+
+			if (data.success && data.pictures) {
+				setGalleryModal(prev => prev ? { ...prev, pictures: data.pictures, loading: false } : null);
+			} else {
+				setGalleryModal(prev => prev ? { ...prev, loading: false } : null);
+			}
+		} catch (err) {
+			console.error('Error fetching gallery:', err);
+			setGalleryModal(prev => prev ? { ...prev, loading: false } : null);
 		}
 	};
-	
-	const drillBreadcrumbItems = [
-		{ label: "Home", onClick: () => router.push("/dashboard") },
-		{
-			label: "Pictures",
-			onClick: () => {
-				setDrillLevel("main");
-				setSelectedMain(null);
-				setSelectedSub(null);
-				setSelectedGroup(null);
-				setDrillSearch("");
-				fetchMainCategoriesForExplorer();
-			},
-		},
-		...(selectedMain
-			? [
-					{
-						label: selectedMain,
-						onClick: () => {
-							setDrillLevel("sub");
-							setSelectedSub(null);
-							setSelectedGroup(null);
-							setDrillSearch("");
-							fetchSubCategoriesForExplorer(selectedMain);
-						},
-					},
-				]
-			: []),
-		...(selectedSub
-			? [
-					{
-						label: selectedSub,
-						onClick: () => {
-							if (!selectedMain) return;
-							setDrillLevel("group");
-							setSelectedGroup(null);
-							setDrillSearch("");
-							fetchGroupsForExplorer(selectedMain, selectedSub);
-						},
-					},
-				]
-			: []),
-		...(selectedGroup
-			? [
-					{
-						label: selectedGroup,
-						onClick: () => {
-							if (!selectedMain || !selectedSub || !selectedGroup) return;
-							setDrillLevel("grid");
-							setDrillSearch("");
-							fetchPicturesForExplorer(selectedMain, selectedSub, selectedGroup);
-						},
-					},
-				]
-			: []),
-	];
-	
+
 	const getImageUrl = (filePath: string | null) => {
 		if (!filePath) return '';
-		
-		if (filePath.startsWith('https://') || filePath.startsWith('http://')) {
-			return filePath;
-		}
-		
+		if (filePath.startsWith('https://') || filePath.startsWith('http://')) return filePath;
 		let normalizedPath = filePath.replace(/\\/g, '/');
 		normalizedPath = normalizedPath.replace(/^[A-Za-z]:/, '');
-		
-		if (normalizedPath.startsWith('~/')) {
-			normalizedPath = normalizedPath.substring(2);
-		}
-		
+		if (normalizedPath.startsWith('~/')) normalizedPath = normalizedPath.substring(2);
 		normalizedPath = normalizedPath.replace(/^\/+/, '');
-		
 		if (!normalizedPath.startsWith('uploads/')) {
-			if (normalizedPath.includes('pictures/')) {
-				normalizedPath = `uploads/${normalizedPath}`;
-			} else if (!normalizedPath.startsWith('public/')) {
-				normalizedPath = `uploads/pictures/${normalizedPath}`;
-			}
+			if (normalizedPath.includes('pictures/')) normalizedPath = `uploads/${normalizedPath}`;
+			else if (!normalizedPath.startsWith('public/')) normalizedPath = `uploads/pictures/${normalizedPath}`;
 		}
-		
-		if (normalizedPath.startsWith('public/')) {
-			normalizedPath = normalizedPath.substring(7);
-		}
-		
-		const relativePath = normalizedPath.startsWith('uploads/') 
-			? normalizedPath.substring(8)
-			: normalizedPath;
-		
+		if (normalizedPath.startsWith('public/')) normalizedPath = normalizedPath.substring(7);
+		const relativePath = normalizedPath.startsWith('uploads/') ? normalizedPath.substring(8) : normalizedPath;
 		const encodedPath = relativePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
 		return `/api/pictures/file/${encodedPath}`;
 	};
-	
+
 	const formatDate = (dateString: string | null) => {
 		if (!dateString) return "N/A";
-		// If date includes time (format: YYYY-MM-DD HH:MI:SS), extract only date part
-		if (dateString.includes(' ')) {
-			return dateString.split(' ')[0];
-		}
-		// If date is in DD-MM-YYYY format, return as is
+		if (dateString.includes(' ')) return dateString.split(' ')[0];
 		return dateString;
 	};
-	
-	const formatFileSize = (sizeKB: number | null) => {
-		if (!sizeKB) return "Unknown";
-		if (sizeKB < 1024) return `${sizeKB} KB`;
-		return `${(sizeKB / 1024).toFixed(1)} MB`;
-	};
-	
-	const totalPages = Math.ceil(total / filters.pageSize);
-	
-	const normalizedDrillSearch = drillSearch.toLowerCase();
-	
-	const filteredMainCategories = mainCategorySummaries.filter(item =>
-		(item.MainCategory || "").toLowerCase().includes(normalizedDrillSearch)
-	);
-	
-	const filteredSubCategories = subCategorySummaries.filter(item =>
-		(item.SubCategory || "").toLowerCase().includes(normalizedDrillSearch)
-	);
-	
-	const filteredGroups = groupSummaries.filter(item =>
-		(item.GroupName || "").toLowerCase().includes(normalizedDrillSearch)
-	);
-	
-	const filteredDrillPictures = drillPictures.filter(picture => {
-		const name = (picture.FileName || "").toLowerCase();
-		const group = (picture.GroupName || "").toLowerCase();
-		return name.includes(normalizedDrillSearch) || group.includes(normalizedDrillSearch);
-	});
-	
-	const canDelete = isAdmin || accessDelete;
-	
+
 	const handleDelete = async (picture: PictureRow) => {
 		try {
 			setDeleting(true);
 			setError(null);
-			
+
 			const response = await fetch(`/api/pictures/delete?pictureId=${picture.PictureID}`, {
 				method: 'DELETE',
 				credentials: 'include',
 			});
-			
+
 			const data = await response.json();
-			
+
 			if (data.success) {
 				setDeleteConfirm({ show: false, picture: null });
 				setSuccessMessage('Picture deleted successfully');
 				setTimeout(() => setSuccessMessage(null), 3000);
-				// Refresh the list
-				await fetchPictures();
+
+				if (viewModal?.PictureID === picture.PictureID) setViewModal(null);
+
+				setGalleryModal(prev => {
+					if (!prev) return null;
+					const updated = prev.pictures.filter(p => p.PictureID !== picture.PictureID);
+					if (updated.length === 0) return null;
+					return { ...prev, pictures: updated };
+				});
+
+				await fetchSummary();
 			} else {
 				setError(data.message || 'Failed to delete picture');
 				setDeleteConfirm({ show: false, picture: null });
@@ -574,7 +335,21 @@ export default function PicturesPage() {
 			setDeleting(false);
 		}
 	};
-	
+
+	const renderSortHeader = (column: string, label: string) => (
+		<th
+			className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 select-none transition-colors"
+			onClick={() => handleSort(column)}
+		>
+			<div className="flex items-center gap-1">
+				{label}
+				{filters.sortBy === column && (
+					<span className="text-[#0b4d2b] font-bold">{filters.sortDir === 'asc' ? ' ↑' : ' ↓'}</span>
+				)}
+			</div>
+		</th>
+	);
+
 	return (
 		<div className="space-y-6">
 			{/* Header */}
@@ -601,7 +376,7 @@ export default function PicturesPage() {
 						{showFilters ? 'Hide' : 'Show'} Filters
 					</button>
 					<button
-						onClick={fetchPictures}
+						onClick={fetchSummary}
 						disabled={loading}
 						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
 					>
@@ -610,248 +385,11 @@ export default function PicturesPage() {
 					</button>
 				</div>
 			</div>
-			{/* Drill-down Explorer */}
-			<div className="bg-white rounded-lg border border-gray-200 p-4 md:p-5 space-y-4">
-				<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-					<div className="flex items-center flex-wrap gap-1 text-sm text-gray-600">
-						{drillBreadcrumbItems.map((item, index) => (
-							<div key={`${item.label}-${index}`} className="flex items-center">
-								{index > 0 && <ChevronRight className="h-3 w-3 mx-1 text-gray-400" />}
-								<button
-									type="button"
-									onClick={item.onClick}
-									className={`hover:text-[#0b4d2b] transition-colors ${
-										index === drillBreadcrumbItems.length - 1 ? "font-semibold text-gray-900" : ""
-									}`}
-								>
-									{item.label}
-								</button>
-							</div>
-						))}
-					</div>
-					<div className="flex items-center gap-2">
-						{drillLevel !== "main" && (
-							<button
-								type="button"
-								onClick={handleDrillBack}
-								className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-							>
-								<ChevronLeft className="h-4 w-4 mr-1" />
-								Back
-							</button>
-						)}
-						<div className="relative w-full md:w-64">
-							<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-							<input
-								type="text"
-								value={drillSearch}
-								onChange={(e) => setDrillSearch(e.target.value)}
-								placeholder={
-									drillLevel === "main"
-										? "Search main categories..."
-										: drillLevel === "sub"
-										? "Search sub-categories..."
-										: drillLevel === "group"
-										? "Search groups..."
-										: "Search pictures..."
-								}
-								className="w-full h-9 pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
-							/>
-						</div>
-					</div>
-				</div>
-				
-				<div>
-					{drillLoading ? (
-						<div className="py-10 flex items-center justify-center">
-							<div className="flex items-center">
-								<Loader2 className="h-5 w-5 animate-spin text-[#0b4d2b] mr-2" />
-								<span className="text-gray-600">
-									{drillLevel === "main"
-										? "Loading categories..."
-										: drillLevel === "sub"
-										? "Loading sub-categories..."
-										: drillLevel === "group"
-										? "Loading groups..."
-										: "Loading pictures..."}
-								</span>
-							</div>
-						</div>
-					) : drillLevel === "main" ? (
-						filteredMainCategories.length === 0 ? (
-							<div className="py-10 text-center">
-								<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-								<p className="text-gray-600">No main categories found</p>
-							</div>
-						) : (
-							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-								{filteredMainCategories.map((item) => (
-									<button
-										key={item.MainCategory || "uncategorized"}
-										type="button"
-										onClick={() => item.MainCategory && handleMainClick(item.MainCategory)}
-										className="group flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-[#0b4d2b] transition-all overflow-hidden"
-									>
-										{item.ThumbnailImage && (
-											<div className="h-28 w-full overflow-hidden bg-gray-100">
-												<img
-													src={getImageUrl(item.ThumbnailImage)}
-													alt={item.MainCategory || "Main category"}
-													className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
-												/>
-											</div>
-										)}
-										<div className="flex-1 p-4 flex flex-col justify-between">
-											<div className="flex items-center justify-between mb-2">
-												<p className="text-sm font-semibold text-gray-900 truncate">
-													{item.MainCategory || "Uncategorized"}
-												</p>
-												<span className="text-xs font-medium text-[#0b4d2b] bg-[#0b4d2b]/10 px-2 py-0.5 rounded-full">
-													{item.TotalPictures} pictures
-												</span>
-											</div>
-											<div className="flex items-center justify-between text-xs text-gray-500">
-												<span>{item.TotalSubCategories} sub-categories</span>
-												<span>{item.TotalGroups} groups</span>
-											</div>
-										</div>
-									</button>
-								))}
-							</div>
-						)
-					) : drillLevel === "sub" ? (
-						filteredSubCategories.length === 0 ? (
-							<div className="py-10 text-center">
-								<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-								<p className="text-gray-600">No sub-categories found for this main category</p>
-							</div>
-						) : (
-							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-								{filteredSubCategories.map((item) => (
-									<button
-										key={item.SubCategory || "nosub"}
-										type="button"
-										onClick={() => item.SubCategory && handleSubClick(item.SubCategory)}
-										className="group flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-[#0b4d2b] transition-all overflow-hidden"
-									>
-										{item.ThumbnailImage && (
-											<div className="h-28 w-full overflow-hidden bg-gray-100">
-												<img
-													src={getImageUrl(item.ThumbnailImage)}
-													alt={item.SubCategory || "Sub-category"}
-													className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
-												/>
-											</div>
-										)}
-										<div className="flex-1 p-4 flex flex-col justify-between">
-											<div className="flex items-center justify-between mb-2">
-												<p className="text-sm font-semibold text-gray-900 truncate">
-													{item.SubCategory || "No sub-category"}
-												</p>
-												<span className="text-xs font-medium text-[#0b4d2b] bg-[#0b4d2b]/10 px-2 py-0.5 rounded-full">
-													{item.TotalPictures} pictures
-												</span>
-											</div>
-											<div className="flex items-center justify-between text-xs text-gray-500">
-												<span>{item.TotalGroups} groups</span>
-											</div>
-										</div>
-									</button>
-								))}
-							</div>
-						)
-					) : drillLevel === "group" ? (
-						filteredGroups.length === 0 ? (
-							<div className="py-10 text-center">
-								<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-								<p className="text-gray-600">No groups found for this sub-category</p>
-							</div>
-						) : (
-							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-								{filteredGroups.map((item) => (
-									<button
-										key={item.GroupName || "nogroup"}
-										type="button"
-										onClick={() => item.GroupName && handleGroupClick(item.GroupName)}
-										className="group flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-[#0b4d2b] transition-all overflow-hidden"
-									>
-										{item.ThumbnailImage && (
-											<div className="h-28 w-full overflow-hidden bg-gray-100">
-												<img
-													src={getImageUrl(item.ThumbnailImage)}
-													alt={item.GroupName || "Group"}
-													className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
-												/>
-											</div>
-										)}
-										<div className="flex-1 p-4 flex flex-col justify-between">
-											<div className="flex items-center justify-between mb-2">
-												<p className="text-sm font-semibold text-gray-900 truncate">
-													{item.GroupName || "No group name"}
-												</p>
-												<span className="text-xs font-medium text-[#0b4d2b] bg-[#0b4d2b]/10 px-2 py-0.5 rounded-full">
-													{item.PictureCount} pictures
-												</span>
-											</div>
-										</div>
-									</button>
-								))}
-							</div>
-						)
-					) : filteredDrillPictures.length === 0 ? (
-						<div className="py-10 text-center">
-							<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-							<p className="text-gray-600">No pictures found for this group</p>
-						</div>
-					) : (
-						<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-							{filteredDrillPictures.map((picture) => (
-								<div
-									key={picture.PictureID}
-									className="group relative flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden cursor-pointer"
-									onClick={() => setViewModal(picture)}
-								>
-									<div className="relative h-36 w-full overflow-hidden bg-gray-100">
-										{picture.FilePath && (
-											<img
-												src={getImageUrl(picture.FilePath)}
-												alt={picture.FileName || "Picture"}
-												className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
-											/>
-										)}
-										<div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-											<span className="inline-flex items-center px-3 py-1 text-xs font-medium text-white bg-black/60 rounded-full">
-												<Eye className="h-3 w-3 mr-1" />
-												View
-											</span>
-										</div>
-									</div>
-									<div className="flex-1 p-3 flex flex-col justify-between">
-										<div>
-											<p className="text-xs font-semibold text-gray-900 truncate mb-1">
-												{picture.FileName || "Untitled picture"}
-											</p>
-											<p className="text-[11px] text-gray-500 truncate">
-												{picture.GroupName || "No group name"}
-											</p>
-										</div>
-										<div className="mt-2 flex items-center justify-between text-[11px] text-gray-500">
-											<span>{formatDate(picture.EventDate || picture.UploadDate)}</span>
-											<span>{formatFileSize(picture.FileSizeKB)}</span>
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-				</div>
-			</div>
-			
+
 			{/* Filters Panel */}
 			{showFilters && (
 				<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg p-3">
 					<div className="space-y-3">
-						{/* Search - Full Width */}
 						<div>
 							<label className="block text-xs font-medium text-gray-700 mb-1">
 								Search (FileName or GroupName)
@@ -865,47 +403,31 @@ export default function PicturesPage() {
 							/>
 						</div>
 
-						{/* Row 1: Group Name, Main Category, Sub Category, Uploaded By */}
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-							{/* GroupName */}
 							<div className="min-w-0">
-								<label className="block text-xs font-medium text-gray-700 mb-1">
-									Group Name
-								</label>
+								<label className="block text-xs font-medium text-gray-700 mb-1">Group Name</label>
 								<select
 									value={filters.groupName}
 									onChange={(e) => handleFilterChange('groupName', e.target.value)}
 									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 								>
 									<option value="">All Groups</option>
-									{groupNames.map(g => (
-										<option key={g} value={g}>{g}</option>
-									))}
+									{groupNames.map(g => <option key={g} value={g}>{g}</option>)}
 								</select>
 							</div>
-							
-							{/* MainCategory */}
 							<div className="min-w-0">
-								<label className="block text-xs font-medium text-gray-700 mb-1">
-									Main Category
-								</label>
+								<label className="block text-xs font-medium text-gray-700 mb-1">Main Category</label>
 								<select
 									value={filters.mainCategory}
 									onChange={(e) => handleFilterChange('mainCategory', e.target.value)}
 									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 								>
 									<option value="">All Categories</option>
-									{mainCategories.map(cat => (
-										<option key={cat} value={cat}>{cat}</option>
-									))}
+									{mainCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
 								</select>
 							</div>
-							
-							{/* SubCategory */}
 							<div className="min-w-0">
-								<label className="block text-xs font-medium text-gray-700 mb-1">
-									Sub Category
-								</label>
+								<label className="block text-xs font-medium text-gray-700 mb-1">Sub Category</label>
 								<select
 									value={filters.subCategory}
 									onChange={(e) => handleFilterChange('subCategory', e.target.value)}
@@ -913,86 +435,42 @@ export default function PicturesPage() {
 									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
 								>
 									<option value="">All Sub Categories</option>
-									{subCategories.map(sub => (
-										<option key={sub} value={sub}>{sub}</option>
-									))}
+									{subCategories.map(sub => <option key={sub} value={sub}>{sub}</option>)}
 								</select>
 							</div>
-							
-							{/* UploadedBy */}
 							<div className="min-w-0">
-								<label className="block text-xs font-medium text-gray-700 mb-1">
-									Uploaded By
-								</label>
+								<label className="block text-xs font-medium text-gray-700 mb-1">Uploaded By</label>
 								<select
 									value={filters.uploadedBy}
 									onChange={(e) => handleFilterChange('uploadedBy', e.target.value)}
 									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 								>
 									<option value="">All Users</option>
-									{uploadedByList.map(user => (
-										<option key={user} value={user}>{user}</option>
-									))}
+									{uploadedByList.map(u => <option key={u} value={u}>{u}</option>)}
 								</select>
 							</div>
 						</div>
 
-						{/* Row 2: Upload Date From, Upload Date To, Event Date From, Event Date To */}
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-							{/* UploadDate From */}
 							<div className="min-w-0">
-								<label className="block text-xs font-medium text-gray-700 mb-1">
-									Upload Date From
-								</label>
-								<input
-									type="date"
-									value={filters.uploadFrom}
-									onChange={(e) => handleFilterChange('uploadFrom', e.target.value)}
-									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
-								/>
+								<label className="block text-xs font-medium text-gray-700 mb-1">Upload Date From</label>
+								<input type="date" value={filters.uploadFrom} onChange={(e) => handleFilterChange('uploadFrom', e.target.value)} className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent" />
 							</div>
-							
-							{/* UploadDate To */}
 							<div className="min-w-0">
-								<label className="block text-xs font-medium text-gray-700 mb-1">
-									Upload Date To
-								</label>
-								<input
-									type="date"
-									value={filters.uploadTo}
-									onChange={(e) => handleFilterChange('uploadTo', e.target.value)}
-									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
-								/>
+								<label className="block text-xs font-medium text-gray-700 mb-1">Upload Date To</label>
+								<input type="date" value={filters.uploadTo} onChange={(e) => handleFilterChange('uploadTo', e.target.value)} className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent" />
 							</div>
-							
-							{/* EventDate From */}
 							<div className="min-w-0">
-								<label className="block text-xs font-medium text-gray-700 mb-1">
-									Event Date From
-								</label>
-								<input
-									type="date"
-									value={filters.eventFrom}
-									onChange={(e) => handleFilterChange('eventFrom', e.target.value)}
-									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
-								/>
+								<label className="block text-xs font-medium text-gray-700 mb-1">Event Date From</label>
+								<input type="date" value={filters.eventFrom} onChange={(e) => handleFilterChange('eventFrom', e.target.value)} className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent" />
 							</div>
-							
-							{/* EventDate To */}
 							<div className="min-w-0">
-								<label className="block text-xs font-medium text-gray-700 mb-1">
-									Event Date To
-								</label>
-								<input
-									type="date"
-									value={filters.eventTo}
-									onChange={(e) => handleFilterChange('eventTo', e.target.value)}
-									className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
-								/>
+								<label className="block text-xs font-medium text-gray-700 mb-1">Event Date To</label>
+								<input type="date" value={filters.eventTo} onChange={(e) => handleFilterChange('eventTo', e.target.value)} className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent" />
 							</div>
 						</div>
 					</div>
-					
+
 					<div className="flex items-center justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
 						<button
 							onClick={resetFilters}
@@ -1003,7 +481,7 @@ export default function PicturesPage() {
 					</div>
 				</div>
 			)}
-			
+
 			{/* Success Message */}
 			{successMessage && (
 				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
@@ -1011,15 +489,12 @@ export default function PicturesPage() {
 						<CheckCircle className="h-5 w-5 text-green-600 mr-3" />
 						<p className="text-green-800 font-medium">{successMessage}</p>
 					</div>
-					<button
-						onClick={() => setSuccessMessage(null)}
-						className="text-green-600 hover:text-green-800 transition-colors"
-					>
+					<button onClick={() => setSuccessMessage(null)} className="text-green-600 hover:text-green-800 transition-colors">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
 			)}
-			
+
 			{/* Error Message */}
 			{error && (
 				<div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
@@ -1027,183 +502,247 @@ export default function PicturesPage() {
 						<AlertCircle className="h-5 w-5 text-red-600 mr-3" />
 						<p className="text-red-800 font-medium">{error}</p>
 					</div>
-					<button
-						onClick={() => setError(null)}
-						className="text-red-600 hover:text-red-800 transition-colors"
-					>
+					<button onClick={() => setError(null)} className="text-red-600 hover:text-red-800 transition-colors">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
 			)}
-			
-			{/* Table */}
-			<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-				<div className="overflow-x-auto">
-					<table className="w-full">
-						<thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-							<tr>
-								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+
+			{/* Summary Table */}
+			<div className="space-y-4">
+				{loading ? (
+					<div className="bg-white rounded-lg border border-gray-200 p-12">
+						<div className="flex items-center justify-center">
+							<RefreshCw className="h-6 w-6 animate-spin text-[#0b4d2b] mr-3" />
+							<span className="text-gray-600">Loading pictures...</span>
+						</div>
+					</div>
+				) : summaryData.length === 0 ? (
+					<div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+						<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+						<p className="text-gray-600">No pictures found</p>
+						<p className="text-sm text-gray-500 mt-1">Try adjusting your filters</p>
+					</div>
+				) : (
+					<>
+						{/* Stats Bar */}
+						<div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-3">
+							<p className="text-sm text-gray-600">
+								<span className="font-semibold text-gray-900">{sortedData.length}</span> group{sortedData.length !== 1 ? 's' : ''} with <span className="font-semibold text-gray-900">{totalPictures}</span> total pictures
+							</p>
+							<div className="flex items-center gap-3">
+								<label className="text-xs text-gray-500">Per page:</label>
+								<select
+									value={filters.pageSize}
+									onChange={(e) => handleFilterChange('pageSize', parseInt(e.target.value))}
+									className="h-8 px-2 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+								>
+									<option value={10}>10</option>
+									<option value={20}>20</option>
+									<option value={50}>50</option>
+									<option value={100}>100</option>
+								</select>
+							</div>
+						</div>
+
+						{/* Table */}
+						<div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+							<div className="overflow-x-auto">
+								<table className="min-w-full divide-y divide-gray-200">
+									<thead className="bg-gray-50">
+										<tr>
+											<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">#</th>
+											{renderSortHeader('GroupName', 'Group Name')}
+											{renderSortHeader('MainCategory', 'Main Category')}
+											{renderSortHeader('SubCategory', 'Sub Category')}
+											{renderSortHeader('PictureCount', 'Images')}
+											{renderSortHeader('LatestUploadDate', 'Last Upload')}
+											{renderSortHeader('LatestEventDate', 'Last Event')}
+											<th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Actions</th>
+										</tr>
+									</thead>
+									<tbody className="bg-white divide-y divide-gray-200">
+										{paginatedData.map((row, idx) => (
+											<tr
+												key={`${row.GroupName}-${row.MainCategory}-${row.SubCategory}-${idx}`}
+												className="hover:bg-gray-50 cursor-pointer transition-colors"
+												onClick={() => openGallery(row)}
+											>
+												<td className="px-4 py-3 text-sm text-gray-500">{startIdx + idx + 1}</td>
+												<td className="px-4 py-3 text-sm font-medium text-gray-900">{row.GroupName || 'Uncategorized'}</td>
+												<td className="px-4 py-3 text-sm text-gray-700">{row.MainCategory || 'Uncategorized'}</td>
+												<td className="px-4 py-3 text-sm text-gray-700">{row.SubCategory || 'Uncategorized'}</td>
+												<td className="px-4 py-3">
+													<span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0b4d2b]/10 text-[#0b4d2b]">
+														<FileImage className="h-3 w-3" />
+														{row.PictureCount}
+													</span>
+												</td>
+												<td className="px-4 py-3 text-sm text-gray-600">{formatDate(row.LatestUploadDate)}</td>
+												<td className="px-4 py-3 text-sm text-gray-600">{formatDate(row.LatestEventDate)}</td>
+												<td className="px-4 py-3 text-center">
+													<button
+														onClick={(e) => { e.stopPropagation(); openGallery(row); }}
+														className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a4226] transition-colors"
+													>
+														<Eye className="h-3.5 w-3.5" />
+														View
+													</button>
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+						</div>
+
+						{/* Pagination */}
+						{totalPages > 1 && (
+							<div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-3">
+								<p className="text-sm text-gray-600">
+									Showing {startIdx + 1} to {Math.min(startIdx + filters.pageSize, sortedData.length)} of {sortedData.length} groups
+								</p>
+								<div className="flex items-center gap-2">
 									<button
-										onClick={() => handleSort('GroupName')}
-										className="flex items-center hover:text-[#0b4d2b] transition-colors"
+										onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
+										disabled={filters.page <= 1}
+										className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 									>
-										Group Name
-										<ArrowUpDown className="h-3 w-3 ml-1" />
+										Previous
 									</button>
-								</th>
-								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<span className="px-3 py-1.5 text-sm font-medium text-gray-700">
+										Page {filters.page} of {totalPages}
+									</span>
 									<button
-										onClick={() => handleSort('MainCategory')}
-										className="flex items-center hover:text-[#0b4d2b] transition-colors"
+										onClick={() => handleFilterChange('page', Math.min(totalPages, filters.page + 1))}
+										disabled={filters.page >= totalPages}
+										className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 									>
-										Main Category
-										<ArrowUpDown className="h-3 w-3 ml-1" />
+										Next
 									</button>
-								</th>
-								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-									Sub Category
-								</th>
-								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-									<button
-										onClick={() => handleSort('FileName')}
-										className="flex items-center hover:text-[#0b4d2b] transition-colors"
-									>
-										File Name
-										<ArrowUpDown className="h-3 w-3 ml-1" />
-									</button>
-								</th>
-								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-									Uploaded By
-								</th>
-								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-									<button
-										onClick={() => handleSort('UploadDate')}
-										className="flex items-center hover:text-[#0b4d2b] transition-colors"
-									>
-										Upload Date
-										<ArrowUpDown className="h-3 w-3 ml-1" />
-									</button>
-								</th>
-								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-									<button
-										onClick={() => handleSort('EventDate')}
-										className="flex items-center hover:text-[#0b4d2b] transition-colors"
-									>
-										Event Date
-										<ArrowUpDown className="h-3 w-3 ml-1" />
-									</button>
-								</th>
-								<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-									Actions
-								</th>
-							</tr>
-						</thead>
-						<tbody className="bg-white divide-y divide-gray-200">
-							{loading ? (
-								<tr>
-									<td colSpan={8} className="px-4 py-12 text-center">
-										<div className="flex items-center justify-center">
-											<RefreshCw className="h-6 w-6 animate-spin text-[#0b4d2b] mr-3" />
-											<span className="text-gray-600">Loading pictures...</span>
+								</div>
+							</div>
+						)}
+					</>
+				)}
+			</div>
+
+			{/* Gallery Modal */}
+			{galleryModal && (
+				<div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+					<div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200">
+						{/* Gallery Header */}
+						<div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-[#0b4d2b] via-[#0d5d3a] to-[#0a3d24] text-white">
+							<div className="flex items-center space-x-4">
+								<div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+									<FileImage className="h-6 w-6" />
+								</div>
+								<div>
+									<h2 className="text-2xl font-bold">Picture Gallery</h2>
+									<p className="text-sm opacity-90 mt-1">
+										{galleryModal.groupName || 'Uncategorized'}
+										{galleryModal.mainCategory && <> &middot; {galleryModal.mainCategory}</>}
+										{galleryModal.subCategory && <> &middot; {galleryModal.subCategory}</>}
+									</p>
+								</div>
+							</div>
+							<button
+								onClick={() => setGalleryModal(null)}
+								className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+								aria-label="Close"
+							>
+								<X className="h-6 w-6" />
+							</button>
+						</div>
+
+						{/* Gallery Content */}
+						<div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-gray-50 to-white">
+							{galleryModal.loading ? (
+								<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+									{Array.from({ length: 12 }).map((_, i) => (
+										<div key={i} className="animate-pulse rounded-lg border border-gray-200 overflow-hidden">
+											<div className="aspect-[4/3] bg-gray-200" />
+											<div className="p-2.5 space-y-2">
+												<div className="h-3 bg-gray-200 rounded w-3/4" />
+												<div className="h-2.5 bg-gray-200 rounded w-1/2" />
+											</div>
 										</div>
-									</td>
-								</tr>
-							) : pictures.length === 0 ? (
-								<tr>
-									<td colSpan={8} className="px-4 py-12 text-center">
-										<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-										<p className="text-gray-600">No pictures found</p>
-										<p className="text-sm text-gray-500 mt-1">Try adjusting your filters</p>
-									</td>
-								</tr>
+									))}
+								</div>
+							) : galleryModal.pictures.length === 0 ? (
+								<div className="text-center py-16">
+									<FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+									<p className="text-gray-600">No pictures found in this group</p>
+								</div>
 							) : (
-								pictures.map((picture) => (
-									<tr key={picture.PictureID} className="hover:bg-gray-50 transition-colors">
-										<td className="px-4 py-3 text-sm text-gray-900">
-											{picture.GroupName || 'N/A'}
-										</td>
-										<td className="px-4 py-3 text-sm text-gray-900">
-											{picture.MainCategory || 'N/A'}
-										</td>
-										<td className="px-4 py-3 text-sm text-gray-900">
-											{picture.SubCategory || 'N/A'}
-										</td>
-										<td className="px-4 py-3 text-sm text-gray-900">
-											{picture.FileName || 'N/A'}
-										</td>
-										<td className="px-4 py-3 text-sm text-gray-600">
-											{picture.UploadedBy || 'N/A'}
-										</td>
-										<td className="px-4 py-3 text-sm text-gray-600">
-											{formatDate(picture.UploadDate)}
-										</td>
-										<td className="px-4 py-3 text-sm text-gray-600">
-											{formatDate(picture.EventDate)}
-										</td>
-										<td className="px-4 py-3 text-sm">
-											<div className="flex items-center space-x-2">
+								<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+									{galleryModal.pictures.map(pic => (
+										<div key={pic.PictureID} className="group/tile relative rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden">
+											<div className="relative aspect-[4/3] bg-gray-100 overflow-hidden cursor-pointer" onClick={() => setViewModal(pic)}>
+												{pic.FilePath ? (
+													<img
+														src={getImageUrl(pic.FilePath)}
+														alt={pic.FileName || 'Picture'}
+														loading="lazy"
+														className="w-full h-full object-cover group-hover/tile:scale-105 transition-transform duration-300"
+													/>
+												) : (
+													<div className="w-full h-full flex items-center justify-center">
+														<FileImage className="h-10 w-10 text-gray-300" />
+													</div>
+												)}
+												<div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover/tile:opacity-100 transition-opacity flex items-end justify-center pb-3">
+													<span className="inline-flex items-center px-3 py-1 text-xs font-medium text-white bg-black/60 rounded-full backdrop-blur-sm">
+														<Eye className="h-3 w-3 mr-1" /> View
+													</span>
+												</div>
+											</div>
+											<div className="p-2.5">
+												<p className="text-xs font-semibold text-gray-900 truncate" title={pic.FileName || undefined}>{pic.FileName || 'Untitled'}</p>
+												<p className="text-[11px] text-gray-500 mt-0.5">{formatDate(pic.EventDate || pic.UploadDate)}</p>
+											</div>
+											<div className="flex border-t border-gray-100">
 												<button
-													onClick={() => setViewModal(picture)}
-													className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-[#0b4d2b] rounded-lg hover:bg-[#0a3d24] transition-colors"
+													onClick={(e) => { e.stopPropagation(); setViewModal(pic); }}
+													className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium text-[#0b4d2b] hover:bg-[#0b4d2b]/5 transition-colors"
 												>
-													<Eye className="h-3 w-3 mr-1" />
-													View
+													<Eye className="h-3 w-3" /> View
 												</button>
 												{canDelete && (
 													<button
-														onClick={() => setDeleteConfirm({ show: true, picture })}
-														className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-														title="Delete picture"
+														onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ show: true, picture: pic }); }}
+														className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors border-l border-gray-100"
 													>
-														<Trash2 className="h-3 w-3 mr-1" />
-														Delete
+														<Trash2 className="h-3 w-3" /> Delete
 													</button>
 												)}
 											</div>
-										</td>
-									</tr>
-								))
+										</div>
+									))}
+								</div>
 							)}
-						</tbody>
-					</table>
-				</div>
-				
-				{/* Pagination */}
-				{totalPages > 1 && (
-					<div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
-						<div className="text-sm text-gray-700">
-							Showing <span className="font-medium">{(filters.page - 1) * filters.pageSize + 1}</span> to{' '}
-							<span className="font-medium">{Math.min(filters.page * filters.pageSize, total)}</span> of{' '}
-							<span className="font-medium">{total}</span> results
 						</div>
-						<div className="flex items-center space-x-2">
+
+						{/* Gallery Footer */}
+						<div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+							<p className="text-sm text-gray-600">
+								{galleryModal.loading ? 'Loading...' : `${galleryModal.pictures.length} picture${galleryModal.pictures.length !== 1 ? 's' : ''}`}
+							</p>
 							<button
-								onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
-								disabled={filters.page === 1}
-								className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+								onClick={() => setGalleryModal(null)}
+								className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm"
 							>
-								<ChevronLeft className="h-4 w-4" />
-							</button>
-							<span className="text-sm text-gray-700">
-								Page {filters.page} of {totalPages}
-							</span>
-							<button
-								onClick={() => handleFilterChange('page', Math.min(totalPages, filters.page + 1))}
-								disabled={filters.page === totalPages}
-								className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-							>
-								<ChevronRight className="h-4 w-4" />
+								Close
 							</button>
 						</div>
 					</div>
-				)}
-			</div>
-			
-			{/* View Modal */}
+				</div>
+			)}
+
+			{/* View Modal (single picture detail) */}
 			{viewModal && (
-				<div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+				<div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-in fade-in duration-200">
 					<div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200">
-						{/* Modal Header */}
 						<div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-[#0b4d2b] via-[#0d5d3a] to-[#0a3d24] text-white">
 							<div className="flex items-center space-x-4">
 								<div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
@@ -1222,11 +761,9 @@ export default function PicturesPage() {
 								<X className="h-6 w-6" />
 							</button>
 						</div>
-						
-						{/* Modal Content */}
+
 						<div className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-gray-50 to-white">
 							<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-								{/* Image Preview - Takes 2 columns */}
 								<div className="lg:col-span-2 space-y-4">
 									<div className="relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
 										{viewModal.FilePath ? (
@@ -1238,9 +775,7 @@ export default function PicturesPage() {
 													const target = e.target as HTMLImageElement;
 													target.style.display = 'none';
 													const fallback = target.parentElement?.querySelector('.fallback-message');
-													if (fallback) {
-														fallback.classList.remove('hidden');
-													}
+													if (fallback) fallback.classList.remove('hidden');
 												}}
 											/>
 										) : null}
@@ -1249,7 +784,7 @@ export default function PicturesPage() {
 											<span className="text-base font-medium text-gray-600">Preview not available</span>
 										</div>
 									</div>
-									
+
 									{viewModal.FilePath && (
 										<a
 											href={getImageUrl(viewModal.FilePath)}
@@ -1262,8 +797,7 @@ export default function PicturesPage() {
 										</a>
 									)}
 								</div>
-								
-								{/* Metadata - Takes 1 column */}
+
 								<div className="space-y-4">
 									<div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 space-y-5">
 										<div className="pb-4 border-b border-gray-200">
@@ -1272,7 +806,7 @@ export default function PicturesPage() {
 												Information
 											</h3>
 										</div>
-										
+
 										<div className="space-y-4">
 											<div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border-l-4 border-blue-500">
 												<div className="flex items-start">
@@ -1283,7 +817,7 @@ export default function PicturesPage() {
 													</div>
 												</div>
 											</div>
-											
+
 											<div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border-l-4 border-purple-500">
 												<div className="flex items-start">
 													<Calendar className="h-5 w-5 text-purple-600 mr-3 mt-0.5 flex-shrink-0" />
@@ -1293,7 +827,7 @@ export default function PicturesPage() {
 													</div>
 												</div>
 											</div>
-											
+
 											<div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border-l-4 border-green-500">
 												<div className="flex items-start">
 													<FileImage className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
@@ -1303,7 +837,7 @@ export default function PicturesPage() {
 													</div>
 												</div>
 											</div>
-											
+
 											<div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border-l-4 border-amber-500">
 												<div className="flex items-start">
 													<FileImage className="h-5 w-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
@@ -1313,7 +847,7 @@ export default function PicturesPage() {
 													</div>
 												</div>
 											</div>
-											
+
 											<div className="bg-gradient-to-r from-cyan-50 to-teal-50 rounded-xl p-4 border-l-4 border-cyan-500">
 												<div className="flex items-start">
 													<User className="h-5 w-5 text-cyan-600 mr-3 mt-0.5 flex-shrink-0" />
@@ -1323,7 +857,7 @@ export default function PicturesPage() {
 													</div>
 												</div>
 											</div>
-											
+
 											<div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-4 border-l-4 border-indigo-500">
 												<div className="flex items-start">
 													<Calendar className="h-5 w-5 text-indigo-600 mr-3 mt-0.5 flex-shrink-0" />
@@ -1333,7 +867,7 @@ export default function PicturesPage() {
 													</div>
 												</div>
 											</div>
-											
+
 											<div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-4 border-l-4 border-violet-500">
 												<div className="flex items-start">
 													<Calendar className="h-5 w-5 text-violet-600 mr-3 mt-0.5 flex-shrink-0" />
@@ -1348,8 +882,7 @@ export default function PicturesPage() {
 								</div>
 							</div>
 						</div>
-						
-						{/* Modal Footer */}
+
 						<div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
 							<button
 								onClick={() => setViewModal(null)}
@@ -1361,12 +894,11 @@ export default function PicturesPage() {
 					</div>
 				</div>
 			)}
-			
+
 			{/* Delete Confirmation Modal */}
 			{deleteConfirm.show && deleteConfirm.picture && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
 					<div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-						{/* Modal Header */}
 						<div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl">
 							<div className="flex items-center">
 								<div className="p-2 bg-white/20 rounded-lg mr-4">
@@ -1378,8 +910,7 @@ export default function PicturesPage() {
 								</div>
 							</div>
 						</div>
-						
-						{/* Modal Content */}
+
 						<div className="p-6">
 							<p className="text-gray-700 text-base mb-3 font-semibold">
 								Are you sure you want to delete this picture?
@@ -1412,8 +943,7 @@ export default function PicturesPage() {
 								</p>
 							</div>
 						</div>
-						
-						{/* Modal Footer */}
+
 						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
 							<button
 								onClick={() => setDeleteConfirm({ show: false, picture: null })}

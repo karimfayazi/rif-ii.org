@@ -1368,6 +1368,14 @@ type TrainingGraphData = {
 	TotalParticipants: number;
 };
 
+type TrainingParticipantsSummary = {
+	EventType: string;
+	Events: number;
+	Participants: number;
+	Male: number;
+	Female: number;
+};
+
 // Embedded GIS Online Maps Component Types
 type EmbeddedMapType = {
 	id: string;
@@ -2178,151 +2186,196 @@ function DistrictWiseChart({ districtData }: { districtData: Array<{ District: s
 }
 
 // Training Chart Components
-function TrainingEventsParticipantsChart({ data }: { data: TrainingGraphData[] }) {
-	const [chartType, setChartType] = useState<ChartType>('bar');
+function TrainingEventsParticipantsChart({ data }: { data: TrainingParticipantsSummary[] }) {
+	const orderMap: Record<string, number> = { 'Training': 0, 'Workshop': 1, 'Grand Total': 999 };
+	const sortedData = [...data].sort((a, b) => {
+		const oA = orderMap[a.EventType] ?? 500;
+		const oB = orderMap[b.EventType] ?? 500;
+		if (oA !== oB) return oA - oB;
+		return a.EventType.localeCompare(b.EventType);
+	});
 
-	const aggregatedData = data.reduce((acc, item) => {
-		const eventName = (item.EventType || '').toLowerCase().trim();
-		// Categorize into Workshop or Training based on event name
-		let category = 'Other';
-		if (eventName.includes('workshop')) {
-			category = 'Workshop';
-		} else if (eventName.includes('training')) {
-			category = 'Training';
-		}
-		
-		if (!acc[category]) {
-			acc[category] = { eventCount: 0, participantCount: 0 };
-		}
-		acc[category].eventCount += 1;
-		acc[category].participantCount += item.TotalParticipants;
-		return acc;
-	}, {} as Record<string, { eventCount: number; participantCount: number }>);
+	if (sortedData.length === 0) {
+		return (
+			<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+				<div className="p-4 border-b border-gray-100">
+					<h3 className="text-base font-semibold text-gray-900">Events & Participants</h3>
+					<p className="text-xs text-gray-500 mt-0.5">By event type</p>
+				</div>
+				<div className="p-4">
+					<div className="flex items-center justify-center h-64 text-sm text-gray-500">No data available</div>
+				</div>
+			</div>
+		);
+	}
 
-	// Ensure unique labels and sort them: Training, Workshop, then Other
-	const labelOrder = ['Training', 'Workshop', 'Other'];
-	const labels = labelOrder.filter(label => aggregatedData[label]);
-	const eventCounts = labels.map(label => aggregatedData[label].eventCount);
-	const participantCounts = labels.map(label => aggregatedData[label].participantCount);
+	const grandTotalRow = sortedData.find(d => d.EventType === 'Grand Total');
+	const nonGrandRows = sortedData.filter(d => d.EventType !== 'Grand Total');
+	const totalEvents = grandTotalRow ? grandTotalRow.Events : nonGrandRows.reduce((s, d) => s + d.Events, 0);
+	const totalParticipants = grandTotalRow ? grandTotalRow.Participants : nonGrandRows.reduce((s, d) => s + d.Participants, 0);
+
+	const labels = sortedData.map(d => d.EventType);
+
+	const getOrCreateTooltip = (chart: any) => {
+		let el = chart.canvas.parentNode.querySelector('#ep-chart-tooltip');
+		if (!el) {
+			el = document.createElement('div');
+			el.id = 'ep-chart-tooltip';
+			el.style.pointerEvents = 'none';
+			el.style.position = 'absolute';
+			el.style.transition = 'all 0.15s ease';
+			el.style.zIndex = '10';
+			chart.canvas.parentNode.style.position = 'relative';
+			chart.canvas.parentNode.appendChild(el);
+		}
+		return el;
+	};
+
+	const externalTooltipHandler = (context: any) => {
+		const { chart, tooltip } = context;
+		const tooltipEl = getOrCreateTooltip(chart);
+		if (tooltip.opacity === 0) {
+			tooltipEl.style.opacity = '0';
+			return;
+		}
+		if (tooltip.dataPoints && tooltip.dataPoints.length > 0) {
+			const idx = tooltip.dataPoints[0].dataIndex;
+			const item = sortedData[idx];
+			if (item) {
+				const rows = [
+					{ color: 'rgba(99,102,241,0.85)', label: 'Events', value: item.Events, round: false },
+					{ color: 'rgba(245,158,11,0.85)', label: 'Participants', value: item.Participants, round: false },
+					{ color: 'rgba(14,165,233,1)', label: 'Male', value: item.Male, round: true },
+					{ color: 'rgba(236,72,153,1)', label: 'Female', value: item.Female, round: true },
+				];
+				tooltipEl.innerHTML = `
+					<div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:12px 16px;box-shadow:0 4px 6px -1px rgb(0 0 0/0.1),0 2px 4px -2px rgb(0 0 0/0.1);min-width:190px;font-family:Inter,system-ui,-apple-system,sans-serif;">
+						<div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid #f3f4f6;">${item.EventType}</div>
+						${rows.map((r, i) => `
+							<div style="display:flex;justify-content:space-between;align-items:center;${i < rows.length - 1 ? 'margin-bottom:5px;' : ''}">
+								<span style="display:flex;align-items:center;gap:6px;">
+									<span style="width:9px;height:9px;border-radius:${r.round ? '50%' : '2px'};background:${r.color};display:inline-block;"></span>
+									<span style="font-size:12px;color:#6b7280;">${r.label}</span>
+								</span>
+								<span style="font-size:12px;font-weight:600;color:#1f2937;">${r.value.toLocaleString()}</span>
+							</div>
+						`).join('')}
+					</div>
+				`;
+			}
+		}
+		tooltipEl.style.opacity = '1';
+		tooltipEl.style.left = tooltip.caretX + 'px';
+		tooltipEl.style.top = tooltip.caretY + 'px';
+		tooltipEl.style.transform = 'translate(-50%, -110%)';
+	};
 
 	const chartData = {
 		labels,
 		datasets: [
 			{
-				label: '# of Events',
-				data: eventCounts,
-				backgroundColor: 'rgba(99, 102, 241, 0.8)', // Indigo
+				label: 'Events',
+				data: sortedData.map(d => d.Events),
+				backgroundColor: 'rgba(99, 102, 241, 0.85)',
 				borderColor: 'rgba(99, 102, 241, 1)',
 				borderWidth: 1,
+				borderRadius: 4,
 				yAxisID: 'y',
+				order: 2,
 			},
 			{
-				label: '# of Participants',
-				data: participantCounts,
-				backgroundColor: 'rgba(245, 158, 11, 0.8)', // Amber
+				label: 'Participants',
+				data: sortedData.map(d => d.Participants),
+				backgroundColor: 'rgba(245, 158, 11, 0.85)',
 				borderColor: 'rgba(245, 158, 11, 1)',
 				borderWidth: 1,
+				borderRadius: 4,
 				yAxisID: 'y1',
+				order: 2,
+			},
+			{
+				label: 'Male',
+				type: 'line' as const,
+				data: sortedData.map(d => d.Male),
+				borderColor: 'rgba(14, 165, 233, 1)',
+				backgroundColor: 'rgba(14, 165, 233, 0.1)',
+				borderWidth: 2.5,
+				pointRadius: 5,
+				pointHoverRadius: 7,
+				pointBackgroundColor: 'rgba(14, 165, 233, 1)',
+				pointBorderColor: '#fff',
+				pointBorderWidth: 2,
+				yAxisID: 'y1',
+				tension: 0.3,
+				order: 1,
+			},
+			{
+				label: 'Female',
+				type: 'line' as const,
+				data: sortedData.map(d => d.Female),
+				borderColor: 'rgba(236, 72, 153, 1)',
+				backgroundColor: 'rgba(236, 72, 153, 0.1)',
+				borderWidth: 2.5,
+				pointRadius: 5,
+				pointHoverRadius: 7,
+				pointBackgroundColor: 'rgba(236, 72, 153, 1)',
+				pointBorderColor: '#fff',
+				pointBorderWidth: 2,
+				yAxisID: 'y1',
+				tension: 0.3,
+				order: 1,
 			},
 		],
 	};
 
-	const options: ChartOptions<'bar'> = {
+	const options: any = {
 		responsive: true,
 		maintainAspectRatio: false,
-		interaction: {
-			mode: 'index' as const,
-			intersect: false,
-		},
+		interaction: { mode: 'index' as const, intersect: false },
 		plugins: {
 			legend: {
 				position: 'top' as const,
 				labels: {
 					font: { size: 11 },
-					padding: 8,
+					padding: 12,
+					usePointStyle: true,
+					pointStyleWidth: 10,
 				},
 			},
 			tooltip: {
-				callbacks: {
-					label: function(context) {
-						const label = context.dataset?.label ?? '';
-						const y = context.parsed?.y;
-
-						// Chart.js can return null for skipped points; handle it
-						if (y === null || y === undefined) return label ? `${label}: 0` : '0';
-
-						// y can be number in most cases
-						if (typeof y === 'number') {
-							return label ? `${label}: ${y.toLocaleString()}` : y.toLocaleString();
-						}
-
-						// fallback for unexpected types
-						return label ? `${label}: ${String(y)}` : String(y);
-					}
-				}
+				enabled: false,
+				external: externalTooltipHandler,
 			},
-			datalabels: {
-				display: true,
-				color: '#fff',
-				font: {
-					weight: 'bold' as const,
-					size: 10,
-				},
-				formatter: (value: number) => value.toLocaleString(),
-			},
+			datalabels: { display: false },
 		},
 		scales: {
 			y: {
 				type: 'linear' as const,
 				display: true,
 				position: 'left' as const,
-				title: {
-					display: true,
-					text: 'Events Count',
-					font: { size: 11 },
-				},
+				beginAtZero: true,
+				title: { display: true, text: 'Events', font: { size: 11 } },
+				grid: { color: 'rgba(0,0,0,0.06)' },
+				ticks: { font: { size: 10 } },
+				border: { display: true },
 			},
 			y1: {
 				type: 'linear' as const,
 				display: true,
 				position: 'right' as const,
-				title: {
-					display: true,
-					text: 'Participants Count',
-					font: { size: 11 },
-				},
-				grid: {
-					drawOnChartArea: false,
-				},
+				beginAtZero: true,
+				title: { display: true, text: 'Participants', font: { size: 11 } },
+				grid: { drawOnChartArea: false },
+				ticks: { font: { size: 10 } },
+				border: { display: true },
 			},
 			x: {
-				ticks: {
-					font: { size: 11, weight: 'bold' as const },
-				},
+				ticks: { font: { size: 11, weight: 'bold' as const } },
+				grid: { color: 'rgba(0,0,0,0.06)' },
+				border: { display: true },
 			},
 		},
 	};
-
-	if (labels.length === 0) {
-		return (
-			<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-				<div className="p-4 border-b border-gray-100">
-					<h3 className="text-base font-semibold text-gray-900">
-						Events & Participants
-					</h3>
-					<p className="text-xs text-gray-500 mt-0.5">By event type</p>
-				</div>
-				<div className="p-4">
-					<div className="flex items-center justify-center h-64 text-sm text-gray-500">
-						No data available
-					</div>
-				</div>
-			</div>
-		);
-	}
-
-	const totalEvents = eventCounts.reduce((sum, count) => sum + count, 0);
-	const totalParticipants = participantCounts.reduce((sum, count) => sum + count, 0);
 
 	return (
 		<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
@@ -2330,9 +2383,7 @@ function TrainingEventsParticipantsChart({ data }: { data: TrainingGraphData[] }
 			<div className="px-4 pt-4 pb-3 border-b border-gray-100">
 				<div className="flex items-start justify-between">
 					<div className="flex-1">
-						<h3 className="text-base font-semibold text-gray-900">
-							Events & Participants
-						</h3>
+						<h3 className="text-base font-semibold text-gray-900">Events & Participants</h3>
 						<p className="text-xs text-gray-500 mt-0.5">By event type</p>
 					</div>
 					<div className="flex gap-2 text-xs">
@@ -2347,15 +2398,9 @@ function TrainingEventsParticipantsChart({ data }: { data: TrainingGraphData[] }
 			</div>
 			{/* Chart Content */}
 			<div className="p-4">
-				<DynamicChartRenderer chartType={chartType} data={chartData} options={options} height="214px" />
-			</div>
-			{/* Chart Footer - Switcher Buttons */}
-			<div className="px-4 pb-4 pt-2 border-t border-gray-100 flex justify-center">
-				<ChartTypeSwitcher 
-					chartId="training-events-participants"
-					currentType={chartType} 
-					onTypeChange={setChartType}
-				/>
+				<div style={{ height: '280px' }}>
+					<Bar data={chartData as any} options={options} />
+				</div>
 			</div>
 		</div>
 	);
@@ -2674,6 +2719,7 @@ export default function DashboardPage() {
 	const [sectorProgress, setSectorProgress] = useState<SectorProgress[]>([]);
 	const [districtProgressSummary, setDistrictProgressSummary] = useState<DistrictProgressSummary[]>([]);
 	const [trainingGraphData, setTrainingGraphData] = useState<TrainingGraphData[]>([]);
+	const [trainingParticipantsSummary, setTrainingParticipantsSummary] = useState<TrainingParticipantsSummary[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -2709,6 +2755,7 @@ export default function DashboardPage() {
 		fetchSectorProgress();
 		fetchDistrictProgressSummary();
 		fetchTrainingGraphs();
+		fetchTrainingParticipantsSummary();
 		fetchSecurityAlerts();
 		fetchNews();
 	}, []);
@@ -2972,6 +3019,20 @@ export default function DashboardPage() {
 		}
 	};
 
+	const fetchTrainingParticipantsSummary = async () => {
+		try {
+			const response = await fetch('/api/training/participants-summary');
+			const data = await response.json();
+			if (data.success) {
+				setTrainingParticipantsSummary(data.data || []);
+			} else {
+				console.error("Failed to fetch training participants summary:", data.message);
+			}
+		} catch (err) {
+			console.error("Error fetching training participants summary:", err);
+		}
+	};
+
 	const handlePictureClick = (picture: PictureData) => {
 		setSelectedPicture(picture);
 	};
@@ -3096,7 +3157,7 @@ export default function DashboardPage() {
 		</div>
 
 			{/* Training, Capacity Building & Awareness Section */}
-			{trainingGraphData.length > 0 && (
+			{(trainingGraphData.length > 0 || trainingParticipantsSummary.length > 0) && (
 				<div className="space-y-6">
 					<div className="space-y-1">
 						<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">Training, Capacity Building & Awareness</h2>
@@ -3105,7 +3166,7 @@ export default function DashboardPage() {
 					{/* Three Chart Cards - Responsive Grid */}
 					<div className="grid gap-[21px] grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
 						{/* Chart 1: Events and Participants by EventType */}
-						<TrainingEventsParticipantsChart data={trainingGraphData} />
+						<TrainingEventsParticipantsChart data={trainingParticipantsSummary} />
 
 						{/* Chart 2: Male vs Female Participants */}
 						<TrainingGenderChart data={trainingGraphData} />
