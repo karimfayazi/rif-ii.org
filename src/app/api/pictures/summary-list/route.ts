@@ -105,15 +105,17 @@ export async function GET(request: NextRequest) {
 			SELECT DISTINCT [UploadedBy] FROM [_rifiiorg_db].[dbo].[tblPictures] WHERE [UploadedBy] IS NOT NULL AND [UploadedBy] != '' AND ([IsActive] = 1 OR [IsActive] IS NULL) ORDER BY [UploadedBy];
 		`);
 
+		const recordsets = filterResult.recordsets as any[];
+
 		return NextResponse.json({
 			data,
 			totalPictures,
 			totalGroups: data.length,
 			filters: {
-				groupNames: filterResult.recordsets[0]?.map((r: any) => r.GroupName) || [],
-				mainCategories: filterResult.recordsets[1]?.map((r: any) => r.MainCategory) || [],
-				subCategories: filterResult.recordsets[2]?.map((r: any) => r.SubCategory) || [],
-				uploadedByList: filterResult.recordsets[3]?.map((r: any) => r.UploadedBy) || [],
+				groupNames: recordsets[0]?.map((r: any) => r.GroupName) || [],
+				mainCategories: recordsets[1]?.map((r: any) => r.MainCategory) || [],
+				subCategories: recordsets[2]?.map((r: any) => r.SubCategory) || [],
+				uploadedByList: recordsets[3]?.map((r: any) => r.UploadedBy) || [],
 			}
 		});
 	} catch (error) {
