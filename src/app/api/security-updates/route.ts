@@ -26,7 +26,11 @@ export async function GET(request: NextRequest) {
 				CONVERT(VARCHAR(19), [date_reported], 120) AS [date_reported],
 				[reported_by],
 				[Comment],
-				[Reference #] AS [ReferenceNumber]
+				[Reference #] AS [ReferenceNumber],
+				[incident_image_1],
+				[incident_image_2],
+				[incident_image_3],
+				[incident_youtube_link]
 			FROM [_rifiiorg_db].[rifiiorg].[security_incidents]
 			WHERE 1=1
 		`;

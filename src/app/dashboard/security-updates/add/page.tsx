@@ -9,10 +9,13 @@ import {
 	CheckCircle, 
 	Loader2,
 	Trash2,
-	Shield
+	Shield,
+	Upload,
+	X
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { uploadToBlob } from "@/lib/uploads";
 
 type SecurityIncidentFormData = {
 	id?: number;
@@ -27,19 +30,25 @@ type SecurityIncidentFormData = {
 	reported_by?: string;
 	Comment?: string;
 	ReferenceNumber?: string;
+	incident_image_1?: string;
+	incident_image_2?: string;
+	incident_image_3?: string;
+	incident_youtube_link?: string;
 };
 
 const CATEGORY_OPTIONS = [
-	"Security Breach",
-	"Physical Security",
-	"Cybersecurity",
-	"Data Breach",
-	"Unauthorized Access",
-	"System Compromise",
-	"Network Attack",
-	"Malware",
-	"Phishing",
-	"Other"
+	"Militants Killed",
+	"Militants Injured",
+	"Militants Arrested",
+	"LEA Killed",
+	"LEA Injured",
+	"Civilians Killed",
+	"Civilians Injured",
+	"IEDs",
+	"Target Killings",
+	"Abductions",
+	"Fire Raid",
+	"Extortions"
 ];
 
 const PROVINCE_OPTIONS = [
@@ -78,6 +87,39 @@ export default function AddSecurityIncidentPage() {
 	const [fetching, setFetching] = useState(isEditMode);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState(false);
+	const [imageUploading, setImageUploading] = useState<Record<string, boolean>>({});
+
+	const handleImageUpload = async (
+		file: File,
+		field: 'incident_image_1' | 'incident_image_2' | 'incident_image_3'
+	) => {
+		setImageUploading(prev => ({ ...prev, [field]: true }));
+		setError(null);
+		try {
+			const result = await uploadToBlob(file, 'pictures');
+			setFormData(prev => ({ ...prev, [field]: result.url }));
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : 'Upload failed';
+			setError(msg);
+		} finally {
+			setImageUploading(prev => ({ ...prev, [field]: false }));
+		}
+	};
+
+	const handleImageFileChange = (
+		e: React.ChangeEvent<HTMLInputElement>,
+		field: 'incident_image_1' | 'incident_image_2' | 'incident_image_3'
+	) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			handleImageUpload(file, field);
+		}
+		e.target.value = '';
+	};
+
+	const clearImage = (field: 'incident_image_1' | 'incident_image_2' | 'incident_image_3') => {
+		setFormData(prev => ({ ...prev, [field]: '' }));
+	};
 
 	// Fetch existing data if editing
 	useEffect(() => {
@@ -106,7 +148,11 @@ export default function AddSecurityIncidentPage() {
 					recommended_actions: incident.recommended_actions || "",
 					reported_by: incident.reported_by || "",
 					Comment: incident.Comment || "",
-					ReferenceNumber: incident.ReferenceNumber || ""
+					ReferenceNumber: incident.ReferenceNumber || "",
+					incident_image_1: incident.incident_image_1 || "",
+					incident_image_2: incident.incident_image_2 || "",
+					incident_image_3: incident.incident_image_3 || "",
+					incident_youtube_link: incident.incident_youtube_link || ""
 				});
 			} else {
 				setError("Failed to fetch security incident data");
@@ -155,6 +201,10 @@ export default function AddSecurityIncidentPage() {
 		}
 		if (!formData.recommended_actions?.trim()) {
 			setError("Recommended Actions is required");
+			return false;
+		}
+		if (formData.incident_youtube_link?.trim() && !/^https?:\/\//.test(formData.incident_youtube_link.trim())) {
+			setError("YouTube link must start with http:// or https://");
 			return false;
 		}
 		return true;
@@ -443,9 +493,85 @@ export default function AddSecurityIncidentPage() {
 					</div>
 				</div>
 
-				{/* Additional Information Section */}
-				<div>
-					<h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h2>
+			{/* Media / Attachments Section */}
+			<div className="border-b border-gray-200 pb-6">
+				<h2 className="text-lg font-semibold text-gray-900 mb-4">Media / Attachments</h2>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+					{(['incident_image_1', 'incident_image_2', 'incident_image_3'] as const).map((field, idx) => (
+						<div key={field}>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Image {idx + 1}
+							</label>
+							{formData[field]?.trim() ? (
+								<div className="relative group">
+									<a href={formData[field]} target="_blank" rel="noopener noreferrer">
+										<img
+											src={formData[field]}
+											alt={`Image ${idx + 1}`}
+											className="w-full h-40 object-cover rounded-lg border border-gray-200"
+											onError={(e) => { (e.target as HTMLImageElement).src = ''; }}
+										/>
+									</a>
+									<button
+										type="button"
+										onClick={() => clearImage(field)}
+										className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+									>
+										<X className="h-4 w-4" />
+									</button>
+								</div>
+							) : (
+								<div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#0b4d2b] transition-colors">
+									{imageUploading[field] ? (
+										<div className="flex flex-col items-center py-2">
+											<Loader2 className="h-8 w-8 animate-spin text-[#0b4d2b] mb-2" />
+											<p className="text-sm text-gray-500">Uploading...</p>
+										</div>
+									) : (
+										<>
+											<input
+												type="file"
+												accept="image/*"
+												onChange={(e) => handleImageFileChange(e, field)}
+												className="hidden"
+												id={`file-${field}`}
+											/>
+											<label htmlFor={`file-${field}`} className="cursor-pointer flex flex-col items-center">
+												<Upload className="h-8 w-8 text-gray-400 mb-2" />
+												<p className="text-sm font-medium text-gray-700">Click to upload</p>
+												<p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP up to 100MB</p>
+											</label>
+										</>
+									)}
+								</div>
+							)}
+						</div>
+					))}
+				</div>
+
+				{/* YouTube Link */}
+				<div className="mt-6">
+					<label className="block text-sm font-medium text-gray-700 mb-2">
+						YouTube Link
+					</label>
+					<input
+						type="text"
+						value={formData.incident_youtube_link || ""}
+						onChange={(e) => handleInputChange('incident_youtube_link', e.target.value)}
+						className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+						placeholder="https://www.youtube.com/watch?v=..."
+					/>
+					{formData.incident_youtube_link?.trim() && /^https?:\/\//.test(formData.incident_youtube_link.trim()) && (
+						<a href={formData.incident_youtube_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center mt-2 text-sm text-blue-600 hover:underline">
+							Open YouTube Link
+						</a>
+					)}
+				</div>
+			</div>
+
+			{/* Additional Information Section */}
+			<div>
+				<h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h2>
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						{/* Reference Number */}
 						<div>

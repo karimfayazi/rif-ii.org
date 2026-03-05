@@ -16,7 +16,11 @@ export async function PUT(request: NextRequest) {
 			recommended_actions,
 			reported_by,
 			Comment,
-			ReferenceNumber
+			ReferenceNumber,
+			incident_image_1,
+			incident_image_2,
+			incident_image_3,
+			incident_youtube_link
 		} = body;
 
 		if (!id) {
@@ -50,7 +54,11 @@ export async function PUT(request: NextRequest) {
 				[recommended_actions] = @recommended_actions,
 				[reported_by] = @reported_by,
 				[Comment] = @Comment,
-				[Reference #] = @ReferenceNumber
+				[Reference #] = @ReferenceNumber,
+				[incident_image_1] = @incident_image_1,
+				[incident_image_2] = @incident_image_2,
+				[incident_image_3] = @incident_image_3,
+				[incident_youtube_link] = @incident_youtube_link
 			WHERE [id] = @id
 		`;
 
@@ -66,6 +74,10 @@ export async function PUT(request: NextRequest) {
 		request_obj.input('reported_by', reported_by || 'System');
 		request_obj.input('Comment', Comment || null);
 		request_obj.input('ReferenceNumber', ReferenceNumber || null);
+		request_obj.input('incident_image_1', incident_image_1 || null);
+		request_obj.input('incident_image_2', incident_image_2 || null);
+		request_obj.input('incident_image_3', incident_image_3 || null);
+		request_obj.input('incident_youtube_link', incident_youtube_link || null);
 
 		await request_obj.query(query);
 

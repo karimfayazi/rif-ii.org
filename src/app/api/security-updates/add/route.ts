@@ -15,7 +15,11 @@ export async function POST(request: NextRequest) {
 			recommended_actions,
 			reported_by,
 			Comment,
-			ReferenceNumber
+			ReferenceNumber,
+			incident_image_1,
+			incident_image_2,
+			incident_image_3,
+			incident_youtube_link
 		} = body;
 
 		// Validate required fields
@@ -31,9 +35,9 @@ export async function POST(request: NextRequest) {
 
 		const query = `
 			INSERT INTO [_rifiiorg_db].[rifiiorg].[security_incidents] 
-			([incident_title], [category], [location_district], [location_province], [incident_date], [incident_summary], [operational_impact], [recommended_actions], [reported_by], [Comment], [Reference #])
+			([incident_title], [category], [location_district], [location_province], [incident_date], [incident_summary], [operational_impact], [recommended_actions], [reported_by], [Comment], [Reference #], [incident_image_1], [incident_image_2], [incident_image_3], [incident_youtube_link])
 			VALUES 
-			(@incident_title, @category, @location_district, @location_province, @incident_date, @incident_summary, @operational_impact, @recommended_actions, @reported_by, @Comment, @ReferenceNumber);
+			(@incident_title, @category, @location_district, @location_province, @incident_date, @incident_summary, @operational_impact, @recommended_actions, @reported_by, @Comment, @ReferenceNumber, @incident_image_1, @incident_image_2, @incident_image_3, @incident_youtube_link);
 			SELECT SCOPE_IDENTITY() AS id;
 		`;
 
@@ -48,6 +52,10 @@ export async function POST(request: NextRequest) {
 		request_obj.input('reported_by', reported_by || 'System');
 		request_obj.input('Comment', Comment || null);
 		request_obj.input('ReferenceNumber', ReferenceNumber || null);
+		request_obj.input('incident_image_1', incident_image_1 || null);
+		request_obj.input('incident_image_2', incident_image_2 || null);
+		request_obj.input('incident_image_3', incident_image_3 || null);
+		request_obj.input('incident_youtube_link', incident_youtube_link || null);
 
 		const result = await request_obj.query(query);
 		const newId = result.recordset?.[0]?.id;

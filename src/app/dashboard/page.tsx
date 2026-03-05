@@ -3477,6 +3477,13 @@ export default function DashboardPage() {
 								<p className="text-sm text-red-100 leading-relaxed">Stay informed about security incidents and alerts</p>
 							</div>
 						</div>
+						<Link
+							href="/dashboard/security-incidents-data"
+							className="inline-flex items-center px-4 py-2 text-sm font-medium bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors whitespace-nowrap backdrop-blur-sm"
+						>
+							<Layers className="h-4 w-4 mr-2" />
+							Security incidents data
+						</Link>
 					</div>
 				</div>
 
