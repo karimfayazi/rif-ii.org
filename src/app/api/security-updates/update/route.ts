@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { serializeCategoryValues } from "@/lib/security-incidents";
 
 export async function PUT(request: NextRequest) {
 	try {
@@ -10,7 +11,8 @@ export async function PUT(request: NextRequest) {
 			category,
 			location_district,
 			location_province,
-			incident_date,
+			incident_date_from,
+			incident_date_to,
 			incident_summary,
 			operational_impact,
 			recommended_actions,
@@ -23,6 +25,8 @@ export async function PUT(request: NextRequest) {
 			incident_youtube_link
 		} = body;
 
+		const normalizedCategory = serializeCategoryValues(category);
+
 		if (!id) {
 			return NextResponse.json(
 				{ success: false, message: "ID is required" },
@@ -31,7 +35,7 @@ export async function PUT(request: NextRequest) {
 		}
 
 		// Validate required fields
-		if (!incident_title || !category || !location_district || !location_province || !incident_date || !incident_summary || !operational_impact || !recommended_actions) {
+		if (!incident_title || !normalizedCategory || !location_district || !location_province || !incident_date_from || !incident_summary || !operational_impact || !recommended_actions) {
 			return NextResponse.json(
 				{ success: false, message: "All required fields must be filled" },
 				{ status: 400 }
@@ -48,7 +52,8 @@ export async function PUT(request: NextRequest) {
 				[category] = @category,
 				[location_district] = @location_district,
 				[location_province] = @location_province,
-				[incident_date] = @incident_date,
+				[incident_date_from] = @incident_date_from,
+				[incident_date_to] = @incident_date_to,
 				[incident_summary] = @incident_summary,
 				[operational_impact] = @operational_impact,
 				[recommended_actions] = @recommended_actions,
@@ -64,10 +69,11 @@ export async function PUT(request: NextRequest) {
 
 		request_obj.input('id', parseInt(id));
 		request_obj.input('incident_title', incident_title);
-		request_obj.input('category', category);
+		request_obj.input('category', normalizedCategory);
 		request_obj.input('location_district', location_district);
 		request_obj.input('location_province', location_province);
-		request_obj.input('incident_date', incident_date);
+		request_obj.input('incident_date_from', incident_date_from);
+		request_obj.input('incident_date_to', incident_date_to || null);
 		request_obj.input('incident_summary', incident_summary);
 		request_obj.input('operational_impact', operational_impact);
 		request_obj.input('recommended_actions', recommended_actions);

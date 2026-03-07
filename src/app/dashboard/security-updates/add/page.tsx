@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
 	ArrowLeft, 
@@ -11,22 +11,26 @@ import {
 	Trash2,
 	Shield,
 	Upload,
-	X
+	X,
+	ChevronDown
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadToBlob } from "@/lib/uploads";
+import { parseCategoryValues, serializeCategoryValues } from "@/lib/security-incidents";
 
 type SecurityIncidentFormData = {
 	id?: number;
 	incident_title?: string;
-	category?: string;
+	category?: string[];
 	location_district?: string;
 	location_province?: string;
-	incident_date?: string;
+	incident_date_from?: string;
+	incident_date_to?: string;
 	incident_summary?: string;
 	operational_impact?: string;
 	recommended_actions?: string;
+	date_reported?: string;
 	reported_by?: string;
 	Comment?: string;
 	ReferenceNumber?: string;
@@ -88,6 +92,8 @@ export default function AddSecurityIncidentPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState(false);
 	const [imageUploading, setImageUploading] = useState<Record<string, boolean>>({});
+	const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+	const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
 	const handleImageUpload = async (
 		file: File,
@@ -128,6 +134,22 @@ export default function AddSecurityIncidentPage() {
 		}
 	}, [isEditMode, id]);
 
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (
+				categoryDropdownRef.current &&
+				!categoryDropdownRef.current.contains(event.target as Node)
+			) {
+				setCategoryDropdownOpen(false);
+			}
+		};
+
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, []);
+
 	const fetchIncidentData = async () => {
 		try {
 			setFetching(true);
@@ -139,13 +161,15 @@ export default function AddSecurityIncidentPage() {
 				setFormData({
 					id: incident.id,
 					incident_title: incident.incident_title || "",
-					category: incident.category || "",
+					category: parseCategoryValues(incident.category),
 					location_district: incident.location_district || "",
 					location_province: incident.location_province || "",
-					incident_date: incident.incident_date || "",
+					incident_date_from: incident.incident_date_from || incident.incident_date || "",
+					incident_date_to: incident.incident_date_to || "",
 					incident_summary: incident.incident_summary || "",
 					operational_impact: incident.operational_impact || "",
 					recommended_actions: incident.recommended_actions || "",
+					date_reported: incident.date_reported || "",
 					reported_by: incident.reported_by || "",
 					Comment: incident.Comment || "",
 					ReferenceNumber: incident.ReferenceNumber || "",
@@ -170,12 +194,35 @@ export default function AddSecurityIncidentPage() {
 		setError(null);
 	};
 
+	const toggleCategory = (categoryValue: string) => {
+		setFormData((prev) => {
+			const currentCategories = prev.category || [];
+			const nextCategories = currentCategories.includes(categoryValue)
+				? currentCategories.filter((item) => item !== categoryValue)
+				: [...currentCategories, categoryValue];
+
+			return {
+				...prev,
+				category: nextCategories
+			};
+		});
+		setError(null);
+	};
+
+	const removeCategory = (categoryValue: string) => {
+		setFormData((prev) => ({
+			...prev,
+			category: (prev.category || []).filter((item) => item !== categoryValue)
+		}));
+		setError(null);
+	};
+
 	const validateForm = (): boolean => {
 		if (!formData.incident_title?.trim()) {
 			setError("Incident Title is required");
 			return false;
 		}
-		if (!formData.category) {
+		if (!formData.category?.length) {
 			setError("Category is required");
 			return false;
 		}
@@ -187,8 +234,16 @@ export default function AddSecurityIncidentPage() {
 			setError("Location Province is required");
 			return false;
 		}
-		if (!formData.incident_date) {
-			setError("Incident Date is required");
+		if (!formData.incident_date_from) {
+			setError("Incident Date From is required");
+			return false;
+		}
+		if (
+			formData.incident_date_from &&
+			formData.incident_date_to &&
+			formData.incident_date_to < formData.incident_date_from
+		) {
+			setError("Incident Date To cannot be earlier than Incident Date From");
 			return false;
 		}
 		if (!formData.incident_summary?.trim()) {
@@ -224,6 +279,7 @@ export default function AddSecurityIncidentPage() {
 		try {
 			const submitData = {
 				...formData,
+				category: serializeCategoryValues(formData.category),
 				reported_by: formData.reported_by || userName
 			};
 
@@ -375,34 +431,86 @@ export default function AddSecurityIncidentPage() {
 						</div>
 
 						{/* Category */}
-						<div>
+						<div className="relative" ref={categoryDropdownRef}>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
 								Category <span className="text-red-500">*</span>
 							</label>
-							<select
-								value={formData.category || ""}
-								onChange={(e) => handleInputChange('category', e.target.value)}
-								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-								required
+							<button
+								type="button"
+								onClick={() => setCategoryDropdownOpen((prev) => !prev)}
+								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none bg-white text-left flex items-center justify-between"
 							>
-								<option value="">Select Category</option>
-								{CATEGORY_OPTIONS.map((cat) => (
-									<option key={cat} value={cat}>{cat}</option>
+								<span className={(formData.category?.length || 0) > 0 ? "text-gray-900" : "text-gray-500"}>
+									{(formData.category?.length || 0) > 0
+										? `${formData.category?.length} categor${formData.category?.length === 1 ? "y" : "ies"} selected`
+										: "Select Category"}
+								</span>
+								<ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${categoryDropdownOpen ? "rotate-180" : ""}`} />
+							</button>
+							{categoryDropdownOpen && (
+								<div className="absolute z-20 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 overflow-y-auto">
+									<div className="p-2 space-y-1">
+										{CATEGORY_OPTIONS.map((cat) => (
+											<label
+												key={cat}
+												className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+											>
+												<input
+													type="checkbox"
+													checked={(formData.category || []).includes(cat)}
+													onChange={() => toggleCategory(cat)}
+													className="h-4 w-4 text-[#0b4d2b] focus:ring-[#0b4d2b] border-gray-300 rounded"
+												/>
+												<span className="text-sm text-gray-700">{cat}</span>
+											</label>
+										))}
+									</div>
+								</div>
+							)}
+							<div className="mt-3 flex flex-wrap gap-2">
+								{(formData.category || []).map((cat) => (
+									<span
+										key={cat}
+										className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+									>
+										{cat}
+										<button
+											type="button"
+											onClick={() => removeCategory(cat)}
+											className="text-blue-700 hover:text-blue-900"
+											aria-label={`Remove ${cat}`}
+										>
+											<X className="h-3 w-3" />
+										</button>
+									</span>
 								))}
-							</select>
+							</div>
 						</div>
 
-						{/* Incident Date */}
+						{/* Incident Date From */}
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Incident Date <span className="text-red-500">*</span>
+								Incident Date From <span className="text-red-500">*</span>
 							</label>
 							<input
 								type="date"
-								value={formData.incident_date || ""}
-								onChange={(e) => handleInputChange('incident_date', e.target.value)}
+								value={formData.incident_date_from || ""}
+								onChange={(e) => handleInputChange('incident_date_from', e.target.value)}
 								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
 								required
+							/>
+						</div>
+
+						{/* Incident Date To */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Incident Date To
+							</label>
+							<input
+								type="date"
+								value={formData.incident_date_to || ""}
+								onChange={(e) => handleInputChange('incident_date_to', e.target.value)}
+								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
 							/>
 						</div>
 

@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
 				[category],
 				[location_district],
 				[location_province],
-				CONVERT(VARCHAR(10), [incident_date], 120) AS [incident_date],
+				CONVERT(VARCHAR(10), [incident_date_from], 120) AS [incident_date_from],
+				CONVERT(VARCHAR(10), [incident_date_to], 120) AS [incident_date_to],
+				CONVERT(VARCHAR(10), [incident_date_from], 120) AS [incident_date],
 				[incident_summary],
 				[operational_impact],
 				[recommended_actions],
@@ -52,7 +54,13 @@ export async function GET(request: NextRequest) {
 
 		// Add filters if provided
 		if (category) {
-			query += ` AND [category] = @category`;
+			query += `
+				AND EXISTS (
+					SELECT 1
+					FROM STRING_SPLIT([category], ',')
+					WHERE LTRIM(RTRIM(value)) = @category
+				)
+			`;
 			request_obj.input('category', category);
 		}
 		if (locationDistrict) {

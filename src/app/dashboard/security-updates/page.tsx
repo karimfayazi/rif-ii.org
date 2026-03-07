@@ -5,6 +5,7 @@ import { Shield, AlertTriangle, Search, Filter, RefreshCw, Calendar, User, Downl
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { parseCategoryValues } from "@/lib/security-incidents";
 
 type SecurityIncident = {
 	id: number;
@@ -12,7 +13,8 @@ type SecurityIncident = {
 	category: string;
 	location_district: string;
 	location_province: string;
-	incident_date: string;
+	incident_date_from: string;
+	incident_date_to?: string;
 	incident_summary: string;
 	operational_impact: string;
 	recommended_actions: string;
@@ -127,8 +129,20 @@ export default function SecurityUpdatesPage() {
 		}
 	};
 
+	const formatIncidentDateRange = (incident: SecurityIncident) => {
+		if (!incident.incident_date_from && !incident.incident_date_to) {
+			return "N/A";
+		}
+
+		if (!incident.incident_date_to || incident.incident_date_to === incident.incident_date_from) {
+			return formatDate(incident.incident_date_from);
+		}
+
+		return `${formatDate(incident.incident_date_from)} to ${formatDate(incident.incident_date_to)}`;
+	};
+
 	// Get unique values for filters
-	const categories = [...new Set(incidents.map(i => i.category).filter(Boolean))];
+	const categories = [...new Set(incidents.flatMap((incident) => parseCategoryValues(incident.category)))];
 	const districts = [...new Set(incidents.map(i => i.location_district).filter(Boolean))];
 	const provinces = [...new Set(incidents.map(i => i.location_province).filter(Boolean))];
 
@@ -338,7 +352,7 @@ export default function SecurityUpdatesPage() {
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Category</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Location</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reference #</th>
-									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Incident Date</th>
+									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Incident Dates</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reported By</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date Reported</th>
 									<th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
@@ -354,10 +368,17 @@ export default function SecurityUpdatesPage() {
 											<div className="font-medium">{incident.incident_title}</div>
 											<div className="text-xs text-gray-500 mt-1 line-clamp-2">{incident.incident_summary}</div>
 										</td>
-										<td className="px-6 py-4 whitespace-nowrap">
-											<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-												{incident.category}
-											</span>
+										<td className="px-6 py-4 text-sm text-gray-600">
+											<div className="flex flex-wrap gap-1.5">
+												{parseCategoryValues(incident.category).map((category) => (
+													<span
+														key={`${incident.id}-${category}`}
+														className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+													>
+														{category}
+													</span>
+												))}
+											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
 											<div>{incident.location_district}</div>
@@ -367,7 +388,7 @@ export default function SecurityUpdatesPage() {
 											{incident.ReferenceNumber || 'N/A'}
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-											{formatDate(incident.incident_date)}
+											{formatIncidentDateRange(incident)}
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
 											{incident.reported_by || 'N/A'}
@@ -456,10 +477,10 @@ export default function SecurityUpdatesPage() {
 											</p>
 										</>
 									)}
-									{deleteConfirm.incident.incident_date && (
+									{(deleteConfirm.incident.incident_date_from || deleteConfirm.incident.incident_date_to) && (
 										<>
-											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Incident Date:</p>
-											<p className="text-base text-gray-700">{formatDate(deleteConfirm.incident.incident_date)}</p>
+											<p className="text-sm font-medium text-gray-500 mb-1 mt-2">Incident Dates:</p>
+											<p className="text-base text-gray-700">{formatIncidentDateRange(deleteConfirm.incident)}</p>
 										</>
 									)}
 								</div>
