@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { getUserIdFromRequest } from "@/lib/auth";
+import { checkPermission } from "@/lib/access-permissions";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -54,6 +56,15 @@ export async function PUT(
 	context: RouteContext
 ) {
 	try {
+		const userId = getUserIdFromRequest(request);
+		const permissionCheck = await checkPermission(userId, "access_links");
+		if (!permissionCheck.allowed) {
+			return NextResponse.json(
+				{ success: false, message: permissionCheck.message || "You do not have permission to edit links." },
+				{ status: 403 }
+			);
+		}
+
 		const { id } = await context.params;
 		const linkId = parseInt(id, 10);
 		if (isNaN(linkId)) {
@@ -126,10 +137,19 @@ export async function PUT(
 }
 
 export async function DELETE(
-	_request: NextRequest,
+	request: NextRequest,
 	context: RouteContext
 ) {
 	try {
+		const userId = getUserIdFromRequest(request);
+		const permissionCheck = await checkPermission(userId, "access_links");
+		if (!permissionCheck.allowed) {
+			return NextResponse.json(
+				{ success: false, message: permissionCheck.message || "You do not have permission to delete links." },
+				{ status: 403 }
+			);
+		}
+
 		const { id } = await context.params;
 		const linkId = parseInt(id, 10);
 		if (isNaN(linkId)) {

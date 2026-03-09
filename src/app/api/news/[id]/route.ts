@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { getUserIdFromRequest, checkDeleteAccess } from "@/lib/auth";
+import { getUserIdFromRequest } from "@/lib/auth";
+import { checkPermission } from "@/lib/access-permissions";
 import sql from "mssql";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +12,9 @@ export async function DELETE(
 ) {
 	try {
 		const userId = getUserIdFromRequest(request);
-		const accessCheck = await checkDeleteAccess(userId);
+		const accessCheck = await checkPermission(userId, "access_news");
 
-		if (!accessCheck.hasAccess) {
+		if (!accessCheck.allowed) {
 			return NextResponse.json(
 				{
 					success: false,

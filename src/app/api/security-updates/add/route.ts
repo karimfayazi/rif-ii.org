@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { serializeCategoryValues } from "@/lib/security-incidents";
+import { getUserIdFromRequest } from "@/lib/auth";
+import { checkPermission } from "@/lib/access-permissions";
 
 export async function POST(request: NextRequest) {
 	try {
+		const userId = getUserIdFromRequest(request);
+		const permissionCheck = await checkPermission(userId, "access_security_updates");
+		if (!permissionCheck.allowed) {
+			return NextResponse.json(
+				{
+					success: false,
+					message: permissionCheck.message || "You do not have permission to add security updates.",
+				},
+				{ status: 403 }
+			);
+		}
+
 		const body = await request.json();
 		const {
 			incident_title,

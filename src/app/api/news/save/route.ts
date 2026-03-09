@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import sql from 'mssql';
+import { getUserIdFromRequest } from "@/lib/auth";
+import { checkPermission } from "@/lib/access-permissions";
 
 export async function POST(request: NextRequest) {
 	try {
@@ -25,6 +27,18 @@ export async function POST(request: NextRequest) {
 			postedByName,
 			isPublished
 		} = body;
+
+		const userId = getUserIdFromRequest(request);
+		const permissionCheck = await checkPermission(userId, "access_news");
+		if (!permissionCheck.allowed) {
+			return NextResponse.json(
+				{
+					success: false,
+					message: permissionCheck.message || "You do not have permission to modify news.",
+				},
+				{ status: 403 }
+			);
+		}
 
 		// Enhanced validation - postedByUserId is now username (string)
 		const missingFields: string[] = [];

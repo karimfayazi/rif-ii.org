@@ -5,6 +5,7 @@ import { Newspaper, ArrowLeft, X, Check, Image as ImageIcon, User, AlertCircle, 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccess } from "@/hooks/useAccess";
 import { uploadToBlob } from "@/lib/uploads";
 
 type NewsFormData = {
@@ -24,6 +25,7 @@ export default function UploadNewsPage() {
 	
 	const { user, userProfile, getUserId, loading: authLoading } = useAuth();
 	const userId = user?.id || getUserId() || null;
+	const { accessNews, loading: accessLoading } = useAccess(userId);
 	const username = userProfile?.full_name || user?.name || user?.username || "";
 	
 	const [formData, setFormData] = useState<NewsFormData>({
@@ -119,6 +121,11 @@ export default function UploadNewsPage() {
 	};
 
 	const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (!accessNews) {
+			setError("You do not have permission to upload news.");
+			e.target.value = '';
+			return;
+		}
 		const file = e.target.files?.[0];
 		if (!file) return;
 
@@ -195,6 +202,10 @@ export default function UploadNewsPage() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		if (!accessNews) {
+			setError("You do not have permission to modify news.");
+			return;
+		}
 		
 		// Client-side validation
 		if (!formData.title || formData.title.length === 0) {
@@ -440,7 +451,7 @@ export default function UploadNewsPage() {
 											type="file"
 											accept="image/jpeg,image/png,image/gif,image/webp,image/jpg"
 											onChange={handleImageUpload}
-											disabled={uploadingImage}
+											disabled={uploadingImage || !accessNews || accessLoading}
 											className="hidden"
 											id="image-upload"
 										/>
@@ -601,7 +612,8 @@ export default function UploadNewsPage() {
 							</Link>
 							<button
 								type="submit"
-								disabled={submitting}
+								disabled={submitting || !accessNews || accessLoading}
+								title={!accessNews ? "You do not have permission to modify news" : undefined}
 								className="w-full sm:w-auto px-6 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
 							>
 								{submitting ? (

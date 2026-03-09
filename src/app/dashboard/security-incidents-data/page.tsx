@@ -15,7 +15,8 @@ import {
 	ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { useAccess } from "@/hooks/useAccess";
 
 type IncidentSummary = {
 	id: number;
@@ -59,7 +60,9 @@ function rowTotal(row: IncidentSummary): number {
 }
 
 export default function SecurityIncidentsDataPage() {
-	const router = useRouter();
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	const { accessSecurityIncidentsData, loading: accessLoading } = useAccess(userId);
 	const [rows, setRows] = useState<IncidentSummary[]>([]);
 	const [totalCount, setTotalCount] = useState(0);
 	const [filterOptions, setFilterOptions] = useState<FilterOptions>({
@@ -131,6 +134,11 @@ export default function SecurityIncidentsDataPage() {
 
 	const handleDelete = async () => {
 		if (!deleteConfirm.incident) return;
+		if (!accessSecurityIncidentsData) {
+			setError("You do not have permission to delete records.");
+			setDeleteConfirm({ show: false, incident: null });
+			return;
+		}
 		try {
 			setDeleting(true);
 			const response = await fetch(
@@ -317,13 +325,25 @@ export default function SecurityIncidentsDataPage() {
 					<div className="inline-flex items-center px-4 py-2 h-10 text-sm font-semibold bg-red-50 text-red-700 border border-red-200 rounded-lg whitespace-nowrap">
 						Total Incidents: {grandTotal}
 					</div>
-					<Link
-						href="/dashboard/security-incidents-data/add"
-						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
-					>
-						<Plus className="h-4 w-4 mr-2 flex-shrink-0" />
-						Add New Incident
-					</Link>
+					{accessSecurityIncidentsData && !accessLoading ? (
+						<Link
+							href="/dashboard/security-incidents-data/add"
+							className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+						>
+							<Plus className="h-4 w-4 mr-2 flex-shrink-0" />
+							Add New Incident
+						</Link>
+					) : (
+						<button
+							type="button"
+							disabled
+							title="You do not have permission to add records"
+							className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg whitespace-nowrap opacity-50 cursor-not-allowed"
+						>
+							<Plus className="h-4 w-4 mr-2 flex-shrink-0" />
+							Add New Incident
+						</button>
+					)}
 					<button
 						onClick={fetchData}
 						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
@@ -464,13 +484,25 @@ export default function SecurityIncidentsDataPage() {
 							? "Try adjusting your filter criteria"
 							: "Records will appear here once they are added"}
 					</p>
-					<Link
-						href="/dashboard/security-incidents-data/add"
-						className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
-					>
-						<Plus className="h-4 w-4 mr-2" />
-						Add First Record
-					</Link>
+					{accessSecurityIncidentsData && !accessLoading ? (
+						<Link
+							href="/dashboard/security-incidents-data/add"
+							className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
+						>
+							<Plus className="h-4 w-4 mr-2" />
+							Add First Record
+						</Link>
+					) : (
+						<button
+							type="button"
+							disabled
+							title="You do not have permission to add records"
+							className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg transition-colors opacity-50 cursor-not-allowed"
+						>
+							<Plus className="h-4 w-4 mr-2" />
+							Add First Record
+						</button>
+					)}
 				</div>
 			) : (
 				<div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
@@ -611,25 +643,29 @@ export default function SecurityIncidentsDataPage() {
 										</td>
 										<td className="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">
 											<div className="flex items-center justify-center gap-2">
-												<Link
-													href={`/dashboard/security-incidents-data/add?id=${row.id}`}
-													className="inline-flex items-center px-3 py-1.5 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
-													title="Edit"
-												>
-													<Edit className="h-4 w-4" />
-												</Link>
-												<button
-													onClick={() =>
-														setDeleteConfirm({
-															show: true,
-															incident: row,
-														})
-													}
-													className="inline-flex items-center px-3 py-1.5 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-													title="Delete"
-												>
-													<Trash2 className="h-4 w-4" />
-												</button>
+												{accessSecurityIncidentsData && (
+													<>
+														<Link
+															href={`/dashboard/security-incidents-data/add?id=${row.id}`}
+															className="inline-flex items-center px-3 py-1.5 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+															title="Edit"
+														>
+															<Edit className="h-4 w-4" />
+														</Link>
+														<button
+															onClick={() =>
+																setDeleteConfirm({
+																	show: true,
+																	incident: row,
+																})
+															}
+															className="inline-flex items-center px-3 py-1.5 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+															title="Delete"
+														>
+															<Trash2 className="h-4 w-4" />
+														</button>
+													</>
+												)}
 											</div>
 										</td>
 									</tr>

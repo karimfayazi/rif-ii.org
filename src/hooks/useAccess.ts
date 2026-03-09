@@ -19,6 +19,11 @@ type AccessPermissions = {
 	userLoginLogs: boolean;
 	trackingSection: boolean;
 	trainingSection: boolean;
+	accessSecurity: boolean;
+	accessLinks: boolean;
+	accessSecurityUpdates: boolean;
+	accessNews: boolean;
+	accessSecurityIncidentsData: boolean;
 	loading: boolean;
 	error: string | null;
 };
@@ -39,6 +44,11 @@ export function useAccess(userId?: string | null) {
 		userLoginLogs: false,
 		trackingSection: true,
 		trainingSection: true,
+		accessSecurity: false,
+		accessLinks: false,
+		accessSecurityUpdates: false,
+		accessNews: false,
+		accessSecurityIncidentsData: false,
 		loading: true,
 		error: null
 	});
@@ -94,6 +104,11 @@ export function useAccess(userId?: string | null) {
 					userLoginLogs: toBool(data.userLoginLogs),
 					trackingSection: data.trackingSection !== false && data.trackingSection !== 0,
 					trainingSection: data.trainingSection !== false && data.trainingSection !== 0,
+					accessSecurity: toBool(data.accessSecurity),
+					accessLinks: toBool(data.accessLinks),
+					accessSecurityUpdates: toBool(data.accessSecurityUpdates),
+					accessNews: toBool(data.accessNews),
+					accessSecurityIncidentsData: toBool(data.accessSecurityIncidentsData),
 					loading: false,
 					error: null
 				});
@@ -113,6 +128,11 @@ export function useAccess(userId?: string | null) {
 					userLoginLogs: false,
 					trackingSection: false,
 					trainingSection: false,
+					accessSecurity: false,
+					accessLinks: false,
+					accessSecurityUpdates: false,
+					accessNews: false,
+					accessSecurityIncidentsData: false,
 					loading: false,
 					error: data.message || "Failed to check access"
 				});
@@ -133,6 +153,11 @@ export function useAccess(userId?: string | null) {
 				userLoginLogs: false,
 				trackingSection: false,
 				trainingSection: false,
+				accessSecurity: false,
+				accessLinks: false,
+				accessSecurityUpdates: false,
+				accessNews: false,
+				accessSecurityIncidentsData: false,
 				loading: false,
 				error: "Error checking access permissions"
 			});

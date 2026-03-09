@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { Shield, AlertTriangle, Search, Filter, RefreshCw, Calendar, User, Download, Plus, Edit, Trash2, AlertCircle, Loader2, CheckCircle } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccess } from "@/hooks/useAccess";
 import { parseCategoryValues } from "@/lib/security-incidents";
 
 type SecurityIncident = {
@@ -25,7 +25,9 @@ type SecurityIncident = {
 };
 
 export default function SecurityUpdatesPage() {
-	const router = useRouter();
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	const { accessSecurityUpdates, loading: accessLoading } = useAccess(userId);
 	const [incidents, setIncidents] = useState<SecurityIncident[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
@@ -81,6 +83,11 @@ export default function SecurityUpdatesPage() {
 
 	const handleDelete = async () => {
 		if (!deleteConfirm.incident || !deleteConfirm.incident.id) return;
+		if (!accessSecurityUpdates) {
+			setError("You do not have permission to delete security incidents.");
+			setDeleteConfirm({ show: false, incident: null });
+			return;
+		}
 
 		try {
 			setDeleting(true);
@@ -226,13 +233,25 @@ export default function SecurityUpdatesPage() {
 					<p className="text-sm text-gray-600 mt-1">View and manage security incident records</p>
 				</div>
 				<div className="flex items-center gap-3">
-					<Link
-						href="/dashboard/security-updates/add"
-						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
-					>
-						<Plus className="h-4 w-4 mr-2 flex-shrink-0" />
-						Add Record
-					</Link>
+					{accessSecurityUpdates && !accessLoading ? (
+						<Link
+							href="/dashboard/security-updates/add"
+							className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+						>
+							<Plus className="h-4 w-4 mr-2 flex-shrink-0" />
+							Add Record
+						</Link>
+					) : (
+						<button
+							type="button"
+							disabled
+							title="You do not have permission to add records"
+							className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg whitespace-nowrap opacity-50 cursor-not-allowed"
+						>
+							<Plus className="h-4 w-4 mr-2 flex-shrink-0" />
+							Add Record
+						</button>
+					)}
 					<button
 						onClick={fetchSecurityIncidents}
 						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
@@ -333,13 +352,25 @@ export default function SecurityUpdatesPage() {
 							: "Security incidents will appear here once they are added"
 						}
 					</p>
-					<Link
-						href="/dashboard/security-updates/add"
-						className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
-					>
-						<Plus className="h-4 w-4 mr-2" />
-						Add First Record
-					</Link>
+					{accessSecurityUpdates && !accessLoading ? (
+						<Link
+							href="/dashboard/security-updates/add"
+							className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
+						>
+							<Plus className="h-4 w-4 mr-2" />
+							Add First Record
+						</Link>
+					) : (
+						<button
+							type="button"
+							disabled
+							title="You do not have permission to add records"
+							className="inline-flex items-center px-4 py-2 bg-[#0b4d2b] text-white rounded-lg transition-colors opacity-50 cursor-not-allowed"
+						>
+							<Plus className="h-4 w-4 mr-2" />
+							Add First Record
+						</button>
+					)}
 				</div>
 			) : (
 				<div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
@@ -398,20 +429,24 @@ export default function SecurityUpdatesPage() {
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
 											<div className="flex items-center justify-center gap-2">
-												<Link
-													href={`/dashboard/security-updates/add?id=${incident.id}`}
-													className="inline-flex items-center px-3 py-1.5 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
-													title="Edit"
-												>
-													<Edit className="h-4 w-4" />
-												</Link>
-												<button
-													onClick={() => setDeleteConfirm({ show: true, incident: incident })}
-													className="inline-flex items-center px-3 py-1.5 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-													title="Delete"
-												>
-													<Trash2 className="h-4 w-4" />
-												</button>
+												{accessSecurityUpdates && (
+													<>
+														<Link
+															href={`/dashboard/security-updates/add?id=${incident.id}`}
+															className="inline-flex items-center px-3 py-1.5 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+															title="Edit"
+														>
+															<Edit className="h-4 w-4" />
+														</Link>
+														<button
+															onClick={() => setDeleteConfirm({ show: true, incident: incident })}
+															className="inline-flex items-center px-3 py-1.5 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+															title="Delete"
+														>
+															<Trash2 className="h-4 w-4" />
+														</button>
+													</>
+												)}
 											</div>
 										</td>
 									</tr>

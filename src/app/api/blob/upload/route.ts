@@ -1,6 +1,7 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { checkPermission, type PermissionField } from '@/lib/access-permissions';
 
 type UploadFolder = 'reports' | 'documents' | 'pictures' | 'news';
 
@@ -9,64 +10,20 @@ async function checkUploadAccess(
 	userId: string | null, 
 	folder: UploadFolder
 ): Promise<{ canUpload: boolean; message?: string }> {
-	if (!userId) {
-		return { canUpload: false, message: "Unauthorized" };
-	}
+	const permissionField: PermissionField =
+		folder === 'reports'
+			? 'Upload_Report'
+			: folder === 'documents'
+				? 'Upload_Documents'
+				: folder === 'news'
+					? 'access_news'
+					: 'Upload_Pictures';
 
-	try {
-		const { getDb } = await import('@/lib/db');
-		const pool = await getDb();
-		
-		// Map folder to permission field
-		const permissionField = folder === 'reports' ? 'Upload_Report' 
-			: folder === 'documents' ? 'Upload_Documents'
-			: folder === 'news' ? 'Upload_Report' // News uses same permission as reports
-			: 'Upload_Pictures';
-		
-		const accessQuery = `
-			SELECT [access_level], [${permissionField}]
-			FROM [_rifiiorg_db].[dbo].[tbl_user_access]
-			WHERE [username] = @userId OR [email] = @userId
-		`;
-		
-		const accessResult = await pool.request()
-			.input('userId', userId)
-			.query(accessQuery);
-		
-		if (accessResult.recordset.length === 0) {
-			return { canUpload: false, message: "User not found" };
-		}
-
-		const userAccess = accessResult.recordset[0];
-		const accessLevel = userAccess.access_level;
-		const isAdmin = accessLevel === 'Admin';
-		
-		// Check specific upload permission
-		const uploadPermissionRaw = userAccess[permissionField];
-		const checkBitField = (value: any): boolean => {
-			if (value === null || value === undefined) return false;
-			if (Buffer.isBuffer(value)) return value[0] === 1;
-			if (typeof value === 'boolean') return value === true;
-			if (typeof value === 'number') return value === 1;
-			if (typeof value === 'string') return value === '1' || value.toLowerCase() === 'true';
-			return false;
-		};
-		
-		const hasPermission = checkBitField(uploadPermissionRaw);
-		const canUpload = isAdmin || hasPermission;
-		
-		if (!canUpload) {
-			return { 
-				canUpload: false, 
-				message: `Insufficient Permissions. This action requires Admin level access or ${permissionField.replace('_', ' ')} permission.` 
-			};
-		}
-
-		return { canUpload: true };
-	} catch (error) {
-		console.error("Error checking upload access:", error);
-		return { canUpload: false, message: "Error checking access permissions" };
-	}
+	const permissionCheck = await checkPermission(userId, permissionField);
+	return {
+		canUpload: permissionCheck.allowed,
+		message: permissionCheck.message,
+	};
 }
 
 // Get allowed file extensions and content types based on folder

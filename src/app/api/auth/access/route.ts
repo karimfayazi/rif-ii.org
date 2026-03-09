@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { checkBitField } from "@/lib/access-permissions";
 
 export async function GET(request: NextRequest) {
 	try {
@@ -28,7 +29,12 @@ export async function GET(request: NextRequest) {
 				[Setting], 
 				[Upload_Report], 
 				[Upload_Pictures], 
-				[Upload_Documents]
+				[Upload_Documents],
+				[security],
+				[access_links],
+				[access_security_updates],
+				[access_news],
+				[access_security_incidents_data]
 			FROM [_rifiiorg_db].[dbo].[tbl_user_access]
 			WHERE [username] = @userId OR [email] = @userId
 		`;
@@ -84,16 +90,6 @@ export async function GET(request: NextRequest) {
 		// Allow upload if user is Admin OR has Upload_Report = true/1
 		const canUploadReport = isAdmin || uploadReport;
 		
-		// Helper function to check BIT field values
-		const checkBitField = (value: any): boolean => {
-			if (value === null || value === undefined) return false;
-			if (Buffer.isBuffer(value)) return value[0] === 1;
-			if (typeof value === 'boolean') return value === true;
-			if (typeof value === 'number') return value === 1;
-			if (typeof value === 'string') return value === '1' || value.toLowerCase() === 'true';
-			return false;
-		};
-		
 		// Upload_Pictures check
 		const uploadPicturesRaw = userAccess.Upload_Pictures;
 		const uploadPictures = checkBitField(uploadPicturesRaw);
@@ -103,6 +99,12 @@ export async function GET(request: NextRequest) {
 		const uploadDocumentsRaw = userAccess.Upload_Documents;
 		const uploadDocuments = checkBitField(uploadDocumentsRaw);
 		const canUploadDocuments = isAdmin || uploadDocuments;
+
+		const accessSecurity = checkBitField(userAccess.security);
+		const accessLinks = checkBitField(userAccess.access_links);
+		const accessSecurityUpdates = checkBitField(userAccess.access_security_updates);
+		const accessNews = checkBitField(userAccess.access_news);
+		const accessSecurityIncidentsData = checkBitField(userAccess.access_security_incidents_data);
 		
 		console.log(`[Access API] User: ${userId}, isAdmin: ${isAdmin}`);
 		console.log(`[Access API] Upload_Report raw: ${uploadReportRaw}, parsed: ${uploadReport}, canUpload: ${canUploadReport}`);
@@ -135,7 +137,12 @@ export async function GET(request: NextRequest) {
 			setting: setting,
 			uploadReport: uploadReport,
 			uploadPictures: uploadPictures,
-			uploadDocuments: uploadDocuments
+			uploadDocuments: uploadDocuments,
+			accessSecurity: accessSecurity,
+			accessLinks: accessLinks,
+			accessSecurityUpdates: accessSecurityUpdates,
+			accessNews: accessNews,
+			accessSecurityIncidentsData: accessSecurityIncidentsData
 		});
 	} catch (error) {
 		console.error("Error checking user access:", error);

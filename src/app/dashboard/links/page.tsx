@@ -12,6 +12,8 @@ import {
 	CheckCircle,
 	AlertCircle,
 } from "lucide-react";
+import { useAccess } from "@/hooks/useAccess";
+import { useAuth } from "@/hooks/useAuth";
 
 type LinkData = {
 	LinkID: number;
@@ -27,6 +29,10 @@ function validateUrl(url: string): boolean {
 }
 
 export default function LinksPage() {
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	const { accessLinks, loading: accessLoading } = useAccess(userId);
+
 	const [links, setLinks] = useState<LinkData[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
@@ -76,6 +82,10 @@ export default function LinksPage() {
 	);
 
 	const openAddModal = () => {
+		if (!accessLinks) {
+			setError("You do not have permission to add links.");
+			return;
+		}
 		setEditingLink(null);
 		setFormTitle("");
 		setFormDescription("");
@@ -86,6 +96,10 @@ export default function LinksPage() {
 	};
 
 	const openEditModal = (link: LinkData) => {
+		if (!accessLinks) {
+			setError("You do not have permission to edit links.");
+			return;
+		}
 		setEditingLink(link);
 		setFormTitle(link.Title);
 		setFormDescription(link.Description || "");
@@ -118,6 +132,10 @@ export default function LinksPage() {
 
 	const handleSave = async () => {
 		if (!validateForm()) return;
+		if (!accessLinks) {
+			setSaveError("You do not have permission to modify links.");
+			return;
+		}
 		setSaving(true);
 		setSaveError(null);
 		try {
@@ -170,6 +188,11 @@ export default function LinksPage() {
 
 	const handleDelete = async () => {
 		if (!deleteConfirm) return;
+		if (!accessLinks) {
+			setError("You do not have permission to delete links.");
+			setDeleteConfirm(null);
+			return;
+		}
 		setDeleting(true);
 		setError(null);
 		try {
@@ -224,7 +247,9 @@ export default function LinksPage() {
 					<button
 						type="button"
 						onClick={openAddModal}
-						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors"
+						disabled={!accessLinks || accessLoading}
+						title={!accessLinks ? "You do not have permission to add links" : undefined}
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						<Plus className="h-4 w-4 mr-2" />
 						Add Link
@@ -326,15 +351,25 @@ export default function LinksPage() {
 												<button
 													type="button"
 													onClick={() => openEditModal(link)}
-													className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+													disabled={!accessLinks || accessLoading}
+													title={!accessLinks ? "You do not have permission to edit links" : undefined}
+													className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 												>
 													<Pencil className="h-3 w-3 mr-1" />
 													Edit
 												</button>
 												<button
 													type="button"
-													onClick={() => setDeleteConfirm(link)}
-													className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+													onClick={() => {
+														if (!accessLinks) {
+															setError("You do not have permission to delete links.");
+															return;
+														}
+														setDeleteConfirm(link);
+													}}
+													disabled={!accessLinks || accessLoading}
+													title={!accessLinks ? "You do not have permission to delete links" : undefined}
+													className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 												>
 													<Trash2 className="h-3 w-3 mr-1" />
 													Delete

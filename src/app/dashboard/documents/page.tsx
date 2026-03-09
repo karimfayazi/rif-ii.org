@@ -26,7 +26,7 @@ type DocumentData = {
 export default function DocumentsPage() {
 	const { user, getUserId } = useAuth();
 	const userId = user?.id || user?.username || getUserId() || null;
-	const { canUpload, accessEdit, accessDelete, loading: accessLoading, error: accessError } = useAccess(userId);
+	const { canUploadDocuments, accessEdit, accessDelete, loading: accessLoading, error: accessError } = useAccess(userId);
 	
 	const [documents, setDocuments] = useState<DocumentData[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -308,13 +308,25 @@ export default function DocumentsPage() {
 				<p className="text-sm text-gray-600 mt-1">Browse and download available documents</p>
 			</div>
 			<div className="flex items-center gap-3">
-				<Link
-					href="/dashboard/documents/upload"
-					className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
-				>
-					<Upload className="h-4 w-4 mr-2 flex-shrink-0" />
-					Upload document
-				</Link>
+				{canUploadDocuments && !accessLoading ? (
+					<Link
+						href="/dashboard/documents/upload"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+					>
+						<Upload className="h-4 w-4 mr-2 flex-shrink-0" />
+						Upload document
+					</Link>
+				) : (
+					<button
+						type="button"
+						disabled
+						title="You do not have upload permission"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg whitespace-nowrap opacity-50 cursor-not-allowed"
+					>
+						<Upload className="h-4 w-4 mr-2 flex-shrink-0" />
+						Upload document
+					</button>
+				)}
 				<button
 					onClick={fetchDocuments}
 					className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
@@ -505,7 +517,7 @@ export default function DocumentsPage() {
 								</Link>
 
 								{/* Edit/Update Button */}
-								{accessEdit && (
+								{accessEdit && canUploadDocuments && (
 									<Link
 										href={`/dashboard/documents/upload?id=${document.DocumentID}`}
 										className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200 whitespace-nowrap"
@@ -517,7 +529,7 @@ export default function DocumentsPage() {
 								)}
 
 								{/* Delete Button */}
-								{accessDelete && (
+								{accessDelete && canUploadDocuments && (
 									<button
 										onClick={() => setDeleteConfirm({ show: true, document: document })}
 										className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border border-red-200 whitespace-nowrap"

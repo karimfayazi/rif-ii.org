@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { getUserIdFromRequest } from "@/lib/auth";
+import { checkPermission } from "@/lib/access-permissions";
 
 export async function PUT(request: NextRequest) {
 	try {
+		const userId = getUserIdFromRequest(request);
+		const permissionCheck = await checkPermission(userId, "access_security_incidents_data");
+		if (!permissionCheck.allowed) {
+			return NextResponse.json(
+				{
+					success: false,
+					message: permissionCheck.message || "You do not have permission to edit incident records.",
+				},
+				{ status: 403 }
+			);
+		}
+
 		const body = await request.json();
 		const {
 			id,

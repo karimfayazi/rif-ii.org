@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccess } from "@/hooks/useAccess";
 
 type FormData = {
 	id?: number;
@@ -107,7 +108,9 @@ export default function AddSecurityIncidentDataPage() {
 	const id = searchParams.get("id");
 	const isEditMode = !!id;
 
-	const { user } = useAuth();
+	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	const { accessSecurityIncidentsData, loading: accessLoading } = useAccess(userId);
 	const userName = user?.name || user?.username || "System";
 
 	const [formData, setFormData] = useState<FormData>({});
@@ -199,6 +202,10 @@ export default function AddSecurityIncidentDataPage() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		if (!accessSecurityIncidentsData) {
+			setError("You do not have permission to modify incident records.");
+			return;
+		}
 		if (!validateForm()) return;
 
 		setLoading(true);
@@ -243,6 +250,10 @@ export default function AddSecurityIncidentDataPage() {
 
 	const handleDelete = async () => {
 		if (!isEditMode || !id) return;
+		if (!accessSecurityIncidentsData) {
+			setError("You do not have permission to delete incident records.");
+			return;
+		}
 		if (
 			!confirm(
 				"Are you sure you want to delete this record? This action cannot be undone."
@@ -498,7 +509,8 @@ export default function AddSecurityIncidentDataPage() {
 					</Link>
 					<button
 						type="submit"
-						disabled={loading}
+						disabled={loading || !accessSecurityIncidentsData || accessLoading}
+						title={!accessSecurityIncidentsData ? "You do not have permission to modify records" : undefined}
 						className="inline-flex items-center px-6 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{loading ? (

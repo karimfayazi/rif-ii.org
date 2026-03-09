@@ -5,7 +5,6 @@ import { FileText, Download, Calendar, Folder, Search, RotateCcw, Filter, Upload
 import Link from "next/link";
 import { useAccess } from "@/hooks/useAccess";
 import { useAuth } from "@/hooks/useAuth";
-import { getUserIdFromCookie } from "@/lib/client-auth";
 
 type ReportData = {
 	ReportID: number;
@@ -321,13 +320,25 @@ export default function ReportsPage() {
 				<p className="text-sm text-gray-600 mt-1">Browse and download available reports</p>
 			</div>
 			<div className="flex items-center gap-3">
-				<Link
-					href="/dashboard/reports/upload"
-					className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
-				>
-					<Upload className="h-4 w-4 mr-2 flex-shrink-0" />
-					Upload report
-				</Link>
+				{canUpload && !accessLoading ? (
+					<Link
+						href="/dashboard/reports/upload"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+					>
+						<Upload className="h-4 w-4 mr-2 flex-shrink-0" />
+						Upload report
+					</Link>
+				) : (
+					<button
+						type="button"
+						disabled
+						title="You do not have upload permission"
+						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg whitespace-nowrap opacity-50 cursor-not-allowed"
+					>
+						<Upload className="h-4 w-4 mr-2 flex-shrink-0" />
+						Upload report
+					</button>
+				)}
 				<button
 					onClick={fetchReports}
 					className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
@@ -518,7 +529,7 @@ export default function ReportsPage() {
 								</Link>
 
 								{/* Edit/Update Button */}
-								{accessEdit && (
+								{accessEdit && canUpload && (
 									<Link
 										href={`/dashboard/reports/upload?id=${report.ReportID}`}
 										className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200 whitespace-nowrap"
@@ -530,7 +541,7 @@ export default function ReportsPage() {
 								)}
 
 								{/* Delete Button */}
-								{accessDelete && (
+								{accessDelete && canUpload && (
 									<button
 										onClick={() => setDeleteConfirm({ show: true, report: report })}
 										className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border border-red-200 whitespace-nowrap"

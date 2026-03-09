@@ -20,7 +20,7 @@ type NewsData = {
 export default function NewsPage() {
 	const { user, getUserId } = useAuth();
 	const userId = user?.id ?? user?.username ?? getUserId() ?? null;
-	const { accessDelete, loading: accessLoading } = useAccess(userId);
+	const { accessDelete, accessNews, loading: accessLoading } = useAccess(userId);
 
 	const [news, setNews] = useState<NewsData[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -82,6 +82,11 @@ export default function NewsPage() {
 
 	const handleDelete = async () => {
 		if (!deleteConfirm.news?.newsId) return;
+		if (!accessNews) {
+			setError("You do not have permission to delete news.");
+			setDeleteConfirm({ show: false, news: null });
+			return;
+		}
 		const newsId = deleteConfirm.news.newsId;
 		try {
 			setDeleting(true);
@@ -216,13 +221,25 @@ export default function NewsPage() {
 					<p className="text-sm text-gray-600 mt-1">Stay informed about the latest developments</p>
 				</div>
 				<div className="flex items-center gap-3">
-					<Link
-						href="/dashboard/news/upload"
-						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
-					>
-						<Upload className="h-4 w-4 mr-2 flex-shrink-0" />
-						Upload News
-					</Link>
+					{accessNews && !accessLoading ? (
+						<Link
+							href="/dashboard/news/upload"
+							className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+						>
+							<Upload className="h-4 w-4 mr-2 flex-shrink-0" />
+							Upload News
+						</Link>
+					) : (
+						<button
+							type="button"
+							disabled
+							title="You do not have permission to upload news"
+							className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-green-600 text-white rounded-lg whitespace-nowrap opacity-50 cursor-not-allowed"
+						>
+							<Upload className="h-4 w-4 mr-2 flex-shrink-0" />
+							Upload News
+						</button>
+					)}
 					<button
 						onClick={fetchNews}
 						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
@@ -396,7 +413,7 @@ export default function NewsPage() {
 										<Eye className="h-3.5 w-3.5 mr-1" />
 										View
 									</button>
-									{!accessLoading && accessDelete && (
+									{!accessLoading && accessDelete && accessNews && (
 										<button
 											onClick={() => setDeleteConfirm({ show: true, news: item })}
 											className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border border-red-200 whitespace-nowrap"

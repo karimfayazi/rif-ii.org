@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { getUserIdFromRequest, checkDeleteAccess } from "@/lib/auth";
+import { getUserIdFromRequest } from "@/lib/auth";
+import { checkPermission } from "@/lib/access-permissions";
 import { unlink } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -77,45 +78,6 @@ export async function GET(
 	}
 }
 
-// Helper function to check edit access
-async function checkEditAccess(userId: string | null): Promise<{ hasAccess: boolean; message?: string }> {
-	if (!userId) {
-		return { hasAccess: false, message: "Unauthorized" };
-	}
-
-	try {
-		const pool = await getDb();
-		const accessQuery = `
-			SELECT [access_edit]
-			FROM [_rifiiorg_db].[dbo].[tbl_user_access]
-			WHERE [username] = @userId OR [email] = @userId
-		`;
-		
-		const accessResult = await pool.request()
-			.input('userId', userId)
-			.query(accessQuery);
-		
-		if (accessResult.recordset.length === 0) {
-			return { hasAccess: false, message: "User not found" };
-		}
-
-		const accessEdit = accessResult.recordset[0].access_edit;
-		const hasAccess = accessEdit === true || accessEdit === 1;
-		
-		if (!hasAccess) {
-			return { 
-				hasAccess: false, 
-				message: "Insufficient Permissions. This action requires edit access. Please contact your administrator if you believe this is an error." 
-			};
-		}
-
-		return { hasAccess: true };
-	} catch (error) {
-		console.error("Error checking edit access:", error);
-		return { hasAccess: false, message: "Error checking access permissions" };
-	}
-}
-
 // PUT - Update report
 export async function PUT(
 	request: NextRequest,
@@ -123,9 +85,9 @@ export async function PUT(
 ) {
 	try {
 		const userId = getUserIdFromRequest(request);
-		const accessCheck = await checkEditAccess(userId);
+		const accessCheck = await checkPermission(userId, "Upload_Report");
 		
-		if (!accessCheck.hasAccess) {
+		if (!accessCheck.allowed) {
 			return NextResponse.json(
 				{
 					success: false,
@@ -213,9 +175,9 @@ export async function DELETE(
 ) {
 	try {
 		const userId = getUserIdFromRequest(request);
-		const accessCheck = await checkDeleteAccess(userId);
+		const accessCheck = await checkPermission(userId, "Upload_Report");
 		
-		if (!accessCheck.hasAccess) {
+		if (!accessCheck.allowed) {
 			return NextResponse.json(
 				{
 					success: false,

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccess } from "@/hooks/useAccess";
 import { uploadToBlob } from "@/lib/uploads";
 import { parseCategoryValues, serializeCategoryValues } from "@/lib/security-incidents";
 
@@ -84,6 +85,8 @@ export default function AddSecurityIncidentPage() {
 	const isEditMode = !!id;
 	
 	const { user, getUserId } = useAuth();
+	const userId = user?.id || user?.username || getUserId() || null;
+	const { accessSecurityUpdates, loading: accessLoading } = useAccess(userId);
 	const userName = user?.name || user?.username || "System";
 
 	const [formData, setFormData] = useState<SecurityIncidentFormData>({});
@@ -99,6 +102,10 @@ export default function AddSecurityIncidentPage() {
 		file: File,
 		field: 'incident_image_1' | 'incident_image_2' | 'incident_image_3'
 	) => {
+		if (!accessSecurityUpdates) {
+			setError("You do not have permission to upload security incident images.");
+			return;
+		}
 		setImageUploading(prev => ({ ...prev, [field]: true }));
 		setError(null);
 		try {
@@ -267,6 +274,10 @@ export default function AddSecurityIncidentPage() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		if (!accessSecurityUpdates) {
+			setError("You do not have permission to modify security incidents.");
+			return;
+		}
 		
 		if (!validateForm()) {
 			return;
@@ -315,6 +326,10 @@ export default function AddSecurityIncidentPage() {
 
 	const handleDelete = async () => {
 		if (!isEditMode || !id) return;
+		if (!accessSecurityUpdates) {
+			setError("You do not have permission to delete security incidents.");
+			return;
+		}
 		
 		if (!confirm("Are you sure you want to delete this security incident? This action cannot be undone.")) {
 			return;
@@ -641,10 +656,11 @@ export default function AddSecurityIncidentPage() {
 												type="file"
 												accept="image/*"
 												onChange={(e) => handleImageFileChange(e, field)}
+												disabled={!accessSecurityUpdates}
 												className="hidden"
 												id={`file-${field}`}
 											/>
-											<label htmlFor={`file-${field}`} className="cursor-pointer flex flex-col items-center">
+											<label htmlFor={`file-${field}`} className={`flex flex-col items-center ${!accessSecurityUpdates ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}>
 												<Upload className="h-8 w-8 text-gray-400 mb-2" />
 												<p className="text-sm font-medium text-gray-700">Click to upload</p>
 												<p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP up to 100MB</p>
@@ -736,7 +752,8 @@ export default function AddSecurityIncidentPage() {
 					</Link>
 					<button
 						type="submit"
-						disabled={loading}
+						disabled={loading || !accessSecurityUpdates || accessLoading}
+						title={!accessSecurityUpdates ? "You do not have permission to modify security incidents" : undefined}
 						className="inline-flex items-center px-6 py-2 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{loading ? (
