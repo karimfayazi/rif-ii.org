@@ -1,14 +1,220 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import {
+	AlertCircle,
+	CheckCircle2,
+	KeyRound,
+	Loader2,
+	Lock,
+	Mail,
+	User,
+	X
+} from "lucide-react";
 
 export default function LoginPage() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+	const [changePasswordData, setChangePasswordData] = useState({
+		email: "",
+		fullName: "",
+		oldPassword: "",
+		newPassword: "",
+		confirmPassword: "",
+	});
+	const [lookupLoading, setLookupLoading] = useState(false);
+	const [changePasswordLoading, setChangePasswordLoading] = useState(false);
+	const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
+	const [changePasswordSuccess, setChangePasswordSuccess] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (!showChangePasswordModal) {
+			return;
+		}
+
+		const trimmedEmail = changePasswordData.email.trim();
+		if (!trimmedEmail) {
+			setChangePasswordData((prev) => ({ ...prev, fullName: "" }));
+			return;
+		}
+
+		const timer = window.setTimeout(async () => {
+			try {
+				setLookupLoading(true);
+				setChangePasswordError(null);
+				setChangePasswordSuccess(null);
+
+				const response = await fetch(
+					`/api/change-password?email=${encodeURIComponent(trimmedEmail)}`
+				);
+				const data = await response.json().catch(() => ({}));
+
+				if (!response.ok) {
+					setChangePasswordData((prev) => ({ ...prev, fullName: "" }));
+					if (data?.message) {
+						setChangePasswordError(data.message);
+					}
+					return;
+				}
+
+				setChangePasswordData((prev) => ({
+					...prev,
+					fullName: data?.user?.full_name || ""
+				}));
+			} catch (lookupError) {
+				console.error("Change password lookup error:", lookupError);
+				setChangePasswordData((prev) => ({ ...prev, fullName: "" }));
+				setChangePasswordError("Unable to fetch user details right now");
+			} finally {
+				setLookupLoading(false);
+			}
+		}, 500);
+
+		return () => {
+			window.clearTimeout(timer);
+		};
+	}, [changePasswordData.email, showChangePasswordModal]);
+
+	const resetChangePasswordModal = () => {
+		setChangePasswordData({
+			email: "",
+			fullName: "",
+			oldPassword: "",
+			newPassword: "",
+			confirmPassword: "",
+		});
+		setLookupLoading(false);
+		setChangePasswordLoading(false);
+		setChangePasswordError(null);
+		setChangePasswordSuccess(null);
+	};
+
+	const openChangePasswordModal = () => {
+		resetChangePasswordModal();
+		setShowChangePasswordModal(true);
+	};
+
+	const closeChangePasswordModal = () => {
+		setShowChangePasswordModal(false);
+		resetChangePasswordModal();
+	};
+
+	const countSpecialCharacters = (value: string) => {
+		return (value.match(/[^A-Za-z0-9]/g) || []).length;
+	};
+
+	const handleChangePasswordInput = (
+		field: "email" | "oldPassword" | "newPassword" | "confirmPassword",
+		value: string
+	) => {
+		setChangePasswordData((prev) => {
+			if (field === "email") {
+				return {
+					...prev,
+					email: value,
+					fullName: "",
+				};
+			}
+
+			return {
+				...prev,
+				[field]: value,
+			};
+		});
+		setChangePasswordError(null);
+		setChangePasswordSuccess(null);
+	};
+
+	const validateChangePasswordForm = () => {
+		const trimmedEmail = changePasswordData.email.trim();
+
+		if (!trimmedEmail) {
+			setChangePasswordError("Email address is required");
+			return false;
+		}
+
+		if (!changePasswordData.fullName.trim()) {
+			setChangePasswordError("Email address does not exist");
+			return false;
+		}
+
+		if (!changePasswordData.oldPassword) {
+			setChangePasswordError("Old password is required");
+			return false;
+		}
+
+		if (!changePasswordData.newPassword) {
+			setChangePasswordError("New password is required");
+			return false;
+		}
+
+		if (countSpecialCharacters(changePasswordData.newPassword) < 1) {
+			setChangePasswordError("New password must contain at least 1 special character");
+			return false;
+		}
+
+		if (!changePasswordData.confirmPassword) {
+			setChangePasswordError("Confirm new password is required");
+			return false;
+		}
+
+		if (changePasswordData.newPassword !== changePasswordData.confirmPassword) {
+			setChangePasswordError("New password and confirm password do not match");
+			return false;
+		}
+
+		return true;
+	};
+
+	async function handleChangePasswordSubmit(event: React.FormEvent) {
+		event.preventDefault();
+		setChangePasswordError(null);
+		setChangePasswordSuccess(null);
+
+		if (!validateChangePasswordForm()) {
+			return;
+		}
+
+		setChangePasswordLoading(true);
+
+		try {
+			const response = await fetch("/api/change-password", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					email: changePasswordData.email.trim(),
+					oldPassword: changePasswordData.oldPassword,
+					newPassword: changePasswordData.newPassword,
+					confirmPassword: changePasswordData.confirmPassword,
+				}),
+			});
+
+			const data = await response.json().catch(() => ({}));
+
+			if (!response.ok) {
+				setChangePasswordError(data?.message || "Failed to update password");
+				return;
+			}
+
+			setChangePasswordSuccess(data?.message || "Password updated successfully");
+			setChangePasswordData((prev) => ({
+				...prev,
+				oldPassword: "",
+				newPassword: "",
+				confirmPassword: "",
+			}));
+		} catch (changeError) {
+			console.error("Change password submission error:", changeError);
+			setChangePasswordError("Unable to update password right now");
+		} finally {
+			setChangePasswordLoading(false);
+		}
+	}
 
 	async function handleSubmit(event: React.FormEvent) {
 		event.preventDefault();
@@ -134,10 +340,169 @@ export default function LoginPage() {
 							>
 								{loading ? "Signing in..." : "Sign in"}
 							</button>
+							<button
+								type="button"
+								onClick={openChangePasswordModal}
+								className="w-full rounded-md border border-[#0b4d2b] bg-white px-4 py-3 text-sm font-semibold text-[#0b4d2b] hover:bg-green-50 transition-colors"
+							>
+								Change Password
+							</button>
 						</form>
 					</div>
 				</div>
 			</div>
+
+			{showChangePasswordModal && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+					<div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+						<div className="bg-gradient-to-r from-[#0b4d2b] to-[#14633a] px-6 py-5 text-white">
+							<div className="flex items-start justify-between gap-4">
+								<div className="flex items-center gap-3">
+									<div className="rounded-xl bg-white/15 p-3">
+										<KeyRound className="h-6 w-6" />
+									</div>
+									<div>
+										<h2 className="text-xl font-semibold">Change Password</h2>
+										<p className="mt-1 text-sm text-green-50">
+											Update your account password securely
+										</p>
+									</div>
+								</div>
+								<button
+									type="button"
+									onClick={closeChangePasswordModal}
+									className="rounded-lg p-2 text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+									aria-label="Close change password modal"
+								>
+									<X className="h-5 w-5" />
+								</button>
+							</div>
+						</div>
+
+						<form onSubmit={handleChangePasswordSubmit} className="space-y-5 p-6">
+							<div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+								<div className="md:col-span-2">
+									<label className="mb-2 block text-sm font-medium text-gray-700">
+										Email Address
+									</label>
+									<input
+										type="email"
+										value={changePasswordData.email}
+										onChange={(e) =>
+											handleChangePasswordInput("email", e.target.value)
+										}
+										placeholder="user@example.com"
+										className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-[#0b4d2b] focus:outline-none focus:ring-4 focus:ring-[#0b4d2b]/10"
+									/>
+								</div>
+
+								<div className="md:col-span-2">
+									<label className="mb-2 block text-sm font-medium text-gray-700">
+										Full Name
+									</label>
+									<input
+										type="text"
+										value={
+											lookupLoading
+												? "Fetching user..."
+												: changePasswordData.fullName
+										}
+										placeholder="Full name will appear automatically"
+										readOnly
+										className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 focus:outline-none"
+									/>
+								</div>
+
+								<div className="md:col-span-2">
+									<label className="mb-2 block text-sm font-medium text-gray-700">
+										Old Password
+									</label>
+									<input
+										type="password"
+										value={changePasswordData.oldPassword}
+										onChange={(e) =>
+											handleChangePasswordInput("oldPassword", e.target.value)
+										}
+										placeholder="Enter old password"
+										className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-[#0b4d2b] focus:outline-none focus:ring-4 focus:ring-[#0b4d2b]/10"
+									/>
+								</div>
+
+								<div>
+									<label className="mb-2 block text-sm font-medium text-gray-700">
+										New Password
+									</label>
+									<input
+										type="password"
+										value={changePasswordData.newPassword}
+										onChange={(e) =>
+											handleChangePasswordInput("newPassword", e.target.value)
+										}
+										placeholder="Enter new password"
+										className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-[#0b4d2b] focus:outline-none focus:ring-4 focus:ring-[#0b4d2b]/10"
+									/>
+									<p className="mt-2 text-xs text-gray-500">
+										Must contain at least 1 special character.
+									</p>
+								</div>
+
+								<div>
+									<label className="mb-2 block text-sm font-medium text-gray-700">
+										Confirm New Password
+									</label>
+									<input
+										type="password"
+										value={changePasswordData.confirmPassword}
+										onChange={(e) =>
+											handleChangePasswordInput("confirmPassword", e.target.value)
+										}
+										placeholder="Confirm new password"
+										className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-[#0b4d2b] focus:outline-none focus:ring-4 focus:ring-[#0b4d2b]/10"
+									/>
+								</div>
+							</div>
+
+							{changePasswordError && (
+								<div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+									<AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+									<span>{changePasswordError}</span>
+								</div>
+							)}
+
+							{changePasswordSuccess && (
+								<div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+									<CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+									<span>{changePasswordSuccess}</span>
+								</div>
+							)}
+
+							<div className="flex flex-col-reverse gap-3 border-t border-gray-200 pt-5 sm:flex-row sm:justify-end">
+								<button
+									type="button"
+									onClick={closeChangePasswordModal}
+									className="rounded-xl border border-gray-300 px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+								>
+									Cancel
+								</button>
+								<button
+									type="submit"
+									disabled={changePasswordLoading || lookupLoading}
+									className="inline-flex items-center justify-center rounded-xl bg-[#0b4d2b] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0a3d22] disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
+								>
+									{changePasswordLoading ? (
+										<>
+											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+											Updating...
+										</>
+									) : (
+										"Update Password"
+									)}
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			)}
 
 			{/* Footer - Fixed at bottom */}
 			<footer className="bg-[#0b4d2b] flex-shrink-0 mt-auto">

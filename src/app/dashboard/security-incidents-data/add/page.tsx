@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 type FormData = {
 	id?: number;
 	QTR_No?: string;
+	QPR_QTR_No?: string;
 	Month_Year?: string;
 	District?: string;
 	Militants_Killed?: number | string;
@@ -132,6 +133,7 @@ export default function AddSecurityIncidentDataPage() {
 				setFormData({
 					id: r.id,
 					QTR_No: r.QTR_No != null ? String(r.QTR_No) : "",
+					QPR_QTR_No: r.QPR_QTR_No != null ? String(r.QPR_QTR_No) : "",
 					Month_Year: r.Month_Year || "",
 					District: r.District || "",
 					Militants_Killed: r.Militants_Killed ?? 0,
@@ -350,77 +352,93 @@ export default function AddSecurityIncidentDataPage() {
 						<Shield className="h-5 w-5 mr-2 text-[#0b4d2b]" />
 						Basic Information
 					</h2>
-					<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-						{/* Month_Year — month picker */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Month / Year <span className="text-red-500">*</span>
-							</label>
-							<input
-								type="month"
-								value={monthPickerValue}
-								onChange={(e) => handleMonthPickerChange(e.target.value)}
-								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-								required
-							/>
-							{formData.Month_Year && (
-								<p className="text-xs text-gray-500 mt-1">
-									Stored as: {formData.Month_Year}
-								</p>
-							)}
-						</div>
-
-						{/* QTR_No — readonly, auto-derived */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Quarter No
-							</label>
-							<input
-								type="text"
-								value={formData.QTR_No || ""}
-								readOnly
-								disabled
-								className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed outline-none"
-								placeholder="Auto from Month/Year"
-							/>
-						</div>
-
-						{/* District — dropdown */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								District <span className="text-red-500">*</span>
-							</label>
-							<select
-								value={formData.District || ""}
-								onChange={(e) =>
-									handleInputChange("District", e.target.value)
-								}
-								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-								required
-							>
-								<option value="">Select District</option>
-								{DISTRICT_OPTIONS.map((d) => (
-									<option key={d} value={d}>
-										{d}
-									</option>
-								))}
-							</select>
-						</div>
-
-						{/* Total — readonly auto-sum */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Total
-							</label>
-							<input
-								type="number"
-								value={total}
-								readOnly
-								disabled
-								className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-900 font-semibold cursor-not-allowed outline-none"
-							/>
-						</div>
+				<div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+					{/* Month_Year — month picker */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Month / Year <span className="text-red-500">*</span>
+						</label>
+						<input
+							type="month"
+							value={monthPickerValue}
+							onChange={(e) => handleMonthPickerChange(e.target.value)}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							required
+						/>
+						{formData.Month_Year && (
+							<p className="text-xs text-gray-500 mt-1">
+								Stored as: {formData.Month_Year}
+							</p>
+						)}
 					</div>
+
+					{/* QTR_No — readonly, auto-derived */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Quarter No
+						</label>
+						<input
+							type="text"
+							value={formData.QTR_No || ""}
+							readOnly
+							disabled
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed outline-none"
+							placeholder="Auto from Month/Year"
+						/>
+					</div>
+
+					{/* QPR_QTR_No */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							QPR QTR No
+						</label>
+						<input
+							type="text"
+							value={formData.QPR_QTR_No || ""}
+							onChange={(e) =>
+								handleInputChange("QPR_QTR_No", e.target.value)
+							}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							placeholder="e.g. QPR-Q1-2026"
+						/>
+					</div>
+
+					{/* District — dropdown */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							District <span className="text-red-500">*</span>
+						</label>
+						<select
+							value={formData.District || ""}
+							onChange={(e) =>
+								handleInputChange("District", e.target.value)
+							}
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							required
+						>
+							<option value="">Select District</option>
+							{DISTRICT_OPTIONS.map((d) => (
+								<option key={d} value={d}>
+									{d}
+								</option>
+							))}
+						</select>
+					</div>
+
+					{/* Total — readonly auto-sum */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Total
+						</label>
+						<input
+							type="number"
+							value={total}
+							readOnly
+							disabled
+							className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-900 font-semibold cursor-not-allowed outline-none"
+						/>
+					</div>
+				</div>
 				</div>
 
 				{/* Category Fields */}

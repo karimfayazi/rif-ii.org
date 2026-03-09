@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
 		const body = await request.json();
 		const {
 			QTR_No,
+			QPR_QTR_No,
 			Month_Year,
 			District,
 			Militants_Killed,
@@ -35,13 +36,13 @@ export async function POST(request: NextRequest) {
 
 		const query = `
 			INSERT INTO [_rifiiorg_db].[rifiiorg].[security_incidents_summary]
-			([QTR_No],[Month_Year],[District],
+			([QTR_No],[QPR_QTR_No],[Month_Year],[District],
 			 [Militants_Killed],[Militants_Injured],[Militants_Arrested],
 			 [LEA_Killed],[LEA_Injured],[Civilians_Killed],[Civilians_Injured],
 			 [IEDs],[Target_Killings],[Abductions],[Fire_Raid],[Extortions],
 			 [username],[update_date])
 			VALUES
-			(@QTR_No, @Month_Year, @District,
+			(@QTR_No, @QPR_QTR_No, @Month_Year, @District,
 			 @Militants_Killed, @Militants_Injured, @Militants_Arrested,
 			 @LEA_Killed, @LEA_Injured, @Civilians_Killed, @Civilians_Injured,
 			 @IEDs, @Target_Killings, @Abductions, @Fire_Raid, @Extortions,
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
 		`;
 
 		req.input("QTR_No", QTR_No || null);
+		req.input("QPR_QTR_No", QPR_QTR_No || null);
 		req.input("Month_Year", Month_Year);
 		req.input("District", District);
 		req.input("Militants_Killed", parseInt(Militants_Killed) || 0);

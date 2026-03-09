@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
 		const id = searchParams.get("id");
 		const monthYear = searchParams.get("monthYear");
 		const district = searchParams.get("district");
+		const qprQtrNo = searchParams.get("qprQtrNo");
 		const qtrNo = searchParams.get("qtrNo");
 		const search = searchParams.get("search");
 
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
 				.request()
 				.input("id", parseInt(id))
 				.query(
-					`SELECT [id],[QTR_No],[Month_Year],[District],
+					`SELECT [id],[QTR_No],[QPR_QTR_No],[Month_Year],[District],
 					[Militants_Killed],[Militants_Injured],[Militants_Arrested],
 					[LEA_Killed],[LEA_Injured],[Civilians_Killed],[Civilians_Injured],
 					[IEDs],[Target_Killings],[Abductions],[Fire_Raid],[Extortions],
@@ -44,6 +45,10 @@ export async function GET(request: NextRequest) {
 			whereClause += " AND [District] = @district";
 			request_obj.input("district", district);
 		}
+		if (qprQtrNo) {
+			whereClause += " AND [QPR_QTR_No] = @qprQtrNo";
+			request_obj.input("qprQtrNo", qprQtrNo);
+		}
 		if (qtrNo) {
 			whereClause += " AND [QTR_No] = @qtrNo";
 			request_obj.input("qtrNo", qtrNo);
@@ -57,6 +62,7 @@ export async function GET(request: NextRequest) {
 			.request()
 			.input("monthYear_c", monthYear || null)
 			.input("district_c", district || null)
+			.input("qprQtrNo_c", qprQtrNo || null)
 			.input("qtrNo_c", qtrNo || null)
 			.input("search_c", search ? `%${search}%` : null)
 			.query(
@@ -65,6 +71,7 @@ export async function GET(request: NextRequest) {
 				WHERE 1=1
 				${monthYear ? "AND [Month_Year] = @monthYear_c" : ""}
 				${district ? "AND [District] = @district_c" : ""}
+				${qprQtrNo ? "AND [QPR_QTR_No] = @qprQtrNo_c" : ""}
 				${qtrNo ? "AND [QTR_No] = @qtrNo_c" : ""}
 				${search ? "AND ([username] LIKE @search_c OR [District] LIKE @search_c)" : ""}`
 			);
@@ -72,7 +79,7 @@ export async function GET(request: NextRequest) {
 		const totalCount = countResult.recordset?.[0]?.totalCount || 0;
 
 		const dataQuery = `
-			SELECT [id],[QTR_No],[Month_Year],[District],
+			SELECT [id],[QTR_No],[QPR_QTR_No],[Month_Year],[District],
 			[Militants_Killed],[Militants_Injured],[Militants_Arrested],
 			[LEA_Killed],[LEA_Injured],[Civilians_Killed],[Civilians_Injured],
 			[IEDs],[Target_Killings],[Abductions],[Fire_Raid],[Extortions],
@@ -95,6 +102,11 @@ export async function GET(request: NextRequest) {
 			.query(
 				`SELECT DISTINCT [District] FROM [_rifiiorg_db].[rifiiorg].[security_incidents_summary] WHERE [District] IS NOT NULL ORDER BY [District]`
 			);
+		const distinctQprQtrs = await pool
+			.request()
+			.query(
+				`SELECT DISTINCT [QPR_QTR_No] FROM [_rifiiorg_db].[rifiiorg].[security_incidents_summary] WHERE [QPR_QTR_No] IS NOT NULL AND [QPR_QTR_No] <> '' ORDER BY [QPR_QTR_No]`
+			);
 		const distinctQtrs = await pool
 			.request()
 			.query(
@@ -108,6 +120,7 @@ export async function GET(request: NextRequest) {
 			filterOptions: {
 				months: distinctMonths.recordset.map((r: any) => r.Month_Year),
 				districts: distinctDistricts.recordset.map((r: any) => r.District),
+				qprQtrNos: distinctQprQtrs.recordset.map((r: any) => r.QPR_QTR_No),
 				quarters: distinctQtrs.recordset.map((r: any) => r.QTR_No),
 			},
 		});
@@ -122,7 +135,7 @@ export async function GET(request: NextRequest) {
 				success: true,
 				rows: [],
 				totalCount: 0,
-				filterOptions: { months: [], districts: [], quarters: [] },
+				filterOptions: { months: [], districts: [], qprQtrNos: [], quarters: [] },
 				message: "Table not found. Please create it first.",
 			});
 		}

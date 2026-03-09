@@ -7,6 +7,7 @@ export async function PUT(request: NextRequest) {
 		const {
 			id,
 			QTR_No,
+			QPR_QTR_No,
 			Month_Year,
 			District,
 			Militants_Killed,
@@ -45,6 +46,7 @@ export async function PUT(request: NextRequest) {
 			UPDATE [_rifiiorg_db].[rifiiorg].[security_incidents_summary]
 			SET
 				[QTR_No] = @QTR_No,
+				[QPR_QTR_No] = @QPR_QTR_No,
 				[Month_Year] = @Month_Year,
 				[District] = @District,
 				[Militants_Killed] = @Militants_Killed,
@@ -66,6 +68,7 @@ export async function PUT(request: NextRequest) {
 
 		req.input("id", parseInt(id));
 		req.input("QTR_No", QTR_No || null);
+		req.input("QPR_QTR_No", QPR_QTR_No || null);
 		req.input("Month_Year", Month_Year);
 		req.input("District", District);
 		req.input("Militants_Killed", parseInt(Militants_Killed) || 0);

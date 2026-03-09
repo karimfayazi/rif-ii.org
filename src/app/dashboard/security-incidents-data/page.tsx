@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 type IncidentSummary = {
 	id: number;
 	QTR_No: number;
+	QPR_QTR_No: string;
 	Month_Year: string;
 	District: string;
 	Militants_Killed: number;
@@ -42,6 +43,7 @@ type FilterOptions = {
 	months: string[];
 	districts: string[];
 	quarters: number[];
+	qprQtrNos: string[];
 };
 
 const NUMERIC_KEYS: (keyof IncidentSummary)[] = [
@@ -64,6 +66,7 @@ export default function SecurityIncidentsDataPage() {
 		months: [],
 		districts: [],
 		quarters: [],
+		qprQtrNos: [],
 	});
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -71,6 +74,7 @@ export default function SecurityIncidentsDataPage() {
 
 	const [selectedMonth, setSelectedMonth] = useState("");
 	const [selectedDistrict, setSelectedDistrict] = useState("");
+	const [selectedQprQtr, setSelectedQprQtr] = useState("");
 	const [selectedQtr, setSelectedQtr] = useState("");
 
 	const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -89,6 +93,7 @@ export default function SecurityIncidentsDataPage() {
 			const params = new URLSearchParams();
 			if (selectedMonth) params.append("monthYear", selectedMonth);
 			if (selectedDistrict) params.append("district", selectedDistrict);
+			if (selectedQprQtr) params.append("qprQtrNo", selectedQprQtr);
 			if (selectedQtr) params.append("qtrNo", selectedQtr);
 
 			const response = await fetch(
@@ -119,6 +124,7 @@ export default function SecurityIncidentsDataPage() {
 	const handleReset = () => {
 		setSelectedMonth("");
 		setSelectedDistrict("");
+		setSelectedQprQtr("");
 		setSelectedQtr("");
 		setTimeout(() => fetchData(), 0);
 	};
@@ -187,14 +193,14 @@ export default function SecurityIncidentsDataPage() {
 	const exportCSV = () => {
 		if (rows.length === 0) return;
 		const headers = [
-			"ID","QTR_No","Month_Year","District",
+			"ID","QTR_No","QPR_QTR_No","Month_Year","District",
 			"Militants_Killed","Militants_Injured","Militants_Arrested",
 			"LEA_Killed","LEA_Injured","Civilians_Killed","Civilians_Injured",
 			"IEDs","Target_Killings","Abductions","Fire_Raid","Extortions",
 			"Total","Username","Updated"
 		];
 		const csvRows = rows.map((r) => [
-			r.id, r.QTR_No, r.Month_Year, r.District,
+			r.id, r.QTR_No, r.QPR_QTR_No || "", r.Month_Year, r.District,
 			r.Militants_Killed, r.Militants_Injured, r.Militants_Arrested,
 			r.LEA_Killed, r.LEA_Injured, r.Civilians_Killed, r.Civilians_Injured,
 			r.IEDs, r.Target_Killings, r.Abductions, r.Fire_Raid, r.Extortions,
@@ -356,7 +362,7 @@ export default function SecurityIncidentsDataPage() {
 					</button>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+				<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
 					{/* Month_Year */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
@@ -390,6 +396,25 @@ export default function SecurityIncidentsDataPage() {
 							{filterOptions.districts.map((d) => (
 								<option key={d} value={d}>
 									{d}
+								</option>
+							))}
+						</select>
+					</div>
+
+					{/* QPR_QTR_No — placed before QTR */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							QPR QTR No
+						</label>
+						<select
+							value={selectedQprQtr}
+							onChange={(e) => setSelectedQprQtr(e.target.value)}
+							className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+						>
+							<option value="">All QPR QTR</option>
+							{filterOptions.qprQtrNos.map((q) => (
+								<option key={q} value={q}>
+									{q}
 								</option>
 							))}
 						</select>
@@ -435,7 +460,7 @@ export default function SecurityIncidentsDataPage() {
 						No records found
 					</h3>
 					<p className="text-gray-600 mb-4">
-						{selectedMonth || selectedDistrict || selectedQtr
+						{selectedMonth || selectedDistrict || selectedQprQtr || selectedQtr
 							? "Try adjusting your filter criteria"
 							: "Records will appear here once they are added"}
 					</p>
@@ -458,6 +483,9 @@ export default function SecurityIncidentsDataPage() {
 									</th>
 									<th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
 										QTR
+									</th>
+									<th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+										QPR QTR
 									</th>
 									<th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
 										Month/Year
@@ -526,6 +554,9 @@ export default function SecurityIncidentsDataPage() {
 										</td>
 										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
 											{row.QTR_No}
+										</td>
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+											{row.QPR_QTR_No || "—"}
 										</td>
 										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
 											{row.Month_Year}
@@ -614,10 +645,11 @@ export default function SecurityIncidentsDataPage() {
 				<div className="text-center text-sm text-gray-500">
 					Showing {rows.length} of {totalCount} record
 					{totalCount !== 1 ? "s" : ""}
-					{(selectedMonth ||
-						selectedDistrict ||
-						selectedQtr) &&
-						" matching your criteria"}
+				{(selectedMonth ||
+					selectedDistrict ||
+					selectedQprQtr ||
+					selectedQtr) &&
+					" matching your criteria"}
 				</div>
 			)}
 
