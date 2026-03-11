@@ -78,7 +78,15 @@ const GROUPS: NavGroup[] = [
 			{ label: "Important links", href: "/dashboard/links", icon: Link2 },
 			{ label: "Tehsil Wise Progress", href: "/dashboard/tehsil-wise-progress", icon: MapPin },
 		{ label: "Photo Gallary", href: "/dashboard/pictures", icon: ImagePlus },
-		{ label: "Maps", href: "/dashboard/maps", icon: Map },
+		{
+			label: "Maps",
+			href: "/dashboard/maps",
+			icon: Map,
+			// New submenu added directly under Maps without changing existing Maps page behavior.
+			subItems: [
+				{ label: "GIS-Maps", href: "/dashboard/maps/gis-maps" },
+			],
+		},
 		{ label: "Security Update", href: "/dashboard/security-updates", icon: Shield },
 		{ label: "Remote Monitoring", href: "/dashboard/remote-monitoring", icon: Monitor },
 		{ label: "News Section", href: "/dashboard/news", icon: Newspaper },

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
 	Filter, RefreshCw, Eye, X, Calendar, User, FileImage,
-	CheckCircle, ExternalLink, Trash2, AlertCircle, Loader2, Upload
+	CheckCircle, ExternalLink, Trash2, AlertCircle, Loader2, Upload, Edit, Save
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
@@ -61,7 +61,7 @@ type FilterState = {
 export default function PicturesPage() {
 	const { user, getUserId } = useAuth();
 	const userId = user?.id || user?.username || getUserId() || null;
-	const { isAdmin, accessDelete, canUploadPictures, loading: accessLoading } = useAccess(userId);
+	const { isAdmin, accessEdit, accessDelete, canUploadPictures, loading: accessLoading } = useAccess(userId);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
@@ -74,6 +74,9 @@ export default function PicturesPage() {
 	const [viewModal, setViewModal] = useState<PictureRow | null>(null);
 	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; picture: PictureRow | null }>({ show: false, picture: null });
 	const [deleting, setDeleting] = useState(false);
+	const [editing, setEditing] = useState(false);
+	const [saving, setSaving] = useState(false);
+	const [editForm, setEditForm] = useState<Partial<PictureRow>>({});
 	const [successMessage, setSuccessMessage] = useState<string | null>(null);
 	const [showFilters, setShowFilters] = useState(false);
 
@@ -99,6 +102,7 @@ export default function PicturesPage() {
 		pageSize: parseInt(searchParams.get('pageSize') || '20'),
 	}));
 
+	const canEdit = isAdmin || accessEdit;
 	const canDelete = isAdmin || accessDelete;
 
 	const apiFilterKey = JSON.stringify({
@@ -296,6 +300,116 @@ export default function PicturesPage() {
 		return dateString;
 	};
 
+	const formatDateForInput = (dateString: string | null) => {
+		if (!dateString) return '';
+		if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+		const date = new Date(dateString);
+		if (Number.isNaN(date.getTime())) return '';
+		return date.toISOString().split('T')[0];
+	};
+
+	const closeViewModal = () => {
+		setViewModal(null);
+		setEditing(false);
+		setEditForm({});
+	};
+
+	const startEditingPicture = (picture: PictureRow) => {
+		setViewModal(picture);
+		setEditing(true);
+		setEditForm({
+			GroupName: picture.GroupName,
+			MainCategory: picture.MainCategory,
+			SubCategory: picture.SubCategory,
+			FileName: picture.FileName,
+			UploadedBy: picture.UploadedBy,
+			IsActive: picture.IsActive,
+			EventDate: picture.EventDate,
+		});
+		setError(null);
+	};
+
+	const cancelEditingPicture = () => {
+		setEditing(false);
+		setEditForm({});
+		setError(null);
+	};
+
+	const handleEditFieldChange = (field: keyof PictureRow, value: string | boolean | null) => {
+		setEditForm(prev => ({ ...prev, [field]: value }));
+	};
+
+	const handleUpdatePicture = async () => {
+		if (!viewModal) return;
+
+		if (!editForm.FileName?.toString().trim()) {
+			setError('File Name is required');
+			return;
+		}
+
+		try {
+			setSaving(true);
+			setError(null);
+
+			const response = await fetch('/api/pictures/manage', {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				credentials: 'include',
+				body: JSON.stringify({
+					PictureID: viewModal.PictureID,
+					GroupName: editForm.GroupName?.toString().trim() || null,
+					MainCategory: editForm.MainCategory?.toString().trim() || null,
+					SubCategory: editForm.SubCategory?.toString().trim() || null,
+					FileName: editForm.FileName?.toString().trim() || null,
+					FilePath: viewModal.FilePath,
+					FileSizeKB: viewModal.FileSizeKB,
+					UploadedBy: editForm.UploadedBy?.toString().trim() || null,
+					IsActive: Boolean(editForm.IsActive),
+					EventDate: editForm.EventDate || null,
+				}),
+			});
+
+			const data = await response.json();
+
+			if (!data.success) {
+				setError(data.message || 'Failed to update picture');
+				return;
+			}
+
+			const updatedPicture: PictureRow = {
+				...viewModal,
+				GroupName: editForm.GroupName?.toString().trim() || null,
+				MainCategory: editForm.MainCategory?.toString().trim() || null,
+				SubCategory: editForm.SubCategory?.toString().trim() || null,
+				FileName: editForm.FileName?.toString().trim() || null,
+				UploadedBy: editForm.UploadedBy?.toString().trim() || null,
+				IsActive: Boolean(editForm.IsActive),
+				EventDate: (editForm.EventDate as string | null) || null,
+			};
+
+			setViewModal(updatedPicture);
+			setGalleryModal(prev => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					pictures: prev.pictures.map(p => p.PictureID === updatedPicture.PictureID ? updatedPicture : p),
+				};
+			});
+			setSuccessMessage('Picture updated successfully');
+			setEditing(false);
+			setEditForm({});
+			await fetchSummary();
+			setTimeout(() => setSuccessMessage(null), 3000);
+		} catch (err) {
+			console.error('Error updating picture:', err);
+			setError('Error updating picture. Please try again.');
+		} finally {
+			setSaving(false);
+		}
+	};
+
 	const handleDelete = async (picture: PictureRow) => {
 		try {
 			setDeleting(true);
@@ -313,7 +427,11 @@ export default function PicturesPage() {
 				setSuccessMessage('Picture deleted successfully');
 				setTimeout(() => setSuccessMessage(null), 3000);
 
-				if (viewModal?.PictureID === picture.PictureID) setViewModal(null);
+				if (viewModal?.PictureID === picture.PictureID) {
+					setViewModal(null);
+					setEditing(false);
+					setEditForm({});
+				}
 
 				setGalleryModal(prev => {
 					if (!prev) return null;
@@ -708,6 +826,14 @@ export default function PicturesPage() {
 												>
 													<Eye className="h-3 w-3" /> View
 												</button>
+												{canEdit && (
+													<button
+														onClick={(e) => { e.stopPropagation(); startEditingPicture(pic); }}
+														className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors border-l border-gray-100"
+													>
+														<Edit className="h-3 w-3" /> Edit
+													</button>
+												)}
 												{canDelete && (
 													<button
 														onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ show: true, picture: pic }); }}
@@ -754,7 +880,7 @@ export default function PicturesPage() {
 								</div>
 							</div>
 							<button
-								onClick={() => setViewModal(null)}
+								onClick={closeViewModal}
 								className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
 								aria-label="Close"
 							>
@@ -813,7 +939,16 @@ export default function PicturesPage() {
 													<FileImage className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
 													<div className="flex-1">
 														<p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">File Name</p>
-														<p className="text-base font-bold text-gray-900 break-words">{viewModal.FileName || 'N/A'}</p>
+														{editing ? (
+															<input
+																type="text"
+																value={editForm.FileName || ''}
+																onChange={(e) => handleEditFieldChange('FileName', e.target.value)}
+																className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#0b4d2b] focus:outline-none focus:ring-2 focus:ring-[#0b4d2b]/20"
+															/>
+														) : (
+															<p className="text-base font-bold text-gray-900 break-words">{viewModal.FileName || 'N/A'}</p>
+														)}
 													</div>
 												</div>
 											</div>
@@ -823,7 +958,16 @@ export default function PicturesPage() {
 													<Calendar className="h-5 w-5 text-purple-600 mr-3 mt-0.5 flex-shrink-0" />
 													<div className="flex-1">
 														<p className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">Group Name</p>
-														<p className="text-base font-semibold text-gray-900">{viewModal.GroupName || 'N/A'}</p>
+														{editing ? (
+															<input
+																type="text"
+																value={editForm.GroupName || ''}
+																onChange={(e) => handleEditFieldChange('GroupName', e.target.value)}
+																className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#0b4d2b] focus:outline-none focus:ring-2 focus:ring-[#0b4d2b]/20"
+															/>
+														) : (
+															<p className="text-base font-semibold text-gray-900">{viewModal.GroupName || 'N/A'}</p>
+														)}
 													</div>
 												</div>
 											</div>
@@ -833,7 +977,16 @@ export default function PicturesPage() {
 													<FileImage className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
 													<div className="flex-1">
 														<p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">Main Category</p>
-														<p className="text-base font-semibold text-gray-900">{viewModal.MainCategory || 'N/A'}</p>
+														{editing ? (
+															<input
+																type="text"
+																value={editForm.MainCategory || ''}
+																onChange={(e) => handleEditFieldChange('MainCategory', e.target.value)}
+																className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#0b4d2b] focus:outline-none focus:ring-2 focus:ring-[#0b4d2b]/20"
+															/>
+														) : (
+															<p className="text-base font-semibold text-gray-900">{viewModal.MainCategory || 'N/A'}</p>
+														)}
 													</div>
 												</div>
 											</div>
@@ -843,7 +996,16 @@ export default function PicturesPage() {
 													<FileImage className="h-5 w-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
 													<div className="flex-1">
 														<p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-1">Sub Category</p>
-														<p className="text-base font-semibold text-gray-900">{viewModal.SubCategory || 'N/A'}</p>
+														{editing ? (
+															<input
+																type="text"
+																value={editForm.SubCategory || ''}
+																onChange={(e) => handleEditFieldChange('SubCategory', e.target.value)}
+																className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#0b4d2b] focus:outline-none focus:ring-2 focus:ring-[#0b4d2b]/20"
+															/>
+														) : (
+															<p className="text-base font-semibold text-gray-900">{viewModal.SubCategory || 'N/A'}</p>
+														)}
 													</div>
 												</div>
 											</div>
@@ -853,7 +1015,16 @@ export default function PicturesPage() {
 													<User className="h-5 w-5 text-cyan-600 mr-3 mt-0.5 flex-shrink-0" />
 													<div className="flex-1">
 														<p className="text-xs font-semibold text-cyan-600 uppercase tracking-wide mb-1">Uploaded By</p>
-														<p className="text-base font-semibold text-gray-900">{viewModal.UploadedBy || 'N/A'}</p>
+														{editing ? (
+															<input
+																type="text"
+																value={editForm.UploadedBy || ''}
+																onChange={(e) => handleEditFieldChange('UploadedBy', e.target.value)}
+																className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#0b4d2b] focus:outline-none focus:ring-2 focus:ring-[#0b4d2b]/20"
+															/>
+														) : (
+															<p className="text-base font-semibold text-gray-900">{viewModal.UploadedBy || 'N/A'}</p>
+														)}
 													</div>
 												</div>
 											</div>
@@ -873,7 +1044,37 @@ export default function PicturesPage() {
 													<Calendar className="h-5 w-5 text-violet-600 mr-3 mt-0.5 flex-shrink-0" />
 													<div className="flex-1">
 														<p className="text-xs font-semibold text-violet-600 uppercase tracking-wide mb-1">Event Date</p>
-														<p className="text-base font-semibold text-gray-900">{formatDate(viewModal.EventDate)}</p>
+														{editing ? (
+															<input
+																type="date"
+																value={formatDateForInput((editForm.EventDate as string | null) || null)}
+																onChange={(e) => handleEditFieldChange('EventDate', e.target.value || null)}
+																className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#0b4d2b] focus:outline-none focus:ring-2 focus:ring-[#0b4d2b]/20"
+															/>
+														) : (
+															<p className="text-base font-semibold text-gray-900">{formatDate(viewModal.EventDate)}</p>
+														)}
+													</div>
+												</div>
+											</div>
+
+											<div className="bg-gradient-to-r from-teal-50 to-green-50 rounded-xl p-4 border-l-4 border-teal-500">
+												<div className="flex items-start">
+													<CheckCircle className="h-5 w-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
+													<div className="flex-1">
+														<p className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-1">Is Active</p>
+														{editing ? (
+															<select
+																value={editForm.IsActive ? '1' : '0'}
+																onChange={(e) => handleEditFieldChange('IsActive', e.target.value === '1')}
+																className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#0b4d2b] focus:outline-none focus:ring-2 focus:ring-[#0b4d2b]/20"
+															>
+																<option value="1">Active</option>
+																<option value="0">Inactive</option>
+															</select>
+														) : (
+															<p className="text-base font-semibold text-gray-900">{viewModal.IsActive ? 'Active' : 'Inactive'}</p>
+														)}
 													</div>
 												</div>
 											</div>
@@ -884,8 +1085,46 @@ export default function PicturesPage() {
 						</div>
 
 						<div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+							{editing ? (
+								<>
+									<button
+										onClick={cancelEditingPicture}
+										disabled={saving}
+										className="px-6 py-3 text-base font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+									>
+										Cancel
+									</button>
+									<button
+										onClick={handleUpdatePicture}
+										disabled={saving}
+										className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-[#0b4d2b] rounded-xl hover:bg-[#0a4226] transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+									>
+										{saving ? (
+											<>
+												<Loader2 className="h-5 w-5 mr-2 animate-spin" />
+												Saving...
+											</>
+										) : (
+											<>
+												<Save className="h-5 w-5 mr-2" />
+												Update
+											</>
+										)}
+									</button>
+								</>
+							) : (
+								canEdit && (
+									<button
+										onClick={() => startEditingPicture(viewModal)}
+										className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-sm hover:shadow-md"
+									>
+										<Edit className="h-5 w-5 mr-2" />
+										Edit
+									</button>
+								)
+							)}
 							<button
-								onClick={() => setViewModal(null)}
+								onClick={closeViewModal}
 								className="px-6 py-3 text-base font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow-md"
 							>
 								Close
