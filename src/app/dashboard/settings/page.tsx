@@ -20,7 +20,8 @@ import {
 	MoreVertical,
 	AlertCircle,
 	Grid3x3,
-	Table
+	Table,
+	Loader2
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -33,6 +34,8 @@ type UserData = {
 	region: string;
 	contact_no: string;
 	access_level: string;
+	created_at?: string | Date;
+	updated_at?: string | Date;
 };
 
 export default function SettingsPage() {
@@ -51,6 +54,12 @@ export default function SettingsPage() {
 	const [departments, setDepartments] = useState<string[]>([]);
 	const [accessLevels, setAccessLevels] = useState<string[]>([]);
 	const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; username: string | null; fullName: string | null }>({
+		show: false,
+		username: null,
+		fullName: null
+	});
+	const [deleting, setDeleting] = useState(false);
 
 	useEffect(() => {
 		checkAdminAccess();
@@ -149,6 +158,59 @@ export default function SettingsPage() {
 		if (!phone) return "N/A";
 		// Simple phone formatting
 		return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+	};
+
+	const formatDate = (date: string | Date | null | undefined) => {
+		if (!date) return "N/A";
+		try {
+			const d = new Date(date);
+			return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+		} catch {
+			return "N/A";
+		}
+	};
+
+	const handleEdit = (username: string) => {
+		router.push(`/dashboard/settings/add?id=${encodeURIComponent(username)}`);
+	};
+
+	const handleDeleteClick = (username: string, fullName: string | null) => {
+		setDeleteConfirm({
+			show: true,
+			username,
+			fullName: fullName || username
+		});
+	};
+
+	const handleDeleteConfirm = async () => {
+		if (!deleteConfirm.username) return;
+
+		try {
+			setDeleting(true);
+			const response = await fetch(`/api/admin/users/delete?username=${encodeURIComponent(deleteConfirm.username)}`, {
+				method: 'DELETE'
+			});
+
+			const data = await response.json();
+
+			if (data.success) {
+				setDeleteConfirm({ show: false, username: null, fullName: null });
+				fetchUsers(); // Refresh the list
+			} else {
+				setError(data.message || "Failed to delete user");
+				setDeleteConfirm({ show: false, username: null, fullName: null });
+			}
+		} catch (err) {
+			setError("Error deleting user");
+			console.error("Error deleting user:", err);
+			setDeleteConfirm({ show: false, username: null, fullName: null });
+		} finally {
+			setDeleting(false);
+		}
+	};
+
+	const handleDeleteCancel = () => {
+		setDeleteConfirm({ show: false, username: null, fullName: null });
 	};
 
 	// Filter users based on search and filters
@@ -392,7 +454,8 @@ export default function SettingsPage() {
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Access Level</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Password</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Created</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Updated</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
 								</tr>
 							</thead>
@@ -444,20 +507,30 @@ export default function SettingsPage() {
 												</span>
 											)}
 										</td>
-										<td className="px-6 py-4 whitespace-nowrap">
-											<span className="text-sm font-mono text-gray-700">
-												{user.password ? maskPassword(user.password) : "N/A"}
+										<td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+											<span className="text-sm text-gray-600">
+												{formatDate(user.created_at)}
+											</span>
+										</td>
+										<td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+											<span className="text-sm text-gray-600">
+												{formatDate(user.updated_at)}
 											</span>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
 											<div className="flex items-center space-x-2">
-												<button className="p-2 text-gray-400 hover:text-blue-600 transition-colors" title="View">
-													<Eye className="h-4 w-4" />
-												</button>
-												<button className="p-2 text-gray-400 hover:text-green-600 transition-colors" title="Edit">
+												<button 
+													onClick={() => handleEdit(user.username)} 
+													className="p-2 text-gray-400 hover:text-green-600 transition-colors" 
+													title="Edit"
+												>
 													<Edit className="h-4 w-4" />
 												</button>
-												<button className="p-2 text-gray-400 hover:text-red-600 transition-colors" title="Delete">
+												<button 
+													onClick={() => handleDeleteClick(user.username, user.full_name)} 
+													className="p-2 text-gray-400 hover:text-red-600 transition-colors" 
+													title="Delete"
+												>
 													<Trash2 className="h-4 w-4" />
 												</button>
 											</div>
@@ -555,19 +628,21 @@ export default function SettingsPage() {
 							{/* Action Buttons */}
 							<div className="px-6 py-4 bg-gray-50 rounded-b-lg flex items-center justify-between">
 								<div className="flex items-center space-x-2">
-									<button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
-										<Eye className="h-4 w-4" />
-									</button>
-									<button className="p-2 text-gray-400 hover:text-green-600 transition-colors">
+									<button 
+										onClick={() => handleEdit(user.username)} 
+										className="p-2 text-gray-400 hover:text-green-600 transition-colors"
+										title="Edit"
+									>
 										<Edit className="h-4 w-4" />
 									</button>
-									<button className="p-2 text-gray-400 hover:text-red-600 transition-colors">
+									<button 
+										onClick={() => handleDeleteClick(user.username, user.full_name)} 
+										className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+										title="Delete"
+									>
 										<Trash2 className="h-4 w-4" />
 									</button>
 								</div>
-								<button className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
-									More actions
-								</button>
 							</div>
 						</div>
 					))}
@@ -579,6 +654,55 @@ export default function SettingsPage() {
 				<div className="text-center text-sm text-gray-500">
 					Showing {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}
 					{(searchTerm || selectedDepartment || selectedAccessLevel) && ' matching your criteria'}
+				</div>
+			)}
+
+			{/* Delete Confirmation Modal */}
+			{deleteConfirm.show && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+					<div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+						<div className="p-6">
+							<div className="flex items-center mb-4">
+								<div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+									<AlertCircle className="h-6 w-6 text-red-600" />
+								</div>
+								<div>
+									<h3 className="text-lg font-semibold text-gray-900">Delete User</h3>
+									<p className="text-sm text-gray-500">This action cannot be undone</p>
+								</div>
+							</div>
+							<p className="text-gray-700 mb-6">
+								Are you sure you want to delete user <span className="font-semibold">{deleteConfirm.fullName || deleteConfirm.username}</span>? 
+								This will permanently remove the user from the system.
+							</p>
+							<div className="flex justify-end space-x-3">
+								<button
+									onClick={handleDeleteCancel}
+									disabled={deleting}
+									className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+								>
+									Cancel
+								</button>
+								<button
+									onClick={handleDeleteConfirm}
+									disabled={deleting}
+									className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center"
+								>
+									{deleting ? (
+										<>
+											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+											Deleting...
+										</>
+									) : (
+										<>
+											<Trash2 className="h-4 w-4 mr-2" />
+											Delete
+										</>
+									)}
+								</button>
+							</div>
+						</div>
+					</div>
 				</div>
 			)}
 		</div>

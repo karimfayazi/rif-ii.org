@@ -30,7 +30,16 @@ export async function GET(request: NextRequest) {
 					[access_reports],
 					[UserLoginLogs],
 					[Tracking_Section],
-					[Training_Section]
+					[Training_Section],
+					[Setting],
+					[Upload_Report],
+					[Upload_Pictures],
+					[Upload_Documents],
+					[security],
+					[access_links],
+					[access_security_updates],
+					[access_news],
+					[access_security_incidents_data]
 				FROM [_rifiiorg_db].[dbo].[tbl_user_access]
 				WHERE [username] = @username
 			`;
@@ -67,9 +76,18 @@ export async function GET(request: NextRequest) {
 					[access_reports],
 					[UserLoginLogs],
 					[Tracking_Section],
-					[Training_Section]
+					[Training_Section],
+					[Setting],
+					[Upload_Report],
+					[Upload_Pictures],
+					[Upload_Documents],
+					[security],
+					[access_links],
+					[access_security_updates],
+					[access_news],
+					[access_security_incidents_data]
 				FROM [_rifiiorg_db].[dbo].[tbl_user_access]
-				ORDER BY [full_name], [username]
+				ORDER BY [created_at] DESC, [full_name], [username]
 			`;
 
 			const result = await pool.request().query(query);

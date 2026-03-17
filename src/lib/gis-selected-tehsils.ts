@@ -3,6 +3,40 @@ import path from "path";
 
 const GIS_MAPS_FOLDER = path.join(process.cwd(), "public", "maps", "SelectedTehsils");
 const ALLOWED_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
+const MAP_METADATA: Record<string, { title: string; category: string }> = {
+	"Paharpur Cattle Frams Map.jpg": {
+		title: "Paharpur Cattle Farms Map",
+		category: "Cattle Farms",
+	},
+	"Paharpur HH Map without Zoning Layer.jpg": {
+		title: "Paharpur HH Map without Zoning Layer",
+		category: "Household",
+	},
+	"Paharpur Scrape Dealers Hospitals & Clinics Map.jpg": {
+		title: "Paharpur Scrape Dealers Hospitals & Clinics Map",
+		category: "Scrape Dealers",
+	},
+	"Paharpur Scrape Dealers Map.jpg": {
+		title: "Paharpur Scrape Dealers Map",
+		category: "Scrape Dealers",
+	},
+	"Paroa Cattle Frams Map.jpg": {
+		title: "Paroa Cattle Farms Map",
+		category: "Cattle Farms",
+	},
+	"Paroa HH Map.jpg": {
+		title: "Paroa HH Map",
+		category: "Household",
+	},
+	"Paroa Scrape Dealers Hospitals & Clinics Map.jpg": {
+		title: "Paroa Scrape Dealers Hospitals & Clinics Map",
+		category: "Scrape Dealers",
+	},
+	"Paroa Scrape Dealers Map.jpg": {
+		title: "Paroa Scrape Dealers Map",
+		category: "Scrape Dealers",
+	},
+};
 
 export type GISMapImage = {
 	fileName: string;
@@ -25,10 +59,20 @@ function buildDetailUrl(fileName: string) {
 }
 
 function buildTitle(fileName: string) {
+	const mappedTitle = MAP_METADATA[fileName]?.title;
+	if (mappedTitle) {
+		return mappedTitle;
+	}
+
 	return path.basename(fileName, path.extname(fileName));
 }
 
 function detectCategory(fileName: string) {
+	const mappedCategory = MAP_METADATA[fileName]?.category;
+	if (mappedCategory) {
+		return mappedCategory;
+	}
+
 	const lower = fileName.toLowerCase();
 
 	if (lower.includes("boundary")) return "Boundary";

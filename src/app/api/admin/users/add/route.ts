@@ -45,12 +45,16 @@ export async function POST(request: NextRequest) {
 			([username], [password], [email], [department], [full_name], [region], [address], 
 			 [contact_no], [access_level], [access_add], [access_edit], [access_delete], 
 			 [access_reports], [UserLoginLogs], [Tracking_Section], [Training_Section], 
-			 [created_at], [updated_at], [access_granted_at])
+			 [Setting], [Upload_Report], [Upload_Pictures], [Upload_Documents], 
+			 [security], [access_links], [access_security_updates], [access_news], 
+			 [access_security_incidents_data], [created_at], [updated_at], [access_granted_at])
 			VALUES 
 			(@username, @password, @email, @department, @full_name, @region, @address, 
 			 @contact_no, @access_level, @access_add, @access_edit, @access_delete, 
 			 @access_reports, @UserLoginLogs, @Tracking_Section, @Training_Section, 
-			 GETDATE(), GETDATE(), GETDATE())
+			 @Setting, @Upload_Report, @Upload_Pictures, @Upload_Documents, 
+			 @security, @access_links, @access_security_updates, @access_news, 
+			 @access_security_incidents_data, GETDATE(), GETDATE(), GETDATE())
 		`;
 
 		await pool.request()
@@ -70,6 +74,15 @@ export async function POST(request: NextRequest) {
 			.input("UserLoginLogs", data.UserLoginLogs ? 1 : 0)
 			.input("Tracking_Section", data.Tracking_Section ? 1 : 0)
 			.input("Training_Section", data.Training_Section ? 1 : 0)
+			.input("Setting", data.Setting ? 1 : 0)
+			.input("Upload_Report", data.Upload_Report ? 1 : 0)
+			.input("Upload_Pictures", data.Upload_Pictures ? 1 : 0)
+			.input("Upload_Documents", data.Upload_Documents ? 1 : 0)
+			.input("security", data.security ? 1 : 0)
+			.input("access_links", data.access_links ? 1 : 0)
+			.input("access_security_updates", data.access_security_updates ? 1 : 0)
+			.input("access_news", data.access_news ? 1 : 0)
+			.input("access_security_incidents_data", data.access_security_incidents_data ? 1 : 0)
 			.query(query);
 
 		return NextResponse.json({
@@ -179,6 +192,42 @@ export async function PUT(request: NextRequest) {
 		if (data.Training_Section !== undefined) {
 			updateFields.push("[Training_Section] = @Training_Section");
 			request_obj.input("Training_Section", data.Training_Section ? 1 : 0);
+		}
+		if (data.Setting !== undefined) {
+			updateFields.push("[Setting] = @Setting");
+			request_obj.input("Setting", data.Setting ? 1 : 0);
+		}
+		if (data.Upload_Report !== undefined) {
+			updateFields.push("[Upload_Report] = @Upload_Report");
+			request_obj.input("Upload_Report", data.Upload_Report ? 1 : 0);
+		}
+		if (data.Upload_Pictures !== undefined) {
+			updateFields.push("[Upload_Pictures] = @Upload_Pictures");
+			request_obj.input("Upload_Pictures", data.Upload_Pictures ? 1 : 0);
+		}
+		if (data.Upload_Documents !== undefined) {
+			updateFields.push("[Upload_Documents] = @Upload_Documents");
+			request_obj.input("Upload_Documents", data.Upload_Documents ? 1 : 0);
+		}
+		if (data.security !== undefined) {
+			updateFields.push("[security] = @security");
+			request_obj.input("security", data.security ? 1 : 0);
+		}
+		if (data.access_links !== undefined) {
+			updateFields.push("[access_links] = @access_links");
+			request_obj.input("access_links", data.access_links ? 1 : 0);
+		}
+		if (data.access_security_updates !== undefined) {
+			updateFields.push("[access_security_updates] = @access_security_updates");
+			request_obj.input("access_security_updates", data.access_security_updates ? 1 : 0);
+		}
+		if (data.access_news !== undefined) {
+			updateFields.push("[access_news] = @access_news");
+			request_obj.input("access_news", data.access_news ? 1 : 0);
+		}
+		if (data.access_security_incidents_data !== undefined) {
+			updateFields.push("[access_security_incidents_data] = @access_security_incidents_data");
+			request_obj.input("access_security_incidents_data", data.access_security_incidents_data ? 1 : 0);
 		}
 
 		updateFields.push("[updated_at] = GETDATE()");
