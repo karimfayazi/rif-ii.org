@@ -1,6 +1,6 @@
 "use client";
 
-import { Monitor, Construction, ArrowLeft, Globe } from "lucide-react";
+import { Monitor, Construction, ArrowLeft, Globe, Map } from "lucide-react";
 import Link from "next/link";
 
 export default function RemoteMonitoringPage() {
@@ -73,6 +73,52 @@ export default function RemoteMonitoringPage() {
 								</p>
 								<div className="flex items-center text-sm text-emerald-600 font-medium">
 									<span>Open Viewer</span>
+									<ArrowLeft className="h-4 w-4 ml-2 rotate-180 group-hover:translate-x-1 transition-transform" />
+								</div>
+							</div>
+						</div>
+					</div>
+				</Link>
+
+				{/* GIS Section */}
+				<Link href="/dashboard/remote-monitoring/gis-section">
+					<div className="bg-gradient-to-br from-cyan-50 to-sky-50 rounded-xl border border-cyan-200 p-6 hover:shadow-lg transition-shadow cursor-pointer group">
+						<div className="flex items-start space-x-4">
+							<div className="p-3 bg-cyan-100 rounded-lg group-hover:bg-cyan-200 transition-colors">
+								<Map className="h-6 w-6 text-cyan-600" />
+							</div>
+							<div className="flex-1">
+								<h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-cyan-700 transition-colors">
+									GIS Section
+								</h3>
+								<p className="text-sm text-gray-700 mb-3">
+									Open the GIS KMZ Maps workspace for future layer-based map content
+								</p>
+								<div className="flex items-center text-sm text-cyan-600 font-medium">
+									<span>Open Section</span>
+									<ArrowLeft className="h-4 w-4 ml-2 rotate-180 group-hover:translate-x-1 transition-transform" />
+								</div>
+							</div>
+						</div>
+					</div>
+				</Link>
+
+				{/* Paroa GIS Map */}
+				<Link href="/paroa-gis-map">
+					<div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl border border-violet-200 p-6 hover:shadow-lg transition-shadow cursor-pointer group">
+						<div className="flex items-start space-x-4">
+							<div className="p-3 bg-violet-100 rounded-lg group-hover:bg-violet-200 transition-colors">
+								<Map className="h-6 w-6 text-violet-600" />
+							</div>
+							<div className="flex-1">
+								<h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-violet-700 transition-colors">
+									Paroa GIS Map
+								</h3>
+								<p className="text-sm text-gray-700 mb-3">
+									Open the standalone Paroa GIS map page without the dashboard layout
+								</p>
+								<div className="flex items-center text-sm text-violet-600 font-medium">
+									<span>Open Map</span>
 									<ArrowLeft className="h-4 w-4 ml-2 rotate-180 group-hover:translate-x-1 transition-transform" />
 								</div>
 							</div>
