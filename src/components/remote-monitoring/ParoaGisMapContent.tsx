@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, ArrowLeft, ChevronDown, Layers, Map, MapPinned, RefreshCw, Square, X } from "lucide-react";
+import {
+	AlertCircle,
+	ArrowLeft,
+	ChevronDown,
+	Download,
+	Layers,
+	Loader2,
+	Map,
+	MapPinned,
+	RefreshCw,
+	Square,
+	X,
+} from "lucide-react";
 import Link from "next/link";
 
 type GeoJsonFeature = {
@@ -40,12 +52,31 @@ type KMZFile = {
 
 type BaseMapType = "satellite" | "street" | "hybrid" | "topographic";
 
+const BASE_MAP_LABELS: Record<BaseMapType, string> = {
+	satellite: "Satellite Map",
+	street: "Street / Road Map",
+	hybrid: "Hybrid Map",
+	topographic: "Topographic Map",
+};
+
+function formatParoaExportFileBase() {
+	const d = new Date();
+	const pad = (n: number) => String(n).padStart(2, "0");
+	return `Paroa_GIS_Map_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+}
+
 interface ParoaGisMapContentProps {
 	showBackButton?: boolean;
 	backHref?: string;
 	title?: string;
 	description?: string;
 	legendDisplayMode?: "sidebar" | "modal";
+	/** When set, KMZ file list / legend / map draw order follows this sequence (unknown files append last). */
+	kmzLayerFileOrder?: string[];
+	/** Optional per-file UI labels (layer picker + legend); merged ahead of built-in legend names when provided. */
+	kmzDisplayNamesByFile?: Record<string, string>;
+	/** When true, show Download (JPG/PDF) for the visible map area (client-side capture). */
+	enableMapExport?: boolean;
 }
 
 const FALLBACK_COLORS = [
@@ -96,8 +127,16 @@ function getLayerStyle(layer: KMZLayer, fallbackColor: string) {
 	};
 }
 
-function getLegendDisplayName(fileName: string, layerName: string) {
-	return LEGEND_NAME_BY_FILE[fileName] || layerName;
+function sortKmzFilesByOrder(files: KMZFile[], order: string[] | undefined): KMZFile[] {
+	if (!order?.length) return files;
+	return [...files].sort((a, b) => {
+		const ia = order.indexOf(a.fileName);
+		const ib = order.indexOf(b.fileName);
+		const ra = ia === -1 ? Number.MAX_SAFE_INTEGER : ia;
+		const rb = ib === -1 ? Number.MAX_SAFE_INTEGER : ib;
+		if (ra !== rb) return ra - rb;
+		return a.fileName.localeCompare(b.fileName);
+	});
 }
 
 export default function ParoaGisMapContent({
@@ -106,6 +145,9 @@ export default function ParoaGisMapContent({
 	title = "Paroa GIS Maps",
 	description = "View Paroa KMZ layers on one online GIS map with selectable visibility and legends",
 	legendDisplayMode = "sidebar",
+	kmzLayerFileOrder,
+	kmzDisplayNamesByFile,
+	enableMapExport = false,
 }: ParoaGisMapContentProps) {
 	const [files, setFiles] = useState<KMZFile[]>([]);
 	const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
@@ -116,6 +158,9 @@ export default function ParoaGisMapContent({
 	const [legendModalOpen, setLegendModalOpen] = useState(false);
 	const [mapLoaded, setMapLoaded] = useState(false);
 	const [baseMapType, setBaseMapType] = useState<BaseMapType>("satellite");
+	const [exportMenuOpen, setExportMenuOpen] = useState(false);
+	const [exporting, setExporting] = useState(false);
+	const [exportError, setExportError] = useState("");
 
 	const mapContainerRef = useRef<HTMLDivElement>(null);
 	const mapInstanceRef = useRef<any>(null);
@@ -123,6 +168,21 @@ export default function ParoaGisMapContent({
 	const baseLayerRefsRef = useRef<Record<string, any>>({});
 	const labelLayerRef = useRef<any>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
+	const exportDropdownRef = useRef<HTMLDivElement>(null);
+
+	const resolveLegendDisplayName = (fileName: string, layerName: string) =>
+		kmzDisplayNamesByFile?.[fileName] ?? LEGEND_NAME_BY_FILE[fileName] ?? layerName;
+
+	const resolveFilePickerLabel = (file: KMZFile) =>
+		kmzDisplayNamesByFile?.[file.fileName] ?? file.displayName;
+
+	const fallbackColorIndexForFile = (file: KMZFile, selectedIndex: number) => {
+		if (kmzLayerFileOrder?.length) {
+			const idx = kmzLayerFileOrder.indexOf(file.fileName);
+			if (idx !== -1) return idx % FALLBACK_COLORS.length;
+		}
+		return selectedIndex % FALLBACK_COLORS.length;
+	};
 
 	const loadFiles = async (options?: { preserveSelection?: boolean }) => {
 		try {
@@ -163,6 +223,11 @@ export default function ParoaGisMapContent({
 		loadFiles();
 	}, []);
 
+	const orderedFiles = useMemo(
+		() => sortKmzFilesByOrder(files, kmzLayerFileOrder),
+		[files, kmzLayerFileOrder],
+	);
+
 	useEffect(() => {
 		if (!dropdownOpen) return;
 
@@ -175,6 +240,19 @@ export default function ParoaGisMapContent({
 		document.addEventListener("mousedown", handleClickOutside);
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, [dropdownOpen]);
+
+	useEffect(() => {
+		if (!exportMenuOpen) return;
+
+		const handleClickOutside = (event: MouseEvent) => {
+			if (exportDropdownRef.current && !exportDropdownRef.current.contains(event.target as Node)) {
+				setExportMenuOpen(false);
+			}
+		};
+
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, [exportMenuOpen]);
 
 	useEffect(() => {
 		if (!mapContainerRef.current || mapInstanceRef.current) return;
@@ -308,8 +386,8 @@ export default function ParoaGisMapContent({
 	}, [baseMapType]);
 
 	const selectedFileData = useMemo(
-		() => files.filter((file) => selectedFiles.has(file.fileName)),
-		[files, selectedFiles],
+		() => orderedFiles.filter((file) => selectedFiles.has(file.fileName)),
+		[orderedFiles, selectedFiles],
 	);
 
 	const legendItems = useMemo(
@@ -317,12 +395,12 @@ export default function ParoaGisMapContent({
 			selectedFileData.flatMap((file, fileIndex) =>
 				file.layers.map((layer) => ({
 					key: `${file.fileName}-${layer.id}`,
-					style: getLayerStyle(layer, FALLBACK_COLORS[fileIndex % FALLBACK_COLORS.length]),
+					style: getLayerStyle(layer, FALLBACK_COLORS[fallbackColorIndexForFile(file, fileIndex)]),
 					type: layer.type,
-					displayName: getLegendDisplayName(file.fileName, layer.name),
+					displayName: resolveLegendDisplayName(file.fileName, layer.name),
 				})),
 			),
-		[selectedFileData],
+		[selectedFileData, kmzDisplayNamesByFile, kmzLayerFileOrder],
 	);
 
 	useEffect(() => {
@@ -341,7 +419,7 @@ export default function ParoaGisMapContent({
 		const visibleLeafletLayers: any[] = [];
 
 		selectedFileData.forEach((file, fileIndex) => {
-			const fallbackColor = FALLBACK_COLORS[fileIndex % FALLBACK_COLORS.length];
+			const fallbackColor = FALLBACK_COLORS[fallbackColorIndexForFile(file, fileIndex)];
 
 			file.layers.forEach((layer) => {
 				const resolvedStyle = getLayerStyle(layer, fallbackColor);
@@ -404,7 +482,7 @@ export default function ParoaGisMapContent({
 				mapInstanceRef.current.fitBounds(group.getBounds(), { padding: [40, 40] });
 			}
 		}
-	}, [selectedFileData]);
+	}, [selectedFileData, kmzLayerFileOrder]);
 
 	const toggleFileSelection = (fileName: string) => {
 		setSelectedFiles((previous) => {
@@ -419,11 +497,95 @@ export default function ParoaGisMapContent({
 	};
 
 	const selectAll = () => {
-		setSelectedFiles(new Set(files.map((file) => file.fileName)));
+		setSelectedFiles(new Set(orderedFiles.map((file) => file.fileName)));
 	};
 
 	const clearAll = () => {
 		setSelectedFiles(new Set());
+	};
+
+	const handleMapExport = async (format: "jpg" | "pdf") => {
+		setExportMenuOpen(false);
+		setExportError("");
+		if (!mapContainerRef.current || !mapInstanceRef.current) {
+			setExportError("Map is not ready to export yet. Please wait and try again.");
+			return;
+		}
+		try {
+			setExporting(true);
+			const map = mapInstanceRef.current;
+			if (typeof map.invalidateSize === "function") {
+				map.invalidateSize();
+			}
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			);
+			await new Promise((r) => setTimeout(r, 300));
+			const html2canvas = (await import("html2canvas")).default;
+			const element = mapContainerRef.current;
+			const canvas = await html2canvas(element, {
+				useCORS: true,
+				allowTaint: false,
+				logging: false,
+				scale: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
+				backgroundColor: "#e5e7eb",
+				imageTimeout: 20000,
+			});
+			const base = formatParoaExportFileBase();
+			const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+			const selectedLayerLabels = orderedFiles
+				.filter((f) => selectedFiles.has(f.fileName))
+				.map((f) => resolveFilePickerLabel(f));
+			if (format === "jpg") {
+				const anchor = document.createElement("a");
+				anchor.href = dataUrl;
+				anchor.download = `${base}.jpg`;
+				anchor.click();
+			} else {
+				const { jsPDF } = await import("jspdf/dist/jspdf.es.min.js");
+				const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+				const pageW = pdf.internal.pageSize.getWidth();
+				const pageH = pdf.internal.pageSize.getHeight();
+				const margin = 12;
+				let cursorY = margin;
+				pdf.setFontSize(14);
+				pdf.setTextColor(17, 24, 39);
+				pdf.text(title, margin, cursorY);
+				cursorY += 8;
+				pdf.setFontSize(9);
+				pdf.setTextColor(71, 85, 105);
+				const zoom = typeof map.getZoom === "function" ? String(map.getZoom()) : "—";
+				const headLine = `Basemap: ${BASE_MAP_LABELS[baseMapType]}  |  Zoom: ${zoom}`;
+				const layersLine =
+					selectedLayerLabels.length > 0
+						? `Visible KMZ: ${selectedLayerLabels.join(", ")}`
+						: "Visible KMZ: (basemap only)";
+				const headSplit = pdf.splitTextToSize(headLine, pageW - 2 * margin);
+				pdf.text(headSplit, margin, cursorY);
+				cursorY += headSplit.length * 4.2;
+				const layersSplit = pdf.splitTextToSize(layersLine, pageW - 2 * margin);
+				pdf.text(layersSplit, margin, cursorY);
+				cursorY += layersSplit.length * 4.2 + 6;
+				const maxImgH = pageH - cursorY - margin;
+				let imgWmm = pageW - 2 * margin;
+				let imgHmm = (canvas.height / canvas.width) * imgWmm;
+				if (imgHmm > maxImgH) {
+					imgHmm = maxImgH;
+					imgWmm = (canvas.width / canvas.height) * imgHmm;
+				}
+				pdf.addImage(dataUrl, "JPEG", margin, cursorY, imgWmm, imgHmm);
+				pdf.save(`${base}.pdf`);
+			}
+		} catch (exportErr) {
+			console.error("Map export failed:", exportErr);
+			setExportError(
+				exportErr instanceof Error
+					? exportErr.message
+					: "Export failed. Some basemap tiles may block capture in this browser—try another basemap or a different browser.",
+			);
+		} finally {
+			setExporting(false);
+		}
 	};
 
 	return (
@@ -529,7 +691,7 @@ export default function ParoaGisMapContent({
 											</button>
 										</div>
 										<div className="max-h-80 overflow-y-auto p-2">
-											{files.map((file) => {
+											{orderedFiles.map((file) => {
 												const checked = selectedFiles.has(file.fileName);
 												return (
 													<label
@@ -543,7 +705,7 @@ export default function ParoaGisMapContent({
 															className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
 														/>
 														<div className="min-w-0 flex-1">
-															<p className="text-sm font-medium text-gray-900 truncate">{file.displayName}</p>
+															<p className="text-sm font-medium text-gray-900 truncate">{resolveFilePickerLabel(file)}</p>
 															<p className="text-xs text-gray-500">
 																{file.totalLayers} layer(s) • {file.totalFeatures} feature(s)
 															</p>
@@ -567,6 +729,46 @@ export default function ParoaGisMapContent({
 								</button>
 							) : null}
 
+							{enableMapExport ? (
+								<div className="relative" ref={exportDropdownRef}>
+									<button
+										type="button"
+										disabled={exporting || !mapLoaded || loading || Boolean(error)}
+										onClick={() => {
+											setExportError("");
+											setExportMenuOpen((previous) => !previous);
+										}}
+										className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+									>
+										{exporting ? (
+											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										) : (
+											<Download className="h-4 w-4 mr-2" />
+										)}
+										Download
+										<ChevronDown className="h-4 w-4 ml-2" />
+									</button>
+									{exportMenuOpen && !exporting ? (
+										<div className="absolute right-0 top-full mt-2 z-[1000] w-52 rounded-xl border border-gray-200 bg-white shadow-xl py-1">
+											<button
+												type="button"
+												className="w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50"
+												onClick={() => void handleMapExport("jpg")}
+											>
+												Download as JPG
+											</button>
+											<button
+												type="button"
+												className="w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50"
+												onClick={() => void handleMapExport("pdf")}
+											>
+												Download as PDF
+											</button>
+										</div>
+									) : null}
+								</div>
+							) : null}
+
 							<button
 								type="button"
 								onClick={() => loadFiles({ preserveSelection: true })}
@@ -577,6 +779,11 @@ export default function ParoaGisMapContent({
 							</button>
 						</div>
 					</div>
+					{enableMapExport && exportError ? (
+						<div className="px-6 pb-3">
+							<p className="text-xs text-red-600">{exportError}</p>
+						</div>
+					) : null}
 
 					<div className="relative h-[650px]">
 						{(!mapLoaded || loading) && (
@@ -653,12 +860,6 @@ export default function ParoaGisMapContent({
 			{legendDisplayMode === "modal" && legendModalOpen ? (
 				<div className="fixed inset-0 z-[1200] bg-slate-950/40 backdrop-blur-[2px]">
 					<div className="flex h-full justify-start">
-						<button
-							type="button"
-							onClick={() => setLegendModalOpen(false)}
-							className="flex-1 cursor-default"
-							aria-label="Close legends overlay"
-						/>
 						<div className="relative h-full w-full max-w-xl border-r border-emerald-200 bg-gradient-to-b from-[#f4fbf7] via-white to-[#f7fbff] shadow-2xl">
 							<div className="border-b border-emerald-100 bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-600 px-6 py-5 text-white">
 								<div className="flex items-start justify-between gap-4">
@@ -725,6 +926,12 @@ export default function ParoaGisMapContent({
 								)}
 							</div>
 						</div>
+						<button
+							type="button"
+							onClick={() => setLegendModalOpen(false)}
+							className="flex-1 cursor-default"
+							aria-label="Close legends overlay"
+						/>
 					</div>
 				</div>
 			) : null}

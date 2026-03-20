@@ -516,6 +516,12 @@ export default function LoginPage() {
 							>
 								Home
 							</Link>
+							<Link
+								href="/paroa-gis-map"
+								className="text-white hover:text-gray-300 transition-colors"
+							>
+								paroa-gis-map
+							</Link>
 						</div>
 					</div>
 				</div>

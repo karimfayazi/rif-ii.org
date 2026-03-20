@@ -5,7 +5,13 @@ import { parseKmzBuffer, type KMZLayer } from "@/lib/gis/kmz-parser";
 
 export const maxDuration = 300;
 
-const PAROA_KMZ_DIRECTORY = "C:\\Users\\Karim.Fayazi\\Pictures\\Kmz\\Kmz\\Paroa";
+const PAROA_KMZ_DIRECTORY = path.join(
+	process.cwd(),
+	"public",
+	"maps",
+	"kmz",
+	"Paroa_kmz_gis_maps",
+);
 
 function formatDisplayName(fileName: string) {
 	return path
