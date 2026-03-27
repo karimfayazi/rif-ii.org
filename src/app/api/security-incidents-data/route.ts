@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
 			CONVERT(VARCHAR(19), [update_date], 120) AS [update_date]
 			FROM [_rifiiorg_db].[rifiiorg].[security_incidents_summary]
 			${whereClause}
-			ORDER BY [update_date] DESC, [id] DESC
+			ORDER BY [id] ASC
 		`;
 
 		const result = await request_obj.query(dataQuery);

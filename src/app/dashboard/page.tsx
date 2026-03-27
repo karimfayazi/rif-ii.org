@@ -3130,6 +3130,48 @@ export default function DashboardPage() {
 
 		{/* Progress % Section - Three Columns */}
 		<div className="space-y-3">
+		<div className="flex flex-wrap items-center gap-2 sm:gap-3">
+			<Link
+				href="/domel-gis-map"
+				target="_blank"
+				rel="noopener noreferrer"
+				className="inline-flex items-center px-3 py-1.5 text-sm bg-[#0b4d2b] text-white font-medium rounded-md hover:bg-[#0a3d24] transition-colors shadow-sm"
+			>
+				<MapPin className="h-4 w-4 mr-1.5 shrink-0" />
+				Domel
+				<ExternalLink className="h-3.5 w-3.5 ml-1.5 shrink-0 opacity-90" aria-hidden />
+			</Link>
+			<Link
+				href="/kakki-gis-map"
+				target="_blank"
+				rel="noopener noreferrer"
+				className="inline-flex items-center px-3 py-1.5 text-sm bg-[#0b4d2b] text-white font-medium rounded-md hover:bg-[#0a3d24] transition-colors shadow-sm"
+			>
+				<MapPin className="h-4 w-4 mr-1.5 shrink-0" />
+				Kakki
+				<ExternalLink className="h-3.5 w-3.5 ml-1.5 shrink-0 opacity-90" aria-hidden />
+			</Link>
+			<Link
+				href="/paharpur-gis-map"
+				target="_blank"
+				rel="noopener noreferrer"
+				className="inline-flex items-center px-3 py-1.5 text-sm bg-[#0b4d2b] text-white font-medium rounded-md hover:bg-[#0a3d24] transition-colors shadow-sm"
+			>
+				<MapPin className="h-4 w-4 mr-1.5 shrink-0" />
+				Paharpur
+				<ExternalLink className="h-3.5 w-3.5 ml-1.5 shrink-0 opacity-90" aria-hidden />
+			</Link>
+			<Link
+				href="/paroa-gis-map"
+				target="_blank"
+				rel="noopener noreferrer"
+				className="inline-flex items-center px-3 py-1.5 text-sm bg-[#0b4d2b] text-white font-medium rounded-md hover:bg-[#0a3d24] transition-colors shadow-sm"
+			>
+				<MapPin className="h-4 w-4 mr-1.5 shrink-0" />
+				Parora
+				<ExternalLink className="h-3.5 w-3.5 ml-1.5 shrink-0 opacity-90" aria-hidden />
+			</Link>
+		</div>
 		<div className="space-y-1">
 			<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">Project Tracking Progress (%)</h2>
 			<p className="text-sm text-gray-600 leading-relaxed">Monitor and track project completion across all outputs</p>

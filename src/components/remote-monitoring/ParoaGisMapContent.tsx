@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	AlertCircle,
 	ArrowLeft,
@@ -59,10 +59,10 @@ const BASE_MAP_LABELS: Record<BaseMapType, string> = {
 	topographic: "Topographic Map",
 };
 
-function formatParoaExportFileBase() {
+function formatGisExportFileBase(fileBasePrefix: string) {
 	const d = new Date();
 	const pad = (n: number) => String(n).padStart(2, "0");
-	return `Paroa_GIS_Map_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+	return `${fileBasePrefix}_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
 }
 
 interface ParoaGisMapContentProps {
@@ -75,8 +75,16 @@ interface ParoaGisMapContentProps {
 	kmzLayerFileOrder?: string[];
 	/** Optional per-file UI labels (layer picker + legend); merged ahead of built-in legend names when provided. */
 	kmzDisplayNamesByFile?: Record<string, string>;
+	/** When set, each KMZ file uses this stroke/fill color for layers and legend swatches (overrides KMZ feature colors for that file only). */
+	kmzLayerColorsByFile?: Record<string, string>;
 	/** When true, show Download (JPG/PDF) for the visible map area (client-side capture). */
 	enableMapExport?: boolean;
+	/** API route that returns parsed KMZ payload (default: Paroa bundle). */
+	kmzApiPath?: string;
+	/** Small brand line above “Legends” in modal layout (default: Paroa). */
+	legendsModalBrandLabel?: string;
+	/** Prefix for exported JPG/PDF filenames (default: Paroa_GIS_Map). */
+	exportFileBasePrefix?: string;
 }
 
 const FALLBACK_COLORS = [
@@ -147,7 +155,11 @@ export default function ParoaGisMapContent({
 	legendDisplayMode = "sidebar",
 	kmzLayerFileOrder,
 	kmzDisplayNamesByFile,
+	kmzLayerColorsByFile,
 	enableMapExport = false,
+	kmzApiPath = "/api/gis/kmz/paroa",
+	legendsModalBrandLabel = "Paroa GIS Map",
+	exportFileBasePrefix = "Paroa_GIS_Map",
 }: ParoaGisMapContentProps) {
 	const [files, setFiles] = useState<KMZFile[]>([]);
 	const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
@@ -184,12 +196,35 @@ export default function ParoaGisMapContent({
 		return selectedIndex % FALLBACK_COLORS.length;
 	};
 
-	const loadFiles = async (options?: { preserveSelection?: boolean }) => {
+	/** Legend + Leaflet styling: optional per-file palette keeps swatches and geometry in sync. */
+	const getDisplayLayerStyle = useCallback(
+		(layer: KMZLayer, file: KMZFile, fileIndex: number) => {
+			const forced = kmzLayerColorsByFile?.[file.fileName];
+			const fallback = FALLBACK_COLORS[fallbackColorIndexForFile(file, fileIndex)];
+			if (forced) {
+				const featureStyle =
+					layer.geojson.features.find((f) => f.properties?._style)?.properties?._style || {};
+				return {
+					color: forced,
+					fillColor: forced,
+					fillOpacity:
+						featureStyle.fillOpacity ??
+						layer.style?.fillOpacity ??
+						(layer.type === "polygon" ? 0.25 : 0),
+					weight: featureStyle.weight ?? layer.style?.weight ?? 2,
+				};
+			}
+			return getLayerStyle(layer, fallback);
+		},
+		[kmzLayerColorsByFile, kmzLayerFileOrder],
+	);
+
+	const loadFiles = useCallback(async (options?: { preserveSelection?: boolean }) => {
 		try {
 			setLoading(true);
 			setError("");
 
-			const response = await fetch("/api/gis/kmz/paroa", { cache: "no-store" });
+			const response = await fetch(kmzApiPath, { cache: "no-store" });
 			const result = await response.json();
 
 			if (!response.ok || !result.success) {
@@ -217,11 +252,11 @@ export default function ParoaGisMapContent({
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [kmzApiPath]);
 
 	useEffect(() => {
-		loadFiles();
-	}, []);
+		void loadFiles();
+	}, [loadFiles]);
 
 	const orderedFiles = useMemo(
 		() => sortKmzFilesByOrder(files, kmzLayerFileOrder),
@@ -395,12 +430,12 @@ export default function ParoaGisMapContent({
 			selectedFileData.flatMap((file, fileIndex) =>
 				file.layers.map((layer) => ({
 					key: `${file.fileName}-${layer.id}`,
-					style: getLayerStyle(layer, FALLBACK_COLORS[fallbackColorIndexForFile(file, fileIndex)]),
+					style: getDisplayLayerStyle(layer, file, fileIndex),
 					type: layer.type,
 					displayName: resolveLegendDisplayName(file.fileName, layer.name),
 				})),
 			),
-		[selectedFileData, kmzDisplayNamesByFile, kmzLayerFileOrder],
+		[selectedFileData, kmzDisplayNamesByFile, kmzLayerFileOrder, getDisplayLayerStyle],
 	);
 
 	useEffect(() => {
@@ -419,15 +454,26 @@ export default function ParoaGisMapContent({
 		const visibleLeafletLayers: any[] = [];
 
 		selectedFileData.forEach((file, fileIndex) => {
-			const fallbackColor = FALLBACK_COLORS[fallbackColorIndexForFile(file, fileIndex)];
-
 			file.layers.forEach((layer) => {
-				const resolvedStyle = getLayerStyle(layer, fallbackColor);
+				const resolvedStyle = getDisplayLayerStyle(layer, file, fileIndex);
+				const useSyncedPalette = Boolean(kmzLayerColorsByFile?.[file.fileName]);
 				const layerKey = `${file.fileName}:${layer.id}`;
 
 				const geoJsonLayer = L.geoJSON(layer.geojson, {
 					style: (feature: any) => {
 						const featureStyle = feature?.properties?._style || {};
+						if (useSyncedPalette) {
+							return {
+								color: resolvedStyle.color,
+								fillColor: resolvedStyle.fillColor,
+								fillOpacity:
+									featureStyle.fillOpacity ??
+									resolvedStyle.fillOpacity ??
+									(layer.type === "polygon" ? 0.25 : 0),
+								weight: featureStyle.weight ?? resolvedStyle.weight ?? 2,
+								opacity: 0.9,
+							};
+						}
 						return {
 							color: featureStyle.color || resolvedStyle.color,
 							fillColor: featureStyle.fillColor || resolvedStyle.fillColor,
@@ -442,8 +488,12 @@ export default function ParoaGisMapContent({
 					pointToLayer: (feature: any, latlng: any) =>
 						L.circleMarker(latlng, {
 							radius: 6,
-							fillColor: feature?.properties?._style?.fillColor || resolvedStyle.fillColor,
-							color: feature?.properties?._style?.color || resolvedStyle.color,
+							fillColor: useSyncedPalette
+								? resolvedStyle.fillColor
+								: feature?.properties?._style?.fillColor || resolvedStyle.fillColor,
+							color: useSyncedPalette
+								? resolvedStyle.color
+								: feature?.properties?._style?.color || resolvedStyle.color,
 							weight: 2,
 							opacity: 1,
 							fillOpacity: 0.8,
@@ -482,7 +532,7 @@ export default function ParoaGisMapContent({
 				mapInstanceRef.current.fitBounds(group.getBounds(), { padding: [40, 40] });
 			}
 		}
-	}, [selectedFileData, kmzLayerFileOrder]);
+	}, [selectedFileData, kmzLayerFileOrder, getDisplayLayerStyle]);
 
 	const toggleFileSelection = (fileName: string) => {
 		setSelectedFiles((previous) => {
@@ -531,7 +581,7 @@ export default function ParoaGisMapContent({
 				backgroundColor: "#e5e7eb",
 				imageTimeout: 20000,
 			});
-			const base = formatParoaExportFileBase();
+			const base = formatGisExportFileBase(exportFileBasePrefix);
 			const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
 			const selectedLayerLabels = orderedFiles
 				.filter((f) => selectedFiles.has(f.fileName))
@@ -865,7 +915,7 @@ export default function ParoaGisMapContent({
 								<div className="flex items-start justify-between gap-4">
 									<div>
 										<p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100">
-											Paroa GIS Map
+											{legendsModalBrandLabel}
 										</p>
 										<h2 className="mt-2 text-2xl font-semibold">Legends</h2>
 										<p className="mt-1 text-sm text-emerald-50/90">

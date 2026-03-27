@@ -424,14 +424,14 @@ export default function SecurityIncidentsDataPage() {
 					{/* QPR_QTR_No — placed before QTR */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							QPR QTR No
+							QPR
 						</label>
 						<select
 							value={selectedQprQtr}
 							onChange={(e) => setSelectedQprQtr(e.target.value)}
 							className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
 						>
-							<option value="">All QPR QTR</option>
+							<option value="">ALL QPR</option>
 							{filterOptions.qprQtrNos.map((q) => (
 								<option key={q} value={q}>
 									{q}
@@ -505,140 +505,206 @@ export default function SecurityIncidentsDataPage() {
 					)}
 				</div>
 			) : (
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+				<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden ring-1 ring-black/5">
 					<div className="overflow-x-auto">
-						<table className="w-full">
-							<thead className="bg-gray-50 border-b border-gray-200">
+						<table className="min-w-full divide-y divide-gray-200">
+							<thead className="bg-gradient-to-r from-gray-100 via-gray-50 to-white border-b-2 border-[#0b4d2b]/25">
 								<tr>
-									<th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										ID
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										QTR
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-										QPR QTR
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
+										QPR
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Month/Year
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										District
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Mil. Killed
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Mil. Injured
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Mil. Arrested
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										LEA Killed
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										LEA Injured
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Civ. Killed
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Civ. Injured
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										IEDs
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Tgt Kill
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Abduct.
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Fire Raid
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Extort.
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-100">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider bg-gray-100/90"
+									>
 										Total
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										User
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Updated
 									</th>
-									<th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+									<th
+										scope="col"
+										className="px-4 py-3.5 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider"
+									>
 										Actions
 									</th>
 								</tr>
 							</thead>
-							<tbody className="bg-white divide-y divide-gray-200">
-								{rows.map((row) => (
+							<tbody className="divide-y divide-gray-100 bg-white">
+								{rows.map((row, rowIdx) => (
 									<tr
 										key={row.id}
-										className="hover:bg-gray-50 transition-colors"
+										className={
+											(rowIdx % 2 === 0 ? "bg-white " : "bg-gray-50/60 ") +
+											"transition-colors hover:bg-emerald-50/45"
+										}
 									>
-										<td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+										<td className="px-4 py-3 whitespace-nowrap text-sm font-medium tabular-nums text-gray-900">
 											{row.id}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm tabular-nums text-gray-700">
 											{row.QTR_No}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
 											{row.QPR_QTR_No || "—"}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
 											{row.Month_Year}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
 											{row.District}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.Militants_Killed}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.Militants_Injured}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.Militants_Arrested}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.LEA_Killed}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.LEA_Injured}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.Civilians_Killed}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.Civilians_Injured}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.IEDs}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.Target_Killings}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.Abductions}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.Fire_Raid}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center tabular-nums text-gray-700">
 											{row.Extortions}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-center font-semibold text-gray-900 bg-gray-50">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-center font-semibold tabular-nums text-gray-900 bg-emerald-50/50">
 											{rowTotal(row)}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
 											{row.username || "—"}
 										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
 											{formatDate(row.update_date)}
 										</td>
 										<td className="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">

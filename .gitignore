@@ -46,10 +46,16 @@ public/maps/Shapefiles/hotosm_pak_roads_lines_shp.*
 public/maps/Shapefiles/hotosm_pak_waterways_lines_shp.*
 public/maps/Shapefiles/hotosm_pak_waterways_lines_shpCopy.*
 
-# KMZ files (too large for GitHub) — except Paroa pack (small; required for /api/gis/kmz/paroa on Vercel)
+# KMZ files (too large for GitHub) — except Paroa/Domel packs (small; required for KMZ GIS API routes on Vercel)
 public/maps/kmz/**/*.kmz
 !public/maps/kmz/Paroa_kmz_gis_maps/
 !public/maps/kmz/Paroa_kmz_gis_maps/**/*.kmz
+!public/maps/kmz/Domel_kmz_gis_maps/
+!public/maps/kmz/Domel_kmz_gis_maps/**/*.kmz
+!public/maps/kmz/Kakki_kmz_gis_maps/
+!public/maps/kmz/Kakki_kmz_gis_maps/**/*.kmz
+!public/maps/kmz/Paharpur_kmz_gis_maps/
+!public/maps/kmz/Paharpur_kmz_gis_maps/**/*.kmz
 
 # Generated GIS data (converted from shapefiles)
 /gis-data/
