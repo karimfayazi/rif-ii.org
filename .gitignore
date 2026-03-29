@@ -56,6 +56,8 @@ public/maps/kmz/**/*.kmz
 !public/maps/kmz/Kakki_kmz_gis_maps/**/*.kmz
 !public/maps/kmz/Paharpur_kmz_gis_maps/
 !public/maps/kmz/Paharpur_kmz_gis_maps/**/*.kmz
+!public/maps/kmz/Paniala_kmz_gis_maps/
+!public/maps/kmz/Paniala_kmz_gis_maps/**/*.kmz
 
 # Generated GIS data (converted from shapefiles)
 /gis-data/
