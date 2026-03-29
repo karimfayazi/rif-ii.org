@@ -34,7 +34,15 @@ app.prepare().then(() => {
       res.end('internal server error')
     }
   })
-  
+
+  // Required for Next.js dev HMR (Webpack/Turbopack WebSocket upgrades)
+  if (dev) {
+    const upgradeHandler = app.getUpgradeHandler()
+    server.on('upgrade', (req, socket, head) => {
+      upgradeHandler(req, socket, head)
+    })
+  }
+
   // Explicitly bind to 0.0.0.0 to allow network access
   server.listen(port, '0.0.0.0', (err) => {
     if (err) {

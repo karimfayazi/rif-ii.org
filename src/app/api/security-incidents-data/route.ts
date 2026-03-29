@@ -87,7 +87,24 @@ export async function GET(request: NextRequest) {
 			CONVERT(VARCHAR(19), [update_date], 120) AS [update_date]
 			FROM [_rifiiorg_db].[rifiiorg].[security_incidents_summary]
 			${whereClause}
-			ORDER BY [id] ASC
+			ORDER BY
+				TRY_CONVERT(INT, RIGHT([Month_Year], 4)) DESC,
+				CASE UPPER(LEFT([Month_Year], 3))
+					WHEN 'JAN' THEN 1
+					WHEN 'FEB' THEN 2
+					WHEN 'MAR' THEN 3
+					WHEN 'APR' THEN 4
+					WHEN 'MAY' THEN 5
+					WHEN 'JUN' THEN 6
+					WHEN 'JUL' THEN 7
+					WHEN 'AUG' THEN 8
+					WHEN 'SEP' THEN 9
+					WHEN 'OCT' THEN 10
+					WHEN 'NOV' THEN 11
+					WHEN 'DEC' THEN 12
+					ELSE 0
+				END DESC,
+				[id] DESC
 		`;
 
 		const result = await request_obj.query(dataQuery);

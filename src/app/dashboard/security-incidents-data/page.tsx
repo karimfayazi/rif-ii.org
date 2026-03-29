@@ -520,12 +520,6 @@ export default function SecurityIncidentsDataPage() {
 										scope="col"
 										className="px-4 py-3.5 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider"
 									>
-										QTR
-									</th>
-									<th
-										scope="col"
-										className="px-4 py-3.5 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider"
-									>
 										QPR
 									</th>
 									<th
@@ -649,9 +643,6 @@ export default function SecurityIncidentsDataPage() {
 									>
 										<td className="px-4 py-3 whitespace-nowrap text-sm font-medium tabular-nums text-gray-900">
 											{row.id}
-										</td>
-										<td className="px-4 py-3 whitespace-nowrap text-sm tabular-nums text-gray-700">
-											{row.QTR_No}
 										</td>
 										<td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
 											{row.QPR_QTR_No || "—"}

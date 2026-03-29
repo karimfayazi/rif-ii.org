@@ -3171,6 +3171,16 @@ export default function DashboardPage() {
 				Parora
 				<ExternalLink className="h-3.5 w-3.5 ml-1.5 shrink-0 opacity-90" aria-hidden />
 			</Link>
+			<Link
+				href="/paniala-gis-map"
+				target="_blank"
+				rel="noopener noreferrer"
+				className="inline-flex items-center px-3 py-1.5 text-sm bg-[#0b4d2b] text-white font-medium rounded-md hover:bg-[#0a3d24] transition-colors shadow-sm"
+			>
+				<MapPin className="h-4 w-4 mr-1.5 shrink-0" />
+				Paniala
+				<ExternalLink className="h-3.5 w-3.5 ml-1.5 shrink-0 opacity-90" aria-hidden />
+			</Link>
 		</div>
 		<div className="space-y-1">
 			<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">Project Tracking Progress (%)</h2>
@@ -3570,24 +3580,26 @@ export default function DashboardPage() {
 			{/* RIF-II Security Alert Section */}
 			<div className="bg-gradient-to-br from-white to-red-50 rounded-xl border border-red-200 shadow-lg overflow-hidden">
 				<div className="p-6 border-b border-red-200 bg-gradient-to-r from-red-600 to-red-700">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center space-x-3">
-							<div className="p-2 bg-white/20 rounded-lg">
+					<Link
+						href="/dashboard/security-incidents-data"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="flex items-center justify-between gap-4 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-red-600 group"
+					>
+						<div className="flex items-center space-x-3 min-w-0 flex-1">
+							<div className="p-2 bg-white/20 rounded-lg shrink-0 group-hover:bg-white/25 transition-colors">
 								<Shield className="h-6 w-6 text-white" />
 							</div>
-							<div className="space-y-1">
+							<div className="space-y-1 min-w-0">
 								<h2 className="text-2xl font-semibold text-white leading-snug tracking-tight">RIF-II Security Alert</h2>
 								<p className="text-sm text-red-100 leading-relaxed">Stay informed about security incidents and alerts</p>
 							</div>
 						</div>
-						<Link
-							href="/dashboard/security-incidents-data"
-							className="inline-flex items-center px-4 py-2 text-sm font-medium bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors whitespace-nowrap backdrop-blur-sm"
-						>
+						<span className="inline-flex items-center px-4 py-2 text-sm font-medium bg-white/20 text-white rounded-lg group-hover:bg-white/30 transition-colors whitespace-nowrap backdrop-blur-sm shrink-0">
 							<Layers className="h-4 w-4 mr-2" />
 							Security incidents data
-						</Link>
-					</div>
+						</span>
+					</Link>
 				</div>
 
 				<div className="p-6">
@@ -3606,7 +3618,24 @@ export default function DashboardPage() {
 							{securityAlerts.map((alert) => (
 								<div
 									key={alert.id}
-									className="bg-white rounded-lg border border-red-200 p-4 hover:shadow-md transition-shadow"
+									role="button"
+									tabIndex={0}
+									onClick={() => {
+										const href = alert.id
+											? `/dashboard/security-updates/view?id=${alert.id}`
+											: "/dashboard/security-updates";
+										window.open(href, "_blank", "noopener,noreferrer");
+									}}
+									onKeyDown={(event) => {
+										if (event.key === "Enter" || event.key === " ") {
+											event.preventDefault();
+											const href = alert.id
+												? `/dashboard/security-updates/view?id=${alert.id}`
+												: "/dashboard/security-updates";
+											window.open(href, "_blank", "noopener,noreferrer");
+										}
+									}}
+									className="bg-white rounded-lg border border-red-200 p-4 hover:shadow-md transition-shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2"
 								>
 									<div className="flex items-start justify-between">
 										<div className="flex-1">
@@ -3615,7 +3644,10 @@ export default function DashboardPage() {
 											</h3>
 											{alert.ReferenceNumber && (
 												<Link
-													href={`/dashboard/security-updates/view?ref=${encodeURIComponent(alert.ReferenceNumber)}`}
+													href={`/dashboard/security-updates/view?id=${alert.id}`}
+													target="_blank"
+													rel="noopener noreferrer"
+													onClick={(event) => event.stopPropagation()}
 													className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
 												>
 													<Shield className="h-4 w-4 mr-1" />
