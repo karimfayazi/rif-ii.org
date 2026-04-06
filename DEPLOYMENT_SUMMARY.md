@@ -78,7 +78,7 @@ In Plesk Node.js settings, add:
 ## 🔧 Database Configuration
 
 The application is already configured to connect to:
-- **Server:** 65.108.5.110
+- **Server:** 95.217.203.20
 - **Database:** _rifiiorg_db
 - **Credentials:** Already configured in `src/lib/db.ts`
 

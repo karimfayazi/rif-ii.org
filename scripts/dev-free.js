@@ -34,8 +34,8 @@ async function main() {
   const isWindows = process.platform === 'win32';
   const npxCommand = isWindows ? 'npx.cmd' : 'npx';
   
-  // Start Next.js dev server without shell:true (fixes DEP0190)
-  const nextProcess = spawn(npxCommand, ['next', 'dev', '--turbopack', '-H', HOST, '-p', PORT], {
+  // Force webpack in dev because Next.js 16 defaults to Turbopack, which triggers the warning here.
+  const nextProcess = spawn(npxCommand, ['next', 'dev', '--webpack', '-H', HOST, '-p', PORT], {
     stdio: 'inherit',
     cwd: process.cwd(),
     windowsHide: false

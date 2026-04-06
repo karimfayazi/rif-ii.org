@@ -133,7 +133,7 @@ output: 'standalone'
 
 ## Notes
 
-- The application uses SQL Server database at `65.108.5.110`
+- The application uses SQL Server database at `95.217.203.20`
 - Database credentials are in `src/lib/db.ts`
 - For production, consider using environment variables for sensitive data
 - Ensure Node.js module `iisnode` is installed if using IIS (Windows)

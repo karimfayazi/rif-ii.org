@@ -390,7 +390,7 @@ If errors still occur, check server logs for:
 ### Environment Variables
 Verify `MSSQL_CONNECTION` is set correctly on Vercel:
 ```
-Data Source=65.108.5.110;Initial Catalog=_rifiiorg_db;User ID=rifiiorg;Password=...;Connect Timeout=60
+Data Source=95.217.203.20;Initial Catalog=_rifiiorg_db;User ID=rifiiorg;Password=...;Connect Timeout=60
 ```
 
 ### Vercel Logs

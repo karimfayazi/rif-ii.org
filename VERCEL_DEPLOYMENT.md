@@ -35,7 +35,7 @@ Make sure your code is pushed to a Git repository (GitHub, GitLab, or Bitbucket)
 4. **Set Environment Variables**
    Click "Environment Variables" and add:
    ```
-   MSSQL_CONNECTION=Data Source=65.108.5.110;Initial Catalog=_rifiiorg_db;Integrated Security=False;User ID=rifiiorg;Password=!l3GI!Or3Rm74w;Connect Timeout=60;Max Pool Size=300;Encrypt=false
+   MSSQL_CONNECTION=Data Source=95.217.203.20;Initial Catalog=_rifiiorg_db;Integrated Security=False;User ID=rifiiorg;Password=!l3GI!Or3Rm74w;Connect Timeout=60;Max Pool Size=300;Encrypt=false
    NODE_ENV=production
    ```
    

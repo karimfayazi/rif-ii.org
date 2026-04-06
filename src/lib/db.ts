@@ -3,7 +3,7 @@ import sql, { ConnectionPool } from "mssql";
 let pool: ConnectionPool | null = null;
 
 const defaultConnection =
-	"Data Source=65.108.5.110;Initial Catalog=_rifiiorg_db;Integrated Security=False;User ID=rifiiorg;Password=!l3GI!Or3Rm74w;Connect Timeout=60;Max Pool Size=300;Encrypt=false";
+	"Data Source=95.217.203.20;Initial Catalog=_rifiiorg_db;Integrated Security=False;User ID=rifiiorg;Password=!l3GI!Or3Rm74w;Connect Timeout=60;Max Pool Size=300;Encrypt=false";
 
 export async function getDb(): Promise<ConnectionPool> {
 	if (pool) return pool;

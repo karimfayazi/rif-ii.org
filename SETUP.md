@@ -19,7 +19,7 @@ Regional Infrastructure Fund – II Management Information System for Khyber Pak
 2. **Environment Variables**
    Create a `.env.local` file with the following variables:
    ```env
-   MSSQL_CONNECTION="Data Source=65.108.5.110;Initial Catalog=_rifiiorg_db;Integrated Security=False;User ID=rifiiorg;Password=!l3GI!Or3Rm74w;Connect Timeout=60;Max Pool Size=300;Encrypt=false"
+   MSSQL_CONNECTION="Data Source=95.217.203.20;Initial Catalog=_rifiiorg_db;Integrated Security=False;User ID=rifiiorg;Password=!l3GI!Or3Rm74w;Connect Timeout=60;Max Pool Size=300;Encrypt=false"
    NODE_ENV="development"
    PORT=3000
    ```
