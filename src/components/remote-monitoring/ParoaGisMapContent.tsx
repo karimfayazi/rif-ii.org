@@ -808,16 +808,49 @@ export default function ParoaGisMapContent({
 			setExportError("Map is not ready to export yet. Please wait and try again.");
 			return;
 		}
+		let restoreMapView: (() => void) | null = null;
 		try {
 			setExporting(true);
 			const map = mapInstanceRef.current;
+			const originalCenter = typeof map.getCenter === "function" ? map.getCenter() : null;
+			const originalZoom = typeof map.getZoom === "function" ? map.getZoom() : null;
+
+			if (originalCenter && originalZoom !== null && typeof map.setView === "function") {
+				restoreMapView = () => {
+					try {
+						map.setView(originalCenter, originalZoom, { animate: false });
+						if (typeof map.invalidateSize === "function") {
+							map.invalidateSize();
+						}
+					} catch (restoreError) {
+						console.warn("Unable to restore map view after export:", restoreError);
+					}
+				};
+			}
+
 			if (typeof map.invalidateSize === "function") {
 				map.invalidateSize();
 			}
+
+			const L = (window as any).L;
+			const exportLayers = Object.values(layerRefsRef.current).filter(
+				(layer) => layer && typeof map.hasLayer === "function" && map.hasLayer(layer),
+			);
+
+			if (L && exportLayers.length > 0 && typeof map.fitBounds === "function") {
+				const exportGroup = L.featureGroup(exportLayers);
+				if (exportGroup.getBounds && exportGroup.getBounds().isValid()) {
+					map.fitBounds(exportGroup.getBounds(), {
+						animate: false,
+						padding: [70, 70],
+					});
+				}
+			}
+
 			await new Promise<void>((resolve) =>
 				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
 			);
-			await new Promise((r) => setTimeout(r, 300));
+			await new Promise((r) => setTimeout(r, 700));
 			const html2canvas = (await import("html2canvas")).default;
 			const element = mapContainerRef.current;
 			const canvas = await html2canvas(element, {
@@ -836,6 +869,7 @@ export default function ParoaGisMapContent({
 			const imageExportCanvas = document.createElement("canvas");
 			const imageExportCtx = imageExportCanvas.getContext("2d");
 			const canvasScale = canvas.width / Math.max(1, element.clientWidth || canvas.width);
+			const mapFramePadding = Math.round(24 * canvasScale);
 			const legendPadding = Math.round(26 * canvasScale);
 			const legendHeaderHeight = Math.round(82 * canvasScale);
 			const legendCardHeight = Math.round(126 * canvasScale);
@@ -848,15 +882,23 @@ export default function ParoaGisMapContent({
 			let dataUrl: string;
 
 			if (imageExportCtx) {
-				imageExportCanvas.width = canvas.width;
-				imageExportCanvas.height = canvas.height + legendHeight;
+				const mapSectionHeight = canvas.height + mapFramePadding * 2;
+				imageExportCanvas.width = canvas.width + mapFramePadding * 2;
+				imageExportCanvas.height = mapSectionHeight + legendHeight;
 				imageExportCtx.fillStyle = "#ffffff";
 				imageExportCtx.fillRect(0, 0, imageExportCanvas.width, imageExportCanvas.height);
-				imageExportCtx.drawImage(canvas, 0, 0);
-				imageExportCtx.fillStyle = "#f8fafc";
-				imageExportCtx.fillRect(0, canvas.height, imageExportCanvas.width, legendHeight);
 
-				let y = canvas.height + legendPadding;
+				imageExportCtx.fillStyle = "#ffffff";
+				imageExportCtx.fillRect(mapFramePadding, mapFramePadding, canvas.width, canvas.height);
+				imageExportCtx.strokeStyle = "#cbd5e1";
+				imageExportCtx.lineWidth = Math.max(1, Math.round(canvasScale));
+				imageExportCtx.strokeRect(mapFramePadding, mapFramePadding, canvas.width, canvas.height);
+				imageExportCtx.drawImage(canvas, mapFramePadding, mapFramePadding);
+
+				imageExportCtx.fillStyle = "#f8fafc";
+				imageExportCtx.fillRect(0, mapSectionHeight, imageExportCanvas.width, legendHeight);
+
+				let y = mapSectionHeight + legendPadding;
 				imageExportCtx.fillStyle = "#0f172a";
 				imageExportCtx.font = `${Math.round(22 * canvasScale)}px Arial, sans-serif`;
 				imageExportCtx.fillText("Visible Layers & Styles", legendPadding, y + Math.round(24 * canvasScale));
@@ -986,7 +1028,9 @@ export default function ParoaGisMapContent({
 					imgHmm = maxImgH;
 					imgWmm = (canvas.width / canvas.height) * imgHmm;
 				}
-				pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", margin, cursorY, imgWmm, imgHmm);
+				const imgX = (pageW - imgWmm) / 2;
+				const imgY = cursorY + Math.max(0, (maxImgH - imgHmm) / 2);
+				pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", imgX, imgY, imgWmm, imgHmm);
 
 				pdf.addPage();
 				cursorY = margin;
@@ -1074,6 +1118,7 @@ export default function ParoaGisMapContent({
 					: "Export failed. Some basemap tiles may block capture in this browser—try another basemap or a different browser.",
 			);
 		} finally {
+			restoreMapView?.();
 			setExporting(false);
 		}
 	};
