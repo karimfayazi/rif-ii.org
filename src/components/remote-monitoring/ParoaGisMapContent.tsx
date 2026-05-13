@@ -52,6 +52,14 @@ type KMZFile = {
 
 type BaseMapType = "satellite" | "street" | "hybrid" | "topographic";
 
+type DisplayLayerStyle = {
+	color: string;
+	fillColor: string;
+	fillOpacity: number;
+	opacity: number;
+	weight: number;
+};
+
 type LayerStyleSettings = {
 	fillColor: string;
 	borderColor: string;
@@ -212,7 +220,7 @@ function formatPropertyKey(key: string) {
 		.trim();
 }
 
-function getLayerStyle(layer: KMZLayer, fallbackColor: string) {
+function getLayerStyle(layer: KMZLayer, fallbackColor: string): DisplayLayerStyle {
 	const featureStyle =
 		layer.geojson.features.find((feature) => feature.properties?._style)?.properties?._style || {};
 
@@ -221,6 +229,7 @@ function getLayerStyle(layer: KMZLayer, fallbackColor: string) {
 		fillColor: featureStyle.fillColor || layer.style?.fillColor || fallbackColor,
 		fillOpacity:
 			featureStyle.fillOpacity ?? layer.style?.fillOpacity ?? (layer.type === "polygon" ? 0.25 : 0),
+		opacity: 0.9,
 		weight: featureStyle.weight ?? layer.style?.weight ?? 2,
 	};
 }
@@ -314,7 +323,7 @@ export default function ParoaGisMapContent({
 		[getDefaultEditableLayerStyle, layerStyles],
 	);
 
-	const getEditableLeafletStyle = useCallback((style: LayerStyleSettings) => ({
+	const getEditableLeafletStyle = useCallback((style: LayerStyleSettings): DisplayLayerStyle => ({
 		color: style.borderColor,
 		fillColor: style.fillColor,
 		fillOpacity: style.fillOpacityPercent / 100,
@@ -341,6 +350,7 @@ export default function ParoaGisMapContent({
 						featureStyle.fillOpacity ??
 						layer.style?.fillOpacity ??
 						(layer.type === "polygon" ? 0.25 : 0),
+					opacity: 0.9,
 					weight: featureStyle.weight ?? layer.style?.weight ?? 2,
 				};
 			}
