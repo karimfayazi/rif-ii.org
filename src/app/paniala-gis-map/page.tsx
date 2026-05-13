@@ -1,30 +1,21 @@
 import ParoaGisMapContent from "@/components/remote-monitoring/ParoaGisMapContent";
 
 const PANIALA_KMZ_LAYER_ORDER: string[] = [
-	"Paniala_NC_Boundary.kmz",
-	"Paniala_Zones_Data.kmz",
-	"Paniala_DumpSites.kmz",
-	"Paniala_Existing_Drain.kmz",
-	"Paniala_Drain_Proposed_by_Community.kmz",
-	"Paniala_WaterSupply_Schemes.kmz",
+	"paniala-nc-boundary",
+	"paniala-zones",
+	"paniala-dump-sites",
+	"paniala-existing-drainage",
+	"paniala-proposed-drainage",
+	"paniala-water-supply",
 ];
 
 const PANIALA_KMZ_DISPLAY_NAMES: Record<string, string> = {
-	"Paniala_NC_Boundary.kmz": "Paniala NC Boundary",
-	"Paniala_Zones_Data.kmz": "Paniala Zones",
-	"Paniala_DumpSites.kmz": "Paniala Dump Sites",
-	"Paniala_Existing_Drain.kmz": "Paniala Existing Drainage",
-	"Paniala_Drain_Proposed_by_Community.kmz": "Paniala Proposed Drainage (Community)",
-	"Paniala_WaterSupply_Schemes.kmz": "Paniala Water Supply Schemes",
-};
-
-const PANIALA_KMZ_LAYER_COLORS: Record<string, string> = {
-	"Paniala_NC_Boundary.kmz": "#1e40af",
-	"Paniala_Zones_Data.kmz": "#6d28d9",
-	"Paniala_DumpSites.kmz": "#713f12",
-	"Paniala_Existing_Drain.kmz": "#0369a1",
-	"Paniala_Drain_Proposed_by_Community.kmz": "#0f766e",
-	"Paniala_WaterSupply_Schemes.kmz": "#0e7490",
+	"paniala-nc-boundary": "Paniala NC Boundary",
+	"paniala-zones": "Paniala Zones",
+	"paniala-dump-sites": "Paniala Dump Sites",
+	"paniala-existing-drainage": "Paniala Existing Drainage",
+	"paniala-proposed-drainage": "Paniala Proposed Drainage (Community)",
+	"paniala-water-supply": "Paniala Water Supply Schemes",
 };
 
 export default function PanialaGisMapStandalonePage() {
@@ -41,7 +32,54 @@ export default function PanialaGisMapStandalonePage() {
 					exportFileBasePrefix="Paniala_GIS_Map"
 					kmzLayerFileOrder={PANIALA_KMZ_LAYER_ORDER}
 					kmzDisplayNamesByFile={PANIALA_KMZ_DISPLAY_NAMES}
-					kmzLayerColorsByFile={PANIALA_KMZ_LAYER_COLORS}
+					layerStyleSettingsPanel={{
+						title: "Layer Style Settings",
+						description: "Customize visibility, colors, opacity, and stroke width for each Paniala GIS layer.",
+						defaultStylesByFile: {
+							"paniala-nc-boundary": {
+								fillColor: "#2563eb",
+								borderColor: "#1e40af",
+								fillOpacityPercent: 25,
+								borderOpacityPercent: 90,
+								borderWidth: 2,
+							},
+							"paniala-zones": {
+								fillColor: "#16a34a",
+								borderColor: "#166534",
+								fillOpacityPercent: 25,
+								borderOpacityPercent: 90,
+								borderWidth: 2,
+							},
+							"paniala-dump-sites": {
+								fillColor: "#f97316",
+								borderColor: "#c2410c",
+								fillOpacityPercent: 80,
+								borderOpacityPercent: 100,
+								borderWidth: 2,
+							},
+							"paniala-existing-drainage": {
+								fillColor: "#0ea5e9",
+								borderColor: "#0369a1",
+								fillOpacityPercent: 60,
+								borderOpacityPercent: 95,
+								borderWidth: 3,
+							},
+							"paniala-proposed-drainage": {
+								fillColor: "#14b8a6",
+								borderColor: "#0f766e",
+								fillOpacityPercent: 60,
+								borderOpacityPercent: 95,
+								borderWidth: 3,
+							},
+							"paniala-water-supply": {
+								fillColor: "#06b6d4",
+								borderColor: "#0e7490",
+								fillOpacityPercent: 80,
+								borderOpacityPercent: 100,
+								borderWidth: 2,
+							},
+						},
+					}}
 					enableMapExport
 				/>
 			</div>

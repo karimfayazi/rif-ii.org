@@ -52,6 +52,20 @@ type KMZFile = {
 
 type BaseMapType = "satellite" | "street" | "hybrid" | "topographic";
 
+type LayerStyleSettings = {
+	fillColor: string;
+	borderColor: string;
+	fillOpacityPercent: number;
+	borderOpacityPercent: number;
+	borderWidth: number;
+};
+
+type LayerStyleSettingsPanelConfig = {
+	title?: string;
+	description?: string;
+	defaultStylesByFile?: Record<string, Partial<LayerStyleSettings>>;
+};
+
 const BASE_MAP_LABELS: Record<BaseMapType, string> = {
 	satellite: "Satellite Map",
 	street: "Street / Road Map",
@@ -59,10 +73,84 @@ const BASE_MAP_LABELS: Record<BaseMapType, string> = {
 	topographic: "Topographic Map",
 };
 
+const DEFAULT_LAYER_STYLE: LayerStyleSettings = {
+	fillColor: "#2563eb",
+	borderColor: "#1e40af",
+	fillOpacityPercent: 25,
+	borderOpacityPercent: 90,
+	borderWidth: 2,
+};
+
+function clampNumber(value: number, min: number, max: number) {
+	if (Number.isNaN(value)) return min;
+	return Math.min(max, Math.max(min, value));
+}
+
+function hexToRgba(hex: string | undefined, opacity: number) {
+	const fallback = "#3388ff";
+	const value = (hex || fallback).replace("#", "");
+	const normalized =
+		value.length === 3
+			? value
+					.split("")
+					.map((char) => `${char}${char}`)
+					.join("")
+			: value;
+	const numeric = Number.parseInt(normalized, 16);
+	if (Number.isNaN(numeric)) return `rgba(51, 136, 255, ${opacity})`;
+	const r = (numeric >> 16) & 255;
+	const g = (numeric >> 8) & 255;
+	const b = numeric & 255;
+	return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
 function formatGisExportFileBase(fileBasePrefix: string) {
 	const d = new Date();
 	const pad = (n: number) => String(n).padStart(2, "0");
 	return `${fileBasePrefix}_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+}
+
+function formatExportTimestamp() {
+	return new Intl.DateTimeFormat("en", {
+		year: "numeric",
+		month: "short",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	}).format(new Date());
+}
+
+function getShapeLabel(type: KMZLayer["type"]) {
+	if (type === "line") return "Polyline";
+	if (type === "point") return "Point Marker";
+	if (type === "mixed") return "Mixed Geometry";
+	return "Polygon";
+}
+
+function getBoundaryLabel(type: KMZLayer["type"]) {
+	if (type === "line") return "Stroke";
+	if (type === "point") return "Marker outline";
+	if (type === "mixed") return "Mixed style";
+	return "Boundary";
+}
+
+function wrapCanvasText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
+	const words = text.split(" ");
+	const lines: string[] = [];
+	let currentLine = "";
+
+	words.forEach((word) => {
+		const testLine = currentLine ? `${currentLine} ${word}` : word;
+		if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+			lines.push(currentLine);
+			currentLine = word;
+		} else {
+			currentLine = testLine;
+		}
+	});
+
+	if (currentLine) lines.push(currentLine);
+	return lines;
 }
 
 interface ParoaGisMapContentProps {
@@ -85,6 +173,8 @@ interface ParoaGisMapContentProps {
 	legendsModalBrandLabel?: string;
 	/** Prefix for exported JPG/PDF filenames (default: Paroa_GIS_Map). */
 	exportFileBasePrefix?: string;
+	/** Optional live per-layer style controls, used by standalone site pages such as Paniala. */
+	layerStyleSettingsPanel?: LayerStyleSettingsPanelConfig;
 }
 
 const FALLBACK_COLORS = [
@@ -160,6 +250,7 @@ export default function ParoaGisMapContent({
 	kmzApiPath = "/api/gis/kmz/paroa",
 	legendsModalBrandLabel = "Paroa GIS Map",
 	exportFileBasePrefix = "Paroa_GIS_Map",
+	layerStyleSettingsPanel,
 }: ParoaGisMapContentProps) {
 	const [files, setFiles] = useState<KMZFile[]>([]);
 	const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
@@ -173,12 +264,16 @@ export default function ParoaGisMapContent({
 	const [exportMenuOpen, setExportMenuOpen] = useState(false);
 	const [exporting, setExporting] = useState(false);
 	const [exportError, setExportError] = useState("");
+	const showInlineExportLegend = false;
+	const [layerStyles, setLayerStyles] = useState<Record<string, LayerStyleSettings>>({});
+	const [layerStylePanelOpen, setLayerStylePanelOpen] = useState(true);
 
 	const mapContainerRef = useRef<HTMLDivElement>(null);
 	const mapInstanceRef = useRef<any>(null);
 	const layerRefsRef = useRef<Record<string, any>>({});
 	const baseLayerRefsRef = useRef<Record<string, any>>({});
 	const labelLayerRef = useRef<any>(null);
+	const lastFitBoundsSignatureRef = useRef("");
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const exportDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -196,9 +291,44 @@ export default function ParoaGisMapContent({
 		return selectedIndex % FALLBACK_COLORS.length;
 	};
 
+	const getDefaultEditableLayerStyle = useCallback(
+		(layer: KMZLayer, file: KMZFile, fileIndex: number): LayerStyleSettings => {
+			const fallback = FALLBACK_COLORS[fallbackColorIndexForFile(file, fileIndex)];
+			const baseStyle = getLayerStyle(layer, fallback);
+			return {
+				...DEFAULT_LAYER_STYLE,
+				fillColor: baseStyle.fillColor || fallback,
+				borderColor: baseStyle.color || fallback,
+				fillOpacityPercent: Math.round(clampNumber((baseStyle.fillOpacity ?? 0.25) * 100, 0, 100)),
+				borderOpacityPercent: 90,
+				borderWidth: clampNumber(baseStyle.weight ?? 2, 1, 12),
+				...layerStyleSettingsPanel?.defaultStylesByFile?.[file.fileName],
+			};
+		},
+		[kmzLayerFileOrder, layerStyleSettingsPanel],
+	);
+
+	const getEditableLayerStyle = useCallback(
+		(layer: KMZLayer, file: KMZFile, fileIndex: number) =>
+			layerStyles[file.fileName] ?? getDefaultEditableLayerStyle(layer, file, fileIndex),
+		[getDefaultEditableLayerStyle, layerStyles],
+	);
+
+	const getEditableLeafletStyle = useCallback((style: LayerStyleSettings) => ({
+		color: style.borderColor,
+		fillColor: style.fillColor,
+		fillOpacity: style.fillOpacityPercent / 100,
+		opacity: style.borderOpacityPercent / 100,
+		weight: style.borderWidth,
+	}), []);
+
 	/** Legend + Leaflet styling: optional per-file palette keeps swatches and geometry in sync. */
 	const getDisplayLayerStyle = useCallback(
 		(layer: KMZLayer, file: KMZFile, fileIndex: number) => {
+			if (layerStyleSettingsPanel) {
+				return getEditableLeafletStyle(getEditableLayerStyle(layer, file, fileIndex));
+			}
+
 			const forced = kmzLayerColorsByFile?.[file.fileName];
 			const fallback = FALLBACK_COLORS[fallbackColorIndexForFile(file, fileIndex)];
 			if (forced) {
@@ -216,7 +346,7 @@ export default function ParoaGisMapContent({
 			}
 			return getLayerStyle(layer, fallback);
 		},
-		[kmzLayerColorsByFile, kmzLayerFileOrder],
+		[getEditableLayerStyle, getEditableLeafletStyle, kmzLayerColorsByFile, kmzLayerFileOrder, layerStyleSettingsPanel],
 	);
 
 	const loadFiles = useCallback(async (options?: { preserveSelection?: boolean }) => {
@@ -438,6 +568,19 @@ export default function ParoaGisMapContent({
 		[selectedFileData, kmzDisplayNamesByFile, kmzLayerFileOrder, getDisplayLayerStyle],
 	);
 
+	const exportLegendItems = useMemo(
+		() =>
+			legendItems.map((item) => ({
+				...item,
+				shapeLabel: getShapeLabel(item.type),
+				boundaryLabel: getBoundaryLabel(item.type),
+				fillOpacityPercent: Math.round(clampNumber((item.style.fillOpacity ?? 0) * 100, 0, 100)),
+				strokeOpacityPercent: Math.round(clampNumber((item.style.opacity ?? 0.9) * 100, 0, 100)),
+				strokeWidth: item.style.weight ?? 2,
+			})),
+		[legendItems],
+	);
+
 	useEffect(() => {
 		if (!mapInstanceRef.current) return;
 
@@ -452,16 +595,29 @@ export default function ParoaGisMapContent({
 		layerRefsRef.current = {};
 
 		const visibleLeafletLayers: any[] = [];
+		const fitBoundsSignature = selectedFileData
+			.flatMap((file) => file.layers.map((layer) => `${file.fileName}:${layer.id}`))
+			.join("|");
 
 		selectedFileData.forEach((file, fileIndex) => {
 			file.layers.forEach((layer) => {
 				const resolvedStyle = getDisplayLayerStyle(layer, file, fileIndex);
 				const useSyncedPalette = Boolean(kmzLayerColorsByFile?.[file.fileName]);
+				const useEditableStyle = Boolean(layerStyleSettingsPanel);
 				const layerKey = `${file.fileName}:${layer.id}`;
 
 				const geoJsonLayer = L.geoJSON(layer.geojson, {
 					style: (feature: any) => {
 						const featureStyle = feature?.properties?._style || {};
+						if (useEditableStyle) {
+							return {
+								color: resolvedStyle.color,
+								fillColor: resolvedStyle.fillColor,
+								fillOpacity: resolvedStyle.fillOpacity,
+								weight: resolvedStyle.weight,
+								opacity: resolvedStyle.opacity,
+							};
+						}
 						if (useSyncedPalette) {
 							return {
 								color: resolvedStyle.color,
@@ -488,15 +644,19 @@ export default function ParoaGisMapContent({
 					pointToLayer: (feature: any, latlng: any) =>
 						L.circleMarker(latlng, {
 							radius: 6,
-							fillColor: useSyncedPalette
+							fillColor: useEditableStyle
+								? resolvedStyle.fillColor
+								: useSyncedPalette
 								? resolvedStyle.fillColor
 								: feature?.properties?._style?.fillColor || resolvedStyle.fillColor,
-							color: useSyncedPalette
+							color: useEditableStyle
+								? resolvedStyle.color
+								: useSyncedPalette
 								? resolvedStyle.color
 								: feature?.properties?._style?.color || resolvedStyle.color,
-							weight: 2,
-							opacity: 1,
-							fillOpacity: 0.8,
+							weight: resolvedStyle.weight ?? 2,
+							opacity: resolvedStyle.opacity ?? 1,
+							fillOpacity: resolvedStyle.fillOpacity ?? 0.8,
 						}),
 					onEachFeature: (feature: any, leafletLayer: any) => {
 						const props = feature.properties || {};
@@ -526,13 +686,19 @@ export default function ParoaGisMapContent({
 			});
 		});
 
-		if (visibleLeafletLayers.length > 0) {
+		if (visibleLeafletLayers.length === 0) {
+			lastFitBoundsSignatureRef.current = "";
+			return;
+		}
+
+		if (lastFitBoundsSignatureRef.current !== fitBoundsSignature) {
 			const group = L.featureGroup(visibleLeafletLayers);
 			if (group.getBounds && group.getBounds().isValid()) {
 				mapInstanceRef.current.fitBounds(group.getBounds(), { padding: [40, 40] });
+				lastFitBoundsSignatureRef.current = fitBoundsSignature;
 			}
 		}
-	}, [selectedFileData, kmzLayerFileOrder, getDisplayLayerStyle]);
+	}, [selectedFileData, kmzLayerFileOrder, getDisplayLayerStyle, layerStyleSettingsPanel]);
 
 	const toggleFileSelection = (fileName: string) => {
 		setSelectedFiles((previous) => {
@@ -554,7 +720,29 @@ export default function ParoaGisMapContent({
 		setSelectedFiles(new Set());
 	};
 
-	const handleMapExport = async (format: "jpg" | "pdf") => {
+	const updateLayerStyle = (file: KMZFile, layer: KMZLayer, fileIndex: number, updates: Partial<LayerStyleSettings>) => {
+		setLayerStyles((previous) => ({
+			...previous,
+			[file.fileName]: {
+				...getEditableLayerStyle(layer, file, fileIndex),
+				...updates,
+			},
+		}));
+	};
+
+	const resetLayerStyle = (fileName: string) => {
+		setLayerStyles((previous) => {
+			const next = { ...previous };
+			delete next[fileName];
+			return next;
+		});
+	};
+
+	const resetAllLayerStyles = () => {
+		setLayerStyles({});
+	};
+
+	const handleMapExport = async (format: "jpg" | "png" | "pdf") => {
 		setExportMenuOpen(false);
 		setExportError("");
 		if (!mapContainerRef.current || !mapInstanceRef.current) {
@@ -582,14 +770,130 @@ export default function ParoaGisMapContent({
 				imageTimeout: 20000,
 			});
 			const base = formatGisExportFileBase(exportFileBasePrefix);
-			const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
 			const selectedLayerLabels = orderedFiles
 				.filter((f) => selectedFiles.has(f.fileName))
 				.map((f) => resolveFilePickerLabel(f));
-			if (format === "jpg") {
+			const timestamp = formatExportTimestamp();
+			const imageExportCanvas = document.createElement("canvas");
+			const imageExportCtx = imageExportCanvas.getContext("2d");
+			const canvasScale = canvas.width / Math.max(1, element.clientWidth || canvas.width);
+			const legendPadding = Math.round(26 * canvasScale);
+			const legendHeaderHeight = Math.round(82 * canvasScale);
+			const legendCardHeight = Math.round(126 * canvasScale);
+			const legendGap = Math.round(14 * canvasScale);
+			const legendHeight =
+				legendPadding * 2 +
+				legendHeaderHeight +
+				Math.max(1, exportLegendItems.length) * legendCardHeight +
+				Math.max(0, exportLegendItems.length - 1) * legendGap;
+			let dataUrl: string;
+
+			if (imageExportCtx) {
+				imageExportCanvas.width = canvas.width;
+				imageExportCanvas.height = canvas.height + legendHeight;
+				imageExportCtx.fillStyle = "#ffffff";
+				imageExportCtx.fillRect(0, 0, imageExportCanvas.width, imageExportCanvas.height);
+				imageExportCtx.drawImage(canvas, 0, 0);
+				imageExportCtx.fillStyle = "#f8fafc";
+				imageExportCtx.fillRect(0, canvas.height, imageExportCanvas.width, legendHeight);
+
+				let y = canvas.height + legendPadding;
+				imageExportCtx.fillStyle = "#0f172a";
+				imageExportCtx.font = `${Math.round(22 * canvasScale)}px Arial, sans-serif`;
+				imageExportCtx.fillText("Visible Layers & Styles", legendPadding, y + Math.round(24 * canvasScale));
+				imageExportCtx.font = `${Math.round(13 * canvasScale)}px Arial, sans-serif`;
+				imageExportCtx.fillStyle = "#475569";
+				imageExportCtx.fillText(`${title} | Exported ${timestamp}`, legendPadding, y + Math.round(48 * canvasScale));
+				imageExportCtx.fillText(
+					"Only currently visible layers are included below.",
+					legendPadding,
+					y + Math.round(68 * canvasScale),
+				);
+				y += legendHeaderHeight;
+
+				if (exportLegendItems.length === 0) {
+					imageExportCtx.fillStyle = "#334155";
+					imageExportCtx.font = `${Math.round(15 * canvasScale)}px Arial, sans-serif`;
+					imageExportCtx.fillText("No visible GIS layers selected.", legendPadding, y + Math.round(28 * canvasScale));
+				}
+
+				exportLegendItems.forEach((item, index) => {
+					const cardX = legendPadding;
+					const cardY = y;
+					const cardW = imageExportCanvas.width - legendPadding * 2;
+					const rowGap = Math.round(22 * canvasScale);
+					imageExportCtx.fillStyle = "#ffffff";
+					imageExportCtx.strokeStyle = "#cbd5e1";
+					imageExportCtx.lineWidth = Math.max(1, Math.round(canvasScale));
+					imageExportCtx.beginPath();
+					imageExportCtx.roundRect(cardX, cardY, cardW, legendCardHeight, Math.round(10 * canvasScale));
+					imageExportCtx.fill();
+					imageExportCtx.stroke();
+
+					const swatchX = cardX + Math.round(16 * canvasScale);
+					const swatchY = cardY + Math.round(16 * canvasScale);
+					imageExportCtx.fillStyle = hexToRgba(item.style.fillColor, item.fillOpacityPercent / 100);
+					imageExportCtx.strokeStyle = hexToRgba(item.style.color, item.strokeOpacityPercent / 100);
+					imageExportCtx.lineWidth = Math.max(2, Math.round(item.strokeWidth * canvasScale));
+					if (item.type === "line") {
+						imageExportCtx.beginPath();
+						imageExportCtx.moveTo(swatchX, swatchY + Math.round(10 * canvasScale));
+						imageExportCtx.lineTo(swatchX + Math.round(32 * canvasScale), swatchY + Math.round(10 * canvasScale));
+						imageExportCtx.stroke();
+					} else if (item.type === "point") {
+						imageExportCtx.beginPath();
+						imageExportCtx.arc(
+							swatchX + Math.round(14 * canvasScale),
+							swatchY + Math.round(12 * canvasScale),
+							Math.round(8 * canvasScale),
+							0,
+							Math.PI * 2,
+						);
+						imageExportCtx.fill();
+						imageExportCtx.stroke();
+					} else {
+						imageExportCtx.fillRect(swatchX, swatchY, Math.round(28 * canvasScale), Math.round(22 * canvasScale));
+						imageExportCtx.strokeRect(swatchX, swatchY, Math.round(28 * canvasScale), Math.round(22 * canvasScale));
+					}
+
+					const textX = cardX + Math.round(62 * canvasScale);
+					const textW = cardW - Math.round(78 * canvasScale);
+					imageExportCtx.fillStyle = "#0f172a";
+					imageExportCtx.font = `bold ${Math.round(15 * canvasScale)}px Arial, sans-serif`;
+					const nameLines = wrapCanvasText(
+						imageExportCtx,
+						`Layer ${index + 1}: ${item.displayName}`,
+						textW,
+					).slice(0, 2);
+					nameLines.forEach((line, lineIndex) => {
+						imageExportCtx.fillText(line, textX, cardY + Math.round(24 * canvasScale) + lineIndex * Math.round(18 * canvasScale));
+					});
+
+					imageExportCtx.fillStyle = "#334155";
+					imageExportCtx.font = `${Math.round(13 * canvasScale)}px Arial, sans-serif`;
+					const detailY = cardY + Math.round(58 * canvasScale);
+					imageExportCtx.fillText(`Shape Type: ${item.shapeLabel}`, textX, detailY);
+					imageExportCtx.fillText(`Fill Color: ${item.style.fillColor || "N/A"}`, textX, detailY + rowGap);
+					imageExportCtx.fillText(`Border Color: ${item.style.color || "N/A"}`, textX + Math.round(260 * canvasScale), detailY + rowGap);
+					imageExportCtx.fillText(`Fill Opacity: ${item.fillOpacityPercent}%`, textX, detailY + rowGap * 2);
+					imageExportCtx.fillText(`Border Opacity: ${item.strokeOpacityPercent}%`, textX + Math.round(260 * canvasScale), detailY + rowGap * 2);
+					imageExportCtx.fillText(`Border Width: ${item.strokeWidth}px`, textX, detailY + rowGap * 3);
+					imageExportCtx.fillText("Visibility Status: Visible", textX + Math.round(260 * canvasScale), detailY + rowGap * 3);
+
+					y += legendCardHeight + legendGap;
+				});
+
+				dataUrl =
+					format === "png"
+						? imageExportCanvas.toDataURL("image/png")
+						: imageExportCanvas.toDataURL("image/jpeg", 0.92);
+			} else {
+				dataUrl = format === "png" ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", 0.92);
+			}
+			if (format === "jpg" || format === "png") {
 				const anchor = document.createElement("a");
 				anchor.href = dataUrl;
-				anchor.download = `${base}.jpg`;
+				anchor.download = `${base}.${format}`;
 				anchor.click();
 			} else {
 				const { jsPDF } = await import("jspdf/dist/jspdf.es.min.js");
@@ -623,7 +927,84 @@ export default function ParoaGisMapContent({
 					imgHmm = maxImgH;
 					imgWmm = (canvas.width / canvas.height) * imgHmm;
 				}
-				pdf.addImage(dataUrl, "JPEG", margin, cursorY, imgWmm, imgHmm);
+				pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", margin, cursorY, imgWmm, imgHmm);
+
+				pdf.addPage();
+				cursorY = margin;
+				pdf.setFont("helvetica", "bold");
+				pdf.setFontSize(16);
+				pdf.setTextColor(15, 23, 42);
+				pdf.text("Visible Layers & Styles", margin, cursorY);
+				cursorY += 7;
+				pdf.setFont("helvetica", "normal");
+				pdf.setFontSize(9);
+				pdf.setTextColor(71, 85, 105);
+				pdf.text(`Only currently visible layers are included. Exported ${timestamp}.`, margin, cursorY);
+				cursorY += 8;
+
+				if (exportLegendItems.length === 0) {
+					pdf.setFontSize(10);
+					pdf.text("No visible GIS layers selected.", margin, cursorY);
+				}
+
+				exportLegendItems.forEach((item, index) => {
+					const blockX = margin;
+					const blockW = pageW - margin * 2;
+					const lineHeight = 5.2;
+					const nameLines = pdf.splitTextToSize(`Layer ${index + 1}: ${item.displayName}`, blockW - 18);
+					const detailLines = [
+						`Layer Name: ${item.displayName}`,
+						`Shape Type: ${item.shapeLabel}`,
+						`Fill Color: ${item.style.fillColor || "N/A"}`,
+						`Border Color: ${item.style.color || "N/A"}`,
+						`Fill Opacity: ${item.fillOpacityPercent}%`,
+						`Border Opacity: ${item.strokeOpacityPercent}%`,
+						`Border Width: ${item.strokeWidth}px`,
+						"Visibility Status: Visible",
+					];
+					const blockH = 17 + nameLines.length * lineHeight + detailLines.length * lineHeight;
+
+					if (cursorY + blockH > pageH - margin) {
+						pdf.addPage();
+						cursorY = margin;
+					}
+
+					pdf.setDrawColor(203, 213, 225);
+					pdf.setFillColor(248, 250, 252);
+					pdf.roundedRect(blockX, cursorY, blockW, blockH, 2, 2, "FD");
+
+					const swatchX = blockX + 4;
+					const swatchY = cursorY + 7;
+					pdf.setDrawColor(item.style.color || "#334155");
+					pdf.setFillColor(item.style.fillColor || "#3388ff");
+					pdf.setLineWidth(Math.max(0.3, Math.min(2, item.strokeWidth * 0.2)));
+					if (item.type === "line") {
+						pdf.line(swatchX, swatchY + 2, swatchX + 9, swatchY + 2);
+					} else if (item.type === "point") {
+						pdf.circle(swatchX + 4, swatchY + 2, 2.2, "FD");
+					} else {
+						pdf.rect(swatchX, swatchY, 7, 5, "FD");
+					}
+
+					let blockY = cursorY + 7;
+					pdf.setFont("helvetica", "bold");
+					pdf.setFontSize(11);
+					pdf.setTextColor(15, 23, 42);
+					pdf.text(nameLines, blockX + 16, blockY);
+					blockY += nameLines.length * lineHeight + 3;
+
+					pdf.setFont("helvetica", "normal");
+					pdf.setFontSize(9);
+					pdf.setTextColor(51, 65, 85);
+					detailLines.forEach((detail) => {
+						const wrapped = pdf.splitTextToSize(detail, blockW - 20);
+						pdf.text(wrapped, blockX + 16, blockY);
+						blockY += wrapped.length * lineHeight;
+					});
+
+					cursorY += blockH + 5;
+				});
+
 				pdf.save(`${base}.pdf`);
 			}
 		} catch (exportErr) {
@@ -673,7 +1054,7 @@ export default function ParoaGisMapContent({
 			<div className={legendDisplayMode === "modal" ? "grid grid-cols-1" : "grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-6"}>
 				<div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
 					<div className="border-b border-gray-200 px-6 py-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-						<div className="flex items-center gap-3">
+						<div className="flex flex-wrap items-center gap-3">
 							<div className="p-3 bg-cyan-100 rounded-xl">
 								<Map className="h-6 w-6 text-cyan-700" />
 							</div>
@@ -810,6 +1191,13 @@ export default function ParoaGisMapContent({
 											<button
 												type="button"
 												className="w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50"
+												onClick={() => void handleMapExport("png")}
+											>
+												Download as PNG
+											</button>
+											<button
+												type="button"
+												className="w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50"
 												onClick={() => void handleMapExport("pdf")}
 											>
 												Download as PDF
@@ -832,6 +1220,207 @@ export default function ParoaGisMapContent({
 					{enableMapExport && exportError ? (
 						<div className="px-6 pb-3">
 							<p className="text-xs text-red-600">{exportError}</p>
+						</div>
+					) : null}
+
+					{layerStyleSettingsPanel ? (
+						<div className="border-b border-gray-200 bg-slate-50 px-6 py-4">
+							<div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+								<div>
+									<button
+										type="button"
+										onClick={() => setLayerStylePanelOpen((previous) => !previous)}
+										className="inline-flex items-center text-sm font-semibold text-gray-900 hover:text-emerald-700"
+									>
+										{layerStyleSettingsPanel.title ?? "Layer Style Settings"}
+										<ChevronDown
+											className={`ml-2 h-4 w-4 transition-transform ${layerStylePanelOpen ? "rotate-180" : ""}`}
+										/>
+									</button>
+									<p className="mt-1 text-xs text-gray-600">
+										{layerStyleSettingsPanel.description ??
+											"Customize each GIS layer color, opacity, stroke width, and visibility."}
+									</p>
+								</div>
+								<button
+									type="button"
+									onClick={resetAllLayerStyles}
+									className="self-start rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:self-auto"
+								>
+									Reset All Styles
+								</button>
+							</div>
+
+							{layerStylePanelOpen ? (
+								<div className="grid gap-4 xl:grid-cols-2">
+									{orderedFiles.map((file, fileIndex) => {
+										const layer = file.layers[0];
+										if (!layer) return null;
+
+										const style = getEditableLayerStyle(layer, file, fileIndex);
+										const checked = selectedFiles.has(file.fileName);
+
+										return (
+											<div
+												key={file.fileName}
+												className={`rounded-xl border bg-white p-4 shadow-sm ${
+													checked ? "border-gray-200" : "border-gray-200 opacity-70"
+												}`}
+											>
+												<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+													<div className="min-w-0">
+														<div className="flex flex-wrap items-center gap-2">
+															<p className="text-sm font-semibold text-gray-900">{resolveFilePickerLabel(file)}</p>
+															<span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium capitalize text-gray-600">
+																{layer.type}
+															</span>
+														</div>
+														<p className="mt-1 text-xs text-gray-500">
+															{file.totalFeatures} feature(s) • {checked ? "Visible" : "Hidden"}
+														</p>
+													</div>
+													<div className="flex items-center gap-3">
+														<label className="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
+															<input
+																type="checkbox"
+																checked={checked}
+																onChange={() => toggleFileSelection(file.fileName)}
+																className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+															/>
+															Show
+														</label>
+														<button
+															type="button"
+															onClick={() => resetLayerStyle(file.fileName)}
+															className="rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50"
+														>
+															Reset
+														</button>
+													</div>
+												</div>
+
+												<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+													<label className="space-y-2">
+														<span className="text-xs font-medium text-gray-700">Fill Color</span>
+														<div className="flex items-center gap-2">
+															<input
+																type="color"
+																value={style.fillColor}
+																onChange={(event) => updateLayerStyle(file, layer, fileIndex, { fillColor: event.target.value })}
+																className="h-9 w-12 cursor-pointer rounded border border-gray-200 bg-white p-1"
+															/>
+															<span className="font-mono text-xs text-gray-600">{style.fillColor}</span>
+														</div>
+													</label>
+
+													<label className="space-y-2">
+														<span className="text-xs font-medium text-gray-700">Stroke Color</span>
+														<div className="flex items-center gap-2">
+															<input
+																type="color"
+																value={style.borderColor}
+																onChange={(event) => updateLayerStyle(file, layer, fileIndex, { borderColor: event.target.value })}
+																className="h-9 w-12 cursor-pointer rounded border border-gray-200 bg-white p-1"
+															/>
+															<span className="font-mono text-xs text-gray-600">{style.borderColor}</span>
+														</div>
+													</label>
+
+													<label className="space-y-2">
+														<span className="flex items-center justify-between text-xs font-medium text-gray-700">
+															Fill Opacity <span>{style.fillOpacityPercent}%</span>
+														</span>
+														<input
+															type="range"
+															min="0"
+															max="100"
+															value={style.fillOpacityPercent}
+															onChange={(event) =>
+																updateLayerStyle(file, layer, fileIndex, {
+																	fillOpacityPercent: clampNumber(Number(event.target.value), 0, 100),
+																})
+															}
+															className="w-full accent-emerald-600"
+														/>
+														<input
+															type="number"
+															min="0"
+															max="100"
+															value={style.fillOpacityPercent}
+															onChange={(event) =>
+																updateLayerStyle(file, layer, fileIndex, {
+																	fillOpacityPercent: clampNumber(Number(event.target.value), 0, 100),
+																})
+															}
+															className="w-full rounded-md border border-gray-200 px-2 py-1 text-sm"
+														/>
+													</label>
+
+													<label className="space-y-2">
+														<span className="flex items-center justify-between text-xs font-medium text-gray-700">
+															Stroke Opacity <span>{style.borderOpacityPercent}%</span>
+														</span>
+														<input
+															type="range"
+															min="0"
+															max="100"
+															value={style.borderOpacityPercent}
+															onChange={(event) =>
+																updateLayerStyle(file, layer, fileIndex, {
+																	borderOpacityPercent: clampNumber(Number(event.target.value), 0, 100),
+																})
+															}
+															className="w-full accent-emerald-600"
+														/>
+														<input
+															type="number"
+															min="0"
+															max="100"
+															value={style.borderOpacityPercent}
+															onChange={(event) =>
+																updateLayerStyle(file, layer, fileIndex, {
+																	borderOpacityPercent: clampNumber(Number(event.target.value), 0, 100),
+																})
+															}
+															className="w-full rounded-md border border-gray-200 px-2 py-1 text-sm"
+														/>
+													</label>
+
+													<label className="space-y-2">
+														<span className="flex items-center justify-between text-xs font-medium text-gray-700">
+															Stroke Width <span>{style.borderWidth}px</span>
+														</span>
+														<input
+															type="range"
+															min="1"
+															max="12"
+															value={style.borderWidth}
+															onChange={(event) =>
+																updateLayerStyle(file, layer, fileIndex, {
+																	borderWidth: clampNumber(Number(event.target.value), 1, 12),
+																})
+															}
+															className="w-full accent-emerald-600"
+														/>
+														<input
+															type="number"
+															min="1"
+															max="12"
+															value={style.borderWidth}
+															onChange={(event) =>
+																updateLayerStyle(file, layer, fileIndex, {
+																	borderWidth: clampNumber(Number(event.target.value), 1, 12),
+																})
+															}
+															className="w-full rounded-md border border-gray-200 px-2 py-1 text-sm"
+														/>
+													</label>
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							) : null}
 						</div>
 					) : null}
 
@@ -869,7 +1458,119 @@ export default function ParoaGisMapContent({
 							</div>
 						)}
 
-						<div ref={mapContainerRef} className="absolute inset-0" />
+						<div ref={mapContainerRef} className="absolute inset-0">
+							{showInlineExportLegend ? (
+								<div
+									className="pointer-events-none absolute bottom-4 right-4 z-[1000] max-w-[400px] rounded-xl p-4"
+									style={{
+										backgroundColor: "rgba(255, 255, 255, 0.98)",
+										border: "2px solid rgb(15, 118, 110)",
+										boxShadow: "0 20px 50px rgba(15, 23, 42, 0.28)",
+										color: "rgb(15, 23, 42)",
+									}}
+								>
+									<div className="mb-3 pb-2" style={{ borderBottom: "2px solid rgb(204, 251, 241)" }}>
+										<p
+											className="uppercase tracking-[0.12em]"
+											style={{
+												color: "rgb(15, 118, 110)",
+												fontSize: 12,
+												fontWeight: 800,
+												lineHeight: 1.2,
+											}}
+										>
+											Paniala GIS Map Legend
+										</p>
+										<p
+											className="mt-1"
+											style={{
+												color: "rgb(2, 6, 23)",
+												fontSize: 14,
+												fontWeight: 700,
+												lineHeight: 1.25,
+											}}
+										>
+											Visible Layers & Styles
+										</p>
+										<p className="mt-0.5" style={{ color: "rgb(71, 85, 105)", fontSize: 11 }}>
+											{title} | Exported {formatExportTimestamp()}
+										</p>
+									</div>
+
+									{exportLegendItems.length > 0 ? (
+										<div className="max-h-[330px] space-y-2 overflow-hidden">
+											{exportLegendItems.map((item) => (
+												<div key={item.key} className="grid grid-cols-[28px_minmax(0,1fr)] gap-2">
+													<div
+														className="flex h-7 w-7 items-center justify-center rounded-md"
+														style={{
+															backgroundColor: "rgb(248, 250, 252)",
+															border: "1px solid rgb(226, 232, 240)",
+														}}
+													>
+														{item.type === "line" ? (
+															<div
+																className="h-1.5 w-5 rounded-full"
+																style={{
+																	backgroundColor: hexToRgba(
+																		item.style.color,
+																		item.strokeOpacityPercent / 100,
+																	),
+																}}
+															/>
+														) : item.type === "point" ? (
+															<div
+																className="h-3.5 w-3.5 rounded-full"
+																style={{
+																	backgroundColor: hexToRgba(
+																		item.style.fillColor,
+																		item.fillOpacityPercent / 100,
+																	),
+																	border: `${Math.max(1, Math.min(3, item.strokeWidth))}px solid ${hexToRgba(
+																		item.style.color,
+																		item.strokeOpacityPercent / 100,
+																	)}`,
+																}}
+															/>
+														) : (
+															<div
+																className="h-4 w-4 rounded-sm"
+																style={{
+																	backgroundColor: hexToRgba(
+																		item.style.fillColor,
+																		item.fillOpacityPercent / 100,
+																	),
+																	border: `${Math.max(1, Math.min(3, item.strokeWidth))}px solid ${hexToRgba(
+																		item.style.color,
+																		item.strokeOpacityPercent / 100,
+																	)}`,
+																}}
+															/>
+														)}
+													</div>
+													<div className="min-w-0">
+														<p
+															className="truncate font-semibold"
+															style={{ color: "rgb(2, 6, 23)", fontSize: 12, lineHeight: 1.25 }}
+														>
+															{item.displayName}
+														</p>
+														<p style={{ color: "rgb(51, 65, 85)", fontSize: 11, lineHeight: 1.35 }}>
+															{item.shapeLabel} | {item.boundaryLabel}: {item.strokeWidth}px | Fill{" "}
+															{item.fillOpacityPercent}% | Stroke {item.strokeOpacityPercent}%
+														</p>
+													</div>
+												</div>
+											))}
+										</div>
+									) : (
+										<p className="text-xs" style={{ color: "rgb(71, 85, 105)" }}>
+											No visible GIS layers selected.
+										</p>
+									)}
+								</div>
+							) : null}
+						</div>
 					</div>
 				</div>
 

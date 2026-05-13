@@ -5,21 +5,46 @@ import { parseKmzBuffer, type KMZLayer } from "@/lib/gis/kmz-parser";
 
 export const maxDuration = 300;
 
-const PANIALA_KMZ_DIRECTORY = path.join(
-	process.cwd(),
-	"public",
-	"maps",
-	"kmz",
-	"Paniala_kmz_gis_maps",
-);
+/** Single production KMZ under `public/gis` (served at `/gis/Paniala_GIS_Map.kmz`). Parsed server-side for Leaflet. */
+const PANIALA_KMZ_FILE = path.join(process.cwd(), "public", "gis", "Paniala_GIS_Map.kmz");
+const PANIALA_KMZ_FILE_NAME = "Paniala_GIS_Map.kmz";
 
-function formatDisplayName(fileName: string) {
-	return path
-		.basename(fileName, path.extname(fileName))
-		.replace(/_/g, " ")
-		.replace(/\s+/g, " ")
-		.trim();
-}
+const PANIALA_VISIBLE_LAYERS: Array<{
+	layerName: string;
+	fileName: string;
+	displayName: string;
+}> = [
+	{
+		layerName: "NC Boundary",
+		fileName: "paniala-nc-boundary",
+		displayName: "Paniala NC Boundary",
+	},
+	{
+		layerName: "Paniala_Zone_Updated",
+		fileName: "paniala-zones",
+		displayName: "Paniala Zones",
+	},
+	{
+		layerName: "Paniala_DS",
+		fileName: "paniala-dump-sites",
+		displayName: "Paniala Dump Sites",
+	},
+	{
+		layerName: "Existing Drain",
+		fileName: "paniala-existing-drainage",
+		displayName: "Paniala Existing Drainage",
+	},
+	{
+		layerName: "Drain Proposed by Community",
+		fileName: "paniala-proposed-drainage",
+		displayName: "Paniala Proposed Drainage (Community)",
+	},
+	{
+		layerName: "Paniala_Water_Supply_Data",
+		fileName: "paniala-water-supply",
+		displayName: "Paniala Water Supply Schemes",
+	},
+];
 
 function calculateFeatureCount(layers: KMZLayer[]) {
 	return layers.reduce((total, layer) => total + layer.geojson.features.length, 0);
@@ -27,49 +52,33 @@ function calculateFeatureCount(layers: KMZLayer[]) {
 
 export async function GET() {
 	try {
-		const directoryEntries = await fs.readdir(PANIALA_KMZ_DIRECTORY, { withFileTypes: true });
-		const kmzFiles = directoryEntries
-			.filter(
-				(entry) =>
-					entry.isFile() &&
-					(entry.name.toLowerCase().endsWith(".kmz") || entry.name.toLowerCase().endsWith(".kml")),
-			)
-			.sort((a, b) => a.name.localeCompare(b.name));
+		const buffer = await fs.readFile(PANIALA_KMZ_FILE);
+		const parsed = await parseKmzBuffer(buffer, PANIALA_KMZ_FILE_NAME);
+		const layersByName = new Map(parsed.layers.map((layer) => [layer.name, layer]));
+		const warnings: Array<{ fileName: string; displayName: string; message: string }> = [];
 
-		const results = await Promise.all(
-			kmzFiles.map(async (entry) => {
-				const displayName = formatDisplayName(entry.name);
+		const files = PANIALA_VISIBLE_LAYERS.flatMap((layerConfig) => {
+			const layer = layersByName.get(layerConfig.layerName);
 
-				try {
-					const fullPath = path.join(PANIALA_KMZ_DIRECTORY, entry.name);
-					const buffer = await fs.readFile(fullPath);
-					const parsed = await parseKmzBuffer(buffer, entry.name);
+			if (!layer) {
+				warnings.push({
+					fileName: layerConfig.fileName,
+					displayName: layerConfig.displayName,
+					message: `Layer "${layerConfig.layerName}" was not found in ${PANIALA_KMZ_FILE_NAME}`,
+				});
+				return [];
+			}
 
-					return {
-						fileName: entry.name,
-						displayName,
-						layers: parsed.layers,
-						totalLayers: parsed.layers.length,
-						totalFeatures: calculateFeatureCount(parsed.layers),
-					};
-				} catch (error) {
-					return {
-						fileName: entry.name,
-						displayName,
-						error: error instanceof Error ? error.message : "Failed to parse KMZ file",
-					};
-				}
-			}),
-		);
-
-		const files = results.filter((item) => !("error" in item));
-		const warnings = results
-			.filter((item) => "error" in item)
-			.map((item) => ({
-				fileName: item.fileName,
-				displayName: item.displayName,
-				message: item.error,
-			}));
+			return [
+				{
+					fileName: layerConfig.fileName,
+					displayName: layerConfig.displayName,
+					layers: [layer],
+					totalLayers: 1,
+					totalFeatures: calculateFeatureCount([layer]),
+				},
+			];
+		});
 
 		return NextResponse.json({
 			success: true,
@@ -77,11 +86,11 @@ export async function GET() {
 			warnings,
 		});
 	} catch (error) {
-		console.error("Error loading Paniala KMZ files:", error);
+		console.error("Error loading Paniala KMZ file:", error);
 		return NextResponse.json(
 			{
 				success: false,
-				message: "Failed to load Paniala KMZ files",
+				message: "Failed to load Paniala KMZ file",
 				error: error instanceof Error ? error.message : "Unknown error",
 			},
 			{ status: 500 },
