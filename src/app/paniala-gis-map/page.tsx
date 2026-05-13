@@ -35,6 +35,7 @@ export default function PanialaGisMapStandalonePage() {
 					layerStyleSettingsPanel={{
 						title: "Layer Style Settings",
 						description: "Customize visibility, colors, opacity, and stroke width for each Paniala GIS layer.",
+						storageKey: "paniala_gis_layer_style_settings",
 						defaultStylesByFile: {
 							"paniala-nc-boundary": {
 								fillColor: "#2563eb",

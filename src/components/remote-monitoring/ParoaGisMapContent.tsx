@@ -71,7 +71,13 @@ type LayerStyleSettings = {
 type LayerStyleSettingsPanelConfig = {
 	title?: string;
 	description?: string;
+	storageKey?: string;
 	defaultStylesByFile?: Record<string, Partial<LayerStyleSettings>>;
+};
+
+type PersistedLayerStyleSettings = {
+	layerStyles?: Record<string, LayerStyleSettings>;
+	visibleLayers?: string[];
 };
 
 const BASE_MAP_LABELS: Record<BaseMapType, string> = {
@@ -275,7 +281,7 @@ export default function ParoaGisMapContent({
 	const [exportError, setExportError] = useState("");
 	const showInlineExportLegend = false;
 	const [layerStyles, setLayerStyles] = useState<Record<string, LayerStyleSettings>>({});
-	const [layerStylePanelOpen, setLayerStylePanelOpen] = useState(true);
+	const [layerStylePanelOpen, setLayerStylePanelOpen] = useState(false);
 
 	const mapContainerRef = useRef<HTMLDivElement>(null);
 	const mapInstanceRef = useRef<any>(null);
@@ -283,8 +289,10 @@ export default function ParoaGisMapContent({
 	const baseLayerRefsRef = useRef<Record<string, any>>({});
 	const labelLayerRef = useRef<any>(null);
 	const lastFitBoundsSignatureRef = useRef("");
+	const layerSettingsHydratedRef = useRef(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const exportDropdownRef = useRef<HTMLDivElement>(null);
+	const layerSettingsStorageKey = layerStyleSettingsPanel?.storageKey;
 
 	const resolveLegendDisplayName = (fileName: string, layerName: string) =>
 		kmzDisplayNamesByFile?.[fileName] ?? LEGEND_NAME_BY_FILE[fileName] ?? layerName;
@@ -359,6 +367,18 @@ export default function ParoaGisMapContent({
 		[getEditableLayerStyle, getEditableLeafletStyle, kmzLayerColorsByFile, kmzLayerFileOrder, layerStyleSettingsPanel],
 	);
 
+	const readSavedLayerSettings = useCallback((): PersistedLayerStyleSettings | null => {
+		if (!layerSettingsStorageKey || typeof window === "undefined") return null;
+
+		try {
+			const saved = window.localStorage.getItem(layerSettingsStorageKey);
+			return saved ? (JSON.parse(saved) as PersistedLayerStyleSettings) : null;
+		} catch (error) {
+			console.error("Invalid saved GIS layer settings:", error);
+			return null;
+		}
+	}, [layerSettingsStorageKey]);
+
 	const loadFiles = useCallback(async (options?: { preserveSelection?: boolean }) => {
 		try {
 			setLoading(true);
@@ -374,8 +394,21 @@ export default function ParoaGisMapContent({
 			const loadedFiles: KMZFile[] = result.files || [];
 			setFiles(loadedFiles);
 			setWarnings(result.warnings || []);
+			const savedLayerSettings = !options?.preserveSelection ? readSavedLayerSettings() : null;
+			if (savedLayerSettings?.layerStyles) {
+				setLayerStyles(savedLayerSettings.layerStyles);
+			}
+
 			setSelectedFiles((previous) => {
 				if (!options?.preserveSelection) {
+					const availableFileNames = new Set(loadedFiles.map((file) => file.fileName));
+					const savedVisibleLayers =
+						savedLayerSettings?.visibleLayers?.filter((fileName) => availableFileNames.has(fileName)) ?? [];
+
+					if (savedVisibleLayers.length > 0) {
+						return new Set(savedVisibleLayers);
+					}
+
 					return new Set(loadedFiles.map((file) => file.fileName));
 				}
 
@@ -386,17 +419,33 @@ export default function ParoaGisMapContent({
 					preservedSelection.length > 0 ? preservedSelection : loadedFiles.map((file) => file.fileName),
 				);
 			});
+			layerSettingsHydratedRef.current = true;
 		} catch (fetchError) {
 			console.error("Error loading GIS KMZ files:", fetchError);
 			setError(fetchError instanceof Error ? fetchError.message : "Failed to load KMZ files");
 		} finally {
 			setLoading(false);
 		}
-	}, [kmzApiPath]);
+	}, [kmzApiPath, readSavedLayerSettings]);
 
 	useEffect(() => {
 		void loadFiles();
 	}, [loadFiles]);
+
+	useEffect(() => {
+		if (!layerSettingsStorageKey || !layerSettingsHydratedRef.current || typeof window === "undefined") return;
+
+		const settingsToSave: PersistedLayerStyleSettings = {
+			layerStyles,
+			visibleLayers: Array.from(selectedFiles),
+		};
+
+		try {
+			window.localStorage.setItem(layerSettingsStorageKey, JSON.stringify(settingsToSave));
+		} catch (error) {
+			console.error("Failed to save GIS layer settings:", error);
+		}
+	}, [layerSettingsStorageKey, layerStyles, selectedFiles]);
 
 	const orderedFiles = useMemo(
 		() => sortKmzFilesByOrder(files, kmzLayerFileOrder),
@@ -1235,12 +1284,13 @@ export default function ParoaGisMapContent({
 
 					{layerStyleSettingsPanel ? (
 						<div className="border-b border-gray-200 bg-slate-50 px-6 py-4">
-							<div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+							<div className={`${layerStylePanelOpen ? "mb-4" : ""} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
 								<div>
 									<button
 										type="button"
 										onClick={() => setLayerStylePanelOpen((previous) => !previous)}
-										className="inline-flex items-center text-sm font-semibold text-gray-900 hover:text-emerald-700"
+										aria-expanded={layerStylePanelOpen}
+										className="inline-flex items-center rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
 									>
 										{layerStyleSettingsPanel.title ?? "Layer Style Settings"}
 										<ChevronDown
@@ -1252,17 +1302,19 @@ export default function ParoaGisMapContent({
 											"Customize each GIS layer color, opacity, stroke width, and visibility."}
 									</p>
 								</div>
-								<button
-									type="button"
-									onClick={resetAllLayerStyles}
-									className="self-start rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:self-auto"
-								>
-									Reset All Styles
-								</button>
+								{layerStylePanelOpen ? (
+									<button
+										type="button"
+										onClick={resetAllLayerStyles}
+										className="self-start rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:self-auto"
+									>
+										Reset All Styles
+									</button>
+								) : null}
 							</div>
 
 							{layerStylePanelOpen ? (
-								<div className="grid gap-4 xl:grid-cols-2">
+								<div className="grid gap-4 overflow-hidden transition-all duration-300 ease-in-out xl:grid-cols-2">
 									{orderedFiles.map((file, fileIndex) => {
 										const layer = file.layers[0];
 										if (!layer) return null;
