@@ -1376,6 +1376,14 @@ type TrainingParticipantsSummary = {
 	Female: number;
 };
 
+type TrainingTehsilSummary = {
+	LocationTehsil: string;
+	Events: number;
+	TotalMale: number;
+	TotalFemale: number;
+	TotalParticipants: number;
+};
+
 // Embedded GIS Online Maps Component Types
 type EmbeddedMapType = {
 	id: string;
@@ -2709,9 +2717,155 @@ function TrainingOrganizationChart({ data }: { data: TrainingGraphData[] }) {
 	);
 }
 
+function TrainingTehsilParticipantsChart({ data }: { data: TrainingTehsilSummary[] }) {
+	if (data.length === 0) {
+		return (
+			<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+				<div className="px-4 pt-4 pb-3 border-b border-gray-100">
+					<h3 className="text-base font-semibold text-gray-900">Participants by Tehsil</h3>
+					<p className="text-xs text-gray-500 mt-0.5">From TrainingEvents · LocationTehsil</p>
+				</div>
+				<div className="p-4">
+					<div className="flex items-center justify-center h-64 text-sm text-gray-500">No tehsil data available</div>
+				</div>
+			</div>
+		);
+	}
+
+	const labels = data.map((item) => item.LocationTehsil);
+	const maleData = data.map((item) => item.TotalMale);
+	const femaleData = data.map((item) => item.TotalFemale);
+	const totalParticipants = data.reduce((sum, item) => sum + item.TotalParticipants, 0);
+	const totalEvents = data.reduce((sum, item) => sum + item.Events, 0);
+	const chartHeight = Math.max(320, Math.min(720, data.length * 36 + 80));
+
+	const chartData = {
+		labels,
+		datasets: [
+			{
+				label: "Male",
+				data: maleData,
+				backgroundColor: "rgba(14, 165, 233, 0.85)",
+				borderColor: "rgba(14, 165, 233, 1)",
+				borderWidth: 1,
+				borderRadius: 3,
+				stack: "participants",
+			},
+			{
+				label: "Female",
+				data: femaleData,
+				backgroundColor: "rgba(236, 72, 153, 0.85)",
+				borderColor: "rgba(236, 72, 153, 1)",
+				borderWidth: 1,
+				borderRadius: 3,
+				stack: "participants",
+			},
+		],
+	};
+
+	const options: ChartOptions<"bar"> = {
+		indexAxis: "y",
+		responsive: true,
+		maintainAspectRatio: false,
+		interaction: { mode: "index", intersect: false },
+		plugins: {
+			legend: {
+				position: "top",
+				labels: {
+					font: { size: 11 },
+					padding: 12,
+					usePointStyle: true,
+					pointStyleWidth: 10,
+				},
+			},
+			tooltip: {
+				callbacks: {
+					afterBody: (tooltipItems) => {
+						const idx = tooltipItems[0]?.dataIndex ?? 0;
+						const item = data[idx];
+						if (!item) return [];
+						return [
+							`Total Participants: ${item.TotalParticipants.toLocaleString()}`,
+							`Events: ${item.Events.toLocaleString()}`,
+						];
+					},
+					label: (context) => {
+						const value = context.parsed.x ?? 0;
+						return `${context.dataset.label}: ${Number(value).toLocaleString()}`;
+					},
+				},
+			},
+			datalabels: {
+				display: (context) => {
+					const value = Number(context.dataset.data[context.dataIndex] ?? 0);
+					return value > 0;
+				},
+				color: "#fff",
+				font: {
+					weight: "bold",
+					size: 10,
+				},
+				formatter: (value: number) => Number(value).toLocaleString(),
+				anchor: "center",
+				align: "center",
+			},
+		},
+		scales: {
+			x: {
+				stacked: true,
+				beginAtZero: true,
+				title: {
+					display: true,
+					text: "Number of Participants",
+					font: { size: 11 },
+				},
+				ticks: { font: { size: 10 } },
+				grid: { color: "rgba(0,0,0,0.06)" },
+			},
+			y: {
+				stacked: true,
+				ticks: {
+					font: { size: 11 },
+					autoSkip: false,
+				},
+				grid: { display: false },
+			},
+		},
+	};
+
+	return (
+		<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+			<div className="px-4 pt-4 pb-3 border-b border-gray-100">
+				<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+					<div className="flex-1">
+						<h3 className="text-base font-semibold text-gray-900">Participants by Tehsil</h3>
+						<p className="text-xs text-gray-500 mt-0.5">
+							TrainingEvents aggregated by LocationTehsil (sorted by total participants)
+						</p>
+					</div>
+					<div className="flex gap-2 text-xs">
+						<span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded font-medium">
+							{totalEvents.toLocaleString()} Events
+						</span>
+						<span className="px-2 py-1 bg-amber-50 text-amber-700 rounded font-medium">
+							{totalParticipants.toLocaleString()} Participants
+						</span>
+					</div>
+				</div>
+			</div>
+			<div className="p-4">
+				<div style={{ height: `${chartHeight}px` }}>
+					<Bar data={chartData as any} options={options} plugins={[ChartDataLabels] as any} />
+				</div>
+			</div>
+		</div>
+	);
+}
+
 export default function DashboardPage() {
 	const router = useRouter();
 	const [pictures, setPictures] = useState<PictureData[]>([]);
+	const [picturesTotalCount, setPicturesTotalCount] = useState(0);
 	const [outputProgress, setOutputProgress] = useState<OutputProgress[]>([]);
 	const [districtProgress, setDistrictProgress] = useState<DistrictProgress[]>([]);
 	const [outputWeightage, setOutputWeightage] = useState<OutputWeightage[]>([]);
@@ -2720,6 +2874,7 @@ export default function DashboardPage() {
 	const [districtProgressSummary, setDistrictProgressSummary] = useState<DistrictProgressSummary[]>([]);
 	const [trainingGraphData, setTrainingGraphData] = useState<TrainingGraphData[]>([]);
 	const [trainingParticipantsSummary, setTrainingParticipantsSummary] = useState<TrainingParticipantsSummary[]>([]);
+	const [trainingTehsilSummary, setTrainingTehsilSummary] = useState<TrainingTehsilSummary[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -2756,6 +2911,7 @@ export default function DashboardPage() {
 		fetchDistrictProgressSummary();
 		fetchTrainingGraphs();
 		fetchTrainingParticipantsSummary();
+		fetchTrainingTehsilSummary();
 		fetchSecurityAlerts();
 		fetchNews();
 	}, []);
@@ -2817,11 +2973,11 @@ export default function DashboardPage() {
 					};
 
 	useEffect(() => {
-		if (isAutoPlaying && pictures.length > 3) {
+		const visibleCount = 5;
+		if (isAutoPlaying && pictures.length > visibleCount) {
 			const interval = setInterval(() => {
 				setCurrentIndex((prevIndex) => {
-					// Show 3 images at a time, so max index should be pictures.length - 3
-					const maxIndex = Math.max(0, pictures.length - 3);
+					const maxIndex = Math.max(0, pictures.length - visibleCount);
 					return prevIndex >= maxIndex ? 0 : prevIndex + 1;
 				});
 			}, 10000); // Change picture every 10 seconds
@@ -2880,27 +3036,20 @@ export default function DashboardPage() {
 		try {
 			setLoading(true);
 			setError(null);
-			// Fetch all pictures for the gallery
-			const response = await fetch('/api/pictures/details');
-			
+			// Load all gallery pictures; UI shows 5 at a time with scroll/navigation
+			const response = await fetch("/api/pictures/dashboard");
+
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
-			
+
 			const data = await response.json();
 
 			if (data.success) {
 				const fetchedPictures = data.pictures || [];
-				// Log first picture's FilePath for debugging
-				if (fetchedPictures.length > 0 && fetchedPictures[0].FilePath) {
-					const firstPic = fetchedPictures[0];
-					const testUrl = getImageUrl(firstPic.FilePath);
-					console.log('Sample picture URL:', {
-						filePath: firstPic.FilePath,
-						generatedUrl: testUrl
-					});
-				}
 				setPictures(fetchedPictures);
+				setPicturesTotalCount(Number(data.totalCount) || fetchedPictures.length);
+				setCurrentIndex(0);
 			} else {
 				const errorMsg = data.message || "Failed to fetch pictures";
 				setError(errorMsg);
@@ -3033,22 +3182,36 @@ export default function DashboardPage() {
 		}
 	};
 
+	const fetchTrainingTehsilSummary = async () => {
+		try {
+			const response = await fetch("/api/training/tehsil-summary");
+			const data = await response.json();
+			if (data.success) {
+				setTrainingTehsilSummary(data.data || []);
+			} else {
+				console.error("Failed to fetch training tehsil summary:", data.message);
+			}
+		} catch (err) {
+			console.error("Error fetching training tehsil summary:", err);
+		}
+	};
+
 	const handlePictureClick = (picture: PictureData) => {
 		setSelectedPicture(picture);
 	};
 
+	const galleryVisibleCount = 5;
+
 	const nextPicture = () => {
 		setCurrentIndex((prevIndex) => {
-			// Show 3 images at a time, so max index should be pictures.length - 3
-			const maxIndex = Math.max(0, pictures.length - 3);
+			const maxIndex = Math.max(0, pictures.length - galleryVisibleCount);
 			return prevIndex >= maxIndex ? 0 : prevIndex + 1;
 		});
 	};
 
 	const prevPicture = () => {
 		setCurrentIndex((prevIndex) => {
-			// Show 3 images at a time, so max index should be pictures.length - 3
-			const maxIndex = Math.max(0, pictures.length - 3);
+			const maxIndex = Math.max(0, pictures.length - galleryVisibleCount);
 			return prevIndex <= 0 ? maxIndex : prevIndex - 1;
 		});
 	};
@@ -3209,7 +3372,7 @@ export default function DashboardPage() {
 		</div>
 
 			{/* Training, Capacity Building & Awareness Section */}
-			{(trainingGraphData.length > 0 || trainingParticipantsSummary.length > 0) && (
+			{(trainingGraphData.length > 0 || trainingParticipantsSummary.length > 0 || trainingTehsilSummary.length > 0) && (
 				<div className="space-y-6">
 					<div className="space-y-1">
 						<h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">Training, Capacity Building & Awareness</h2>
@@ -3226,20 +3389,31 @@ export default function DashboardPage() {
 						{/* Chart 3: Organization-wise Participants */}
 						<TrainingOrganizationChart data={trainingGraphData} />
 					</div>
+
+					{/* Chart 4: Full-width Tehsil Participants */}
+					{trainingTehsilSummary.length > 0 ? (
+						<TrainingTehsilParticipantsChart data={trainingTehsilSummary} />
+					) : null}
 				</div>
 			)}
 
 			{/* Picture Gallery Section */}
 			<div className="bg-gradient-to-r from-[#0b4d2b] to-[#0a3d24] rounded-xl shadow-lg overflow-hidden">
 				<div className="p-6">
-					<div className="flex items-center justify-between">
+					<div className="flex items-center justify-between gap-4">
 						<div className="space-y-1">
 							<h2 className="text-2xl font-semibold text-white leading-snug tracking-tight">Project Activity Picture Gallery (click Picture for detail)</h2>
 							<p className="text-sm text-green-100 leading-relaxed">
-								Displaying {pictures.length} picture{pictures.length !== 1 ? 's' : ''} from your collection
+								Showing {Math.min(galleryVisibleCount, carouselPictures.length)} at a time · {picturesTotalCount} picture{picturesTotalCount !== 1 ? "s" : ""} in your collection
 							</p>
 						</div>
 						<div className="flex items-center space-x-2">
+							<Link
+								href="/dashboard/pictures"
+								className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors bg-white/15 text-white hover:bg-white/25 border border-white/30"
+							>
+								View All
+							</Link>
 							<button
 								onClick={() => setIsAutoPlaying(!isAutoPlaying)}
 								className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
@@ -3263,7 +3437,7 @@ export default function DashboardPage() {
 				) : (
 					<div className="relative bg-white rounded-xl shadow-sm p-6">
 						{/* Navigation Buttons */}
-						{carouselPictures.length > 3 && (
+						{carouselPictures.length > galleryVisibleCount && (
 							<>
 								<button
 									onClick={prevPicture}
@@ -3282,9 +3456,9 @@ export default function DashboardPage() {
 							</>
 						)}
 
-						{/* Three Images Grid */}
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-12">
-							{carouselPictures.slice(currentIndex, currentIndex + 3).map((picture, index) => {
+						{/* Five Images Grid (scroll/navigate through all) */}
+						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 px-12">
+							{carouselPictures.slice(currentIndex, currentIndex + galleryVisibleCount).map((picture, index) => {
 								const actualIndex = currentIndex + index;
 								const imageUrl = getImageUrl(picture.FilePath);
 								const uniqueKey = picture.PictureID || `picture-${actualIndex}-${picture.FileName || index}`;
@@ -3297,7 +3471,7 @@ export default function DashboardPage() {
 										{/* Elegant Card Container */}
 										<div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden transform hover:-translate-y-1 border border-gray-100 cursor-pointer" onClick={() => handlePictureClick(picture)}>
 											{/* Image Frame - Reduced Height */}
-											<div className="relative w-full bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 p-2 overflow-hidden" style={{ height: '280px' }}>
+											<div className="relative w-full bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 p-2 overflow-hidden" style={{ height: '220px' }}>
 												{/* Inner Frame */}
 												<div className="relative w-full h-full rounded-lg overflow-hidden shadow-inner border-2 border-white/50">
 													{imageUrl ? (
@@ -3393,15 +3567,15 @@ export default function DashboardPage() {
 						</div>
 
 						{/* Dots Indicator */}
-						{carouselPictures.length > 3 && (
+						{carouselPictures.length > galleryVisibleCount && (
 							<div className="flex justify-center items-center gap-3 mt-8 pt-6 border-t border-gray-200">
-								{Array.from({ length: Math.ceil(carouselPictures.length / 3) }).map((_, index) => {
-									const slideIndex = index * 3;
-									const isActive = currentIndex >= slideIndex && currentIndex < slideIndex + 3;
+								{Array.from({ length: Math.ceil(carouselPictures.length / galleryVisibleCount) }).map((_, index) => {
+									const slideIndex = index * galleryVisibleCount;
+									const isActive = currentIndex >= slideIndex && currentIndex < slideIndex + galleryVisibleCount;
 									return (
 										<button
 											key={index}
-											onClick={() => setCurrentIndex(slideIndex)}
+											onClick={() => setCurrentIndex(Math.min(slideIndex, Math.max(0, carouselPictures.length - galleryVisibleCount)))}
 											className={`h-2.5 rounded-full transition-all duration-300 ${
 												isActive
 													? "w-10 bg-[#0b4d2b] shadow-md"
@@ -3614,7 +3788,7 @@ export default function DashboardPage() {
 							<p className="text-gray-600">No security alerts at this time</p>
 						</div>
 					) : (
-						<div className="space-y-4">
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 							{securityAlerts.map((alert) => (
 								<div
 									key={alert.id}
@@ -3635,27 +3809,25 @@ export default function DashboardPage() {
 											window.open(href, "_blank", "noopener,noreferrer");
 										}
 									}}
-									className="bg-white rounded-lg border border-red-200 p-4 hover:shadow-md transition-shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2"
+									className="bg-white rounded-lg border border-red-200 px-4 py-[0.72rem] hover:bg-red-50 hover:border-red-300 hover:shadow-md transition duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 h-full min-w-0"
 								>
-									<div className="flex items-start justify-between">
-										<div className="flex-1">
-											<h3 className="text-base font-medium text-gray-900 leading-snug mb-2">
-												{alert.incident_title}
-											</h3>
-											{alert.ReferenceNumber && (
-												<Link
-													href={`/dashboard/security-updates/view?id=${alert.id}`}
-													target="_blank"
-													rel="noopener noreferrer"
-													onClick={(event) => event.stopPropagation()}
-													className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
-												>
-													<Shield className="h-4 w-4 mr-1" />
-													Reference #: {alert.ReferenceNumber}
-													<ExternalLink className="h-3 w-3 ml-1" />
-												</Link>
-											)}
-										</div>
+									<div className="flex flex-col items-center justify-center text-center min-w-0">
+										<h3 className="text-base font-medium text-gray-900 leading-snug mb-[0.36rem] break-words w-full">
+											{alert.incident_title}
+										</h3>
+										{alert.ReferenceNumber && (
+											<Link
+												href={`/dashboard/security-updates/view?id=${alert.id}`}
+												target="_blank"
+												rel="noopener noreferrer"
+												onClick={(event) => event.stopPropagation()}
+												className="inline-flex items-center justify-center text-sm font-medium text-red-600 hover:text-red-700 hover:underline break-all"
+											>
+												<Shield className="h-4 w-4 mr-1 shrink-0" />
+												Reference #: {alert.ReferenceNumber}
+												<ExternalLink className="h-3 w-3 ml-1 shrink-0" />
+											</Link>
+										)}
 									</div>
 								</div>
 							))}

@@ -28,7 +28,14 @@ export default function ReportsPage() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedMainCategory, setSelectedMainCategory] = useState("");
 	const [selectedSubCategory, setSelectedSubCategory] = useState("");
-	const [selectedEventDate, setSelectedEventDate] = useState("");
+	const [dateFrom, setDateFrom] = useState("");
+	const [dateTo, setDateTo] = useState("");
+	const [appliedDateFrom, setAppliedDateFrom] = useState("");
+	const [appliedDateTo, setAppliedDateTo] = useState("");
+	const [defaultDateFrom, setDefaultDateFrom] = useState("");
+	const [defaultDateTo, setDefaultDateTo] = useState("");
+	const [dateBoundsReady, setDateBoundsReady] = useState(false);
+	const [dateRangeError, setDateRangeError] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
 	const [mainCategories, setMainCategories] = useState<string[]>([]);
@@ -36,32 +43,88 @@ export default function ReportsPage() {
 	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; report: ReportData | null }>({ show: false, report: null });
 	const [deleting, setDeleting] = useState(false);
 
+	const isDateRangeInvalid = (from: string, to: string) => Boolean(from && to && to < from);
+
+	// Lightweight MIN/MAX EventDate for default Date From / Date To
 	useEffect(() => {
-		fetchReports();
+		let cancelled = false;
+
+		const loadDateBounds = async () => {
+			try {
+				const response = await fetch("/api/reports/date-range");
+				const data = await response.json();
+				if (cancelled) return;
+
+				if (data.success) {
+					const minDate = data.minDate || "";
+					const maxDate = data.maxDate || "";
+					setDefaultDateFrom(minDate);
+					setDefaultDateTo(maxDate);
+					setDateFrom(minDate);
+					setDateTo(maxDate);
+					setAppliedDateFrom(minDate);
+					setAppliedDateTo(maxDate);
+					setDateRangeError(null);
+				}
+			} catch (err) {
+				console.error("Error fetching reports date range:", err);
+			} finally {
+				if (!cancelled) {
+					setDateBoundsReady(true);
+				}
+			}
+		};
+
+		loadDateBounds();
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
-	const fetchReports = async () => {
+	useEffect(() => {
+		if (!dateBoundsReady) return;
+		fetchReports({
+			dateFrom: appliedDateFrom,
+			dateTo: appliedDateTo,
+		});
+		// Initial load only after date bounds are ready
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [dateBoundsReady]);
+
+	const fetchReports = async (overrides?: {
+		searchTerm?: string;
+		mainCategory?: string;
+		subCategory?: string;
+		dateFrom?: string;
+		dateTo?: string;
+	}) => {
+		const from = overrides?.dateFrom ?? appliedDateFrom;
+		const to = overrides?.dateTo ?? appliedDateTo;
+
+		if (isDateRangeInvalid(from, to)) {
+			setDateRangeError("Date To cannot be earlier than Date From.");
+			return;
+		}
+
 		try {
 			setLoading(true);
+			setDateRangeError(null);
 			const params = new URLSearchParams();
-			if (selectedMainCategory) params.append('mainCategory', selectedMainCategory);
-			if (selectedSubCategory) params.append('subCategory', selectedSubCategory);
-			if (searchTerm) params.append('search', searchTerm);
+			const mainCategory = overrides?.mainCategory ?? selectedMainCategory;
+			const subCategory = overrides?.subCategory ?? selectedSubCategory;
+			const search = overrides?.searchTerm ?? searchTerm;
+
+			if (mainCategory) params.append('mainCategory', mainCategory);
+			if (subCategory) params.append('subCategory', subCategory);
+			if (search) params.append('search', search);
+			if (from) params.append('dateFrom', from);
+			if (to) params.append('dateTo', to);
 
 			const response = await fetch(`/api/reports?${params.toString()}`);
 			const data = await response.json();
 
 			if (data.success) {
 				let fetchedReports = data.reports || [];
-				
-				// Client-side filter by event date if selected
-				if (selectedEventDate) {
-					fetchedReports = fetchedReports.filter((report: ReportData) => {
-						if (!report.EventDate) return false;
-						const reportDate = new Date(report.EventDate).toISOString().split('T')[0];
-						return reportDate === selectedEventDate;
-					});
-				}
 				
 				// Sort by EventDate DESC (latest first) - default sort
 				fetchedReports.sort((a: ReportData, b: ReportData) => {
@@ -133,15 +196,35 @@ export default function ReportsPage() {
 	};
 
 	const handleSearch = () => {
-		fetchReports();
+		if (isDateRangeInvalid(dateFrom, dateTo)) {
+			setDateRangeError("Date To cannot be earlier than Date From.");
+			return;
+		}
+		setDateRangeError(null);
+		setAppliedDateFrom(dateFrom);
+		setAppliedDateTo(dateTo);
+		fetchReports({
+			dateFrom,
+			dateTo,
+		});
 	};
 
 	const handleReset = () => {
 		setSearchTerm("");
 		setSelectedMainCategory("");
 		setSelectedSubCategory("");
-		setSelectedEventDate("");
-		fetchReports();
+		setDateFrom(defaultDateFrom);
+		setDateTo(defaultDateTo);
+		setAppliedDateFrom(defaultDateFrom);
+		setAppliedDateTo(defaultDateTo);
+		setDateRangeError(null);
+		fetchReports({
+			searchTerm: "",
+			mainCategory: "",
+			subCategory: "",
+			dateFrom: defaultDateFrom,
+			dateTo: defaultDateTo,
+		});
 	};
 
 	const getFileUrl = (filePath: string) => {
@@ -265,7 +348,7 @@ export default function ReportsPage() {
 				<div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
 					<p className="text-red-600">{error}</p>
 					<button
-						onClick={fetchReports}
+						onClick={() => fetchReports()}
 						className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
 					>
 						Try Again
@@ -340,7 +423,7 @@ export default function ReportsPage() {
 					</button>
 				)}
 				<button
-					onClick={fetchReports}
+					onClick={() => fetchReports()}
 					className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
 				>
 					<RefreshCw className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -426,13 +509,42 @@ export default function ReportsPage() {
 					</select>
 				</div>
 
-				{/* Event Date Filter */}
-				<div className="min-w-[180px]">
-					<label className="block text-xs font-medium text-gray-700 mb-1">Event Date</label>
+				{/* Date From Filter */}
+				<div className="min-w-[160px]">
+					<label className="block text-xs font-medium text-gray-700 mb-1">Date From</label>
 					<input
 						type="date"
-						value={selectedEventDate}
-						onChange={(e) => setSelectedEventDate(e.target.value)}
+						value={dateFrom}
+						max={dateTo || undefined}
+						onChange={(e) => {
+							const value = e.target.value;
+							setDateFrom(value);
+							if (isDateRangeInvalid(value, dateTo)) {
+								setDateRangeError("Date To cannot be earlier than Date From.");
+							} else {
+								setDateRangeError(null);
+							}
+						}}
+						className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+					/>
+				</div>
+
+				{/* Date To Filter */}
+				<div className="min-w-[160px]">
+					<label className="block text-xs font-medium text-gray-700 mb-1">Date To</label>
+					<input
+						type="date"
+						value={dateTo}
+						min={dateFrom || undefined}
+						onChange={(e) => {
+							const value = e.target.value;
+							setDateTo(value);
+							if (isDateRangeInvalid(dateFrom, value)) {
+								setDateRangeError("Date To cannot be earlier than Date From.");
+							} else {
+								setDateRangeError(null);
+							}
+						}}
 						className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
 					/>
 				</div>
@@ -448,6 +560,13 @@ export default function ReportsPage() {
 					</button>
 				</div>
 			</div>
+
+			{dateRangeError && (
+				<div className="mt-2 flex items-center text-sm text-red-600">
+					<AlertCircle className="h-4 w-4 mr-1.5 flex-shrink-0" />
+					{dateRangeError}
+				</div>
+			)}
 		</div>
 
 		{/* Reports Grid - Horizontal View */}
@@ -456,7 +575,7 @@ export default function ReportsPage() {
 				<FileText className="mx-auto h-10 w-10 text-gray-400 mb-3" />
 				<h3 className="text-base font-medium text-gray-900 mb-1">No reports found</h3>
 				<p className="text-sm text-gray-600">
-					{searchTerm || selectedMainCategory || selectedSubCategory 
+					{searchTerm || selectedMainCategory || selectedSubCategory || appliedDateFrom || appliedDateTo
 						? "Try adjusting your search criteria" 
 						: "Reports will appear here once they are uploaded"
 					}

@@ -15,7 +15,7 @@ export default function Footer() {
 		<footer className="bg-[#0b4d2b]">
 			<div className="mx-auto w-full max-w-none px-6 py-4 text-center text-white text-sm">
 				<div className="flex justify-between items-center">
-					<span>&copy; 2025 RIF-II, All rights reserved.</span>
+					<span>&copy; 2026 RIF-II, All rights reserved.</span>
 					<div className="flex gap-4">
 						<Link
 							href="/"

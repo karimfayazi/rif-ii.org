@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { 
 	Filter, 
@@ -22,7 +22,9 @@ import {
 	AlertCircle,
 	Loader2,
 	CheckCircle,
-	ArrowLeft
+	ArrowLeft,
+	ChevronUp,
+	ChevronDown
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
@@ -101,21 +103,86 @@ export default function TrainingPage() {
 	const [selectedLocationTehsil, setSelectedLocationTehsil] = useState("");
 	const [selectedTrainingFacilitator, setSelectedTrainingFacilitator] = useState("");
 	const [trainingName, setTrainingName] = useState("");
-	const [eventDate, setEventDate] = useState("");
+	const [filterStartDate, setFilterStartDate] = useState("");
+	const [filterEndDate, setFilterEndDate] = useState("");
+	// Applied dates drive the grid/API; UI dates only apply after clicking Apply
+	const [appliedStartDate, setAppliedStartDate] = useState("");
+	const [appliedEndDate, setAppliedEndDate] = useState("");
+	const [defaultStartDate, setDefaultStartDate] = useState("");
+	const [defaultEndDate, setDefaultEndDate] = useState("");
+	const [dateBoundsReady, setDateBoundsReady] = useState(false);
+	const [dateRangeError, setDateRangeError] = useState<string | null>(null);
 	const [outputs, setOutputs] = useState<string[]>([]);
 	const [eventTypes, setEventTypes] = useState<string[]>([]);
 	const [locationTehsils, setLocationTehsils] = useState<string[]>([]);
 	const [showFilters, setShowFilters] = useState<boolean>(true);
+	const [sortColumn, setSortColumn] = useState<"StartDate" | "EndDate" | null>(null);
+	const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+	const isDateRangeInvalid = (start: string, end: string) => Boolean(start && end && end < start);
+
+	const handleDateSort = (column: "StartDate" | "EndDate") => {
+		if (sortColumn === column) {
+			setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+		} else {
+			setSortColumn(column);
+			setSortDir("asc");
+		}
+	};
+
+	// Lightweight MIN/MAX event dates for default Start/End Date pre-fill
+	useEffect(() => {
+		let cancelled = false;
+
+		const loadDateBounds = async () => {
+			try {
+				const response = await fetch("/api/training/date-range");
+				const data = await response.json();
+				if (cancelled) return;
+
+				if (data.success) {
+					const minDate = data.minDate || "";
+					const maxDate = data.maxDate || "";
+					setDefaultStartDate(minDate);
+					setDefaultEndDate(maxDate);
+					setFilterStartDate(minDate);
+					setFilterEndDate(maxDate);
+					setAppliedStartDate(minDate);
+					setAppliedEndDate(maxDate);
+					setDateRangeError(null);
+				}
+			} catch (err) {
+				console.error("Error fetching training date range:", err);
+			} finally {
+				if (!cancelled) {
+					setDateBoundsReady(true);
+				}
+			}
+		};
+
+		loadDateBounds();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	const fetchTrainingData = useCallback(async () => {
+		if (isDateRangeInvalid(appliedStartDate, appliedEndDate)) {
+			setDateRangeError("End Date cannot be earlier than Start Date.");
+			return;
+		}
+
 		try {
 			setLoading(true);
+			setDateRangeError(null);
 			const params = new URLSearchParams();
 			if (selectedDistrict && selectedDistrict !== "All") params.append('district', selectedDistrict);
 			if (selectedOutput) params.append('output', selectedOutput);
 			if (selectedEventType) params.append('eventType', selectedEventType);
 			if (selectedLocationTehsil) params.append('locationTehsil', selectedLocationTehsil);
 			if (selectedTrainingFacilitator) params.append('trainingFacilitator', selectedTrainingFacilitator);
+			if (appliedStartDate) params.append('startDate', appliedStartDate);
+			if (appliedEndDate) params.append('endDate', appliedEndDate);
 
 			const response = await fetch(`/api/training?${params.toString()}`);
 			const data = await response.json();
@@ -140,14 +207,26 @@ export default function TrainingPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [selectedDistrict, selectedOutput, selectedEventType, selectedLocationTehsil, selectedTrainingFacilitator]);
+	}, [selectedDistrict, selectedOutput, selectedEventType, selectedLocationTehsil, selectedTrainingFacilitator, appliedStartDate, appliedEndDate]);
 
 	useEffect(() => {
+		if (!dateBoundsReady) return;
 		fetchTrainingData();
-	}, [fetchTrainingData]);
+	}, [fetchTrainingData, dateBoundsReady]);
 
 	const handleSearch = () => {
-		fetchTrainingData();
+		if (isDateRangeInvalid(filterStartDate, filterEndDate)) {
+			setDateRangeError("End Date cannot be earlier than Start Date.");
+			return;
+		}
+		setDateRangeError(null);
+		// Changing applied dates triggers grid refresh via fetchTrainingData deps
+		if (filterStartDate === appliedStartDate && filterEndDate === appliedEndDate) {
+			fetchTrainingData();
+			return;
+		}
+		setAppliedStartDate(filterStartDate);
+		setAppliedEndDate(filterEndDate);
 	};
 
 	const handleReset = () => {
@@ -157,7 +236,11 @@ export default function TrainingPage() {
 		setSelectedLocationTehsil("");
 		setSelectedTrainingFacilitator("");
 		setTrainingName("");
-		setEventDate("");
+		setFilterStartDate(defaultStartDate);
+		setFilterEndDate(defaultEndDate);
+		setAppliedStartDate(defaultStartDate);
+		setAppliedEndDate(defaultEndDate);
+		setDateRangeError(null);
 	};
 
 	const formatNumber = (num: number | null | undefined) => {
@@ -285,6 +368,22 @@ export default function TrainingPage() {
 		}
 	};
 
+	// Parse API date strings (dd-mm-yyyy) or ISO (yyyy-mm-dd) for client-side range checks
+	const parseEventDate = (dateStr?: string): Date | null => {
+		if (!dateStr) return null;
+		if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+			const parsed = new Date(`${dateStr}T00:00:00`);
+			return Number.isNaN(parsed.getTime()) ? null : parsed;
+		}
+		const parts = dateStr.split(/[-/]/);
+		if (parts.length === 3) {
+			const [dd, mm, yyyy] = parts;
+			const parsed = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+			return Number.isNaN(parsed.getTime()) ? null : parsed;
+		}
+		return null;
+	};
+
 	// Filter data based on selected filters
 	const filteredData = trainingData.filter(item => {
 		const matchesDistrict = !selectedDistrict || selectedDistrict === "All" || item.District === selectedDistrict;
@@ -293,10 +392,28 @@ export default function TrainingPage() {
 		const matchesLocationTehsil = !selectedLocationTehsil || item.LocationTehsil === selectedLocationTehsil;
 		const matchesTrainingFacilitator = !selectedTrainingFacilitator || item.TrainingFacilitatorName === selectedTrainingFacilitator;
 		const matchesTrainingName = !trainingName || (item.TrainingTitle && item.TrainingTitle.toLowerCase().includes(trainingName.toLowerCase()));
-		const matchesEventDate = !eventDate || item.StartDate === eventDate;
+
+		const itemEventDate = parseEventDate(item.StartDate);
+		const rangeStart = appliedStartDate ? new Date(`${appliedStartDate}T00:00:00`) : null;
+		const rangeEnd = appliedEndDate ? new Date(`${appliedEndDate}T00:00:00`) : null;
+		const matchesStartDate = !rangeStart || (itemEventDate !== null && itemEventDate >= rangeStart);
+		const matchesEndDate = !rangeEnd || (itemEventDate !== null && itemEventDate <= rangeEnd);
 		
-		return matchesDistrict && matchesOutput && matchesEventType && matchesLocationTehsil && matchesTrainingFacilitator && matchesTrainingName && matchesEventDate;
+		return matchesDistrict && matchesOutput && matchesEventType && matchesLocationTehsil && matchesTrainingFacilitator && matchesTrainingName && matchesStartDate && matchesEndDate;
 	});
+
+	const displayData = useMemo(() => {
+		if (!sortColumn) return filteredData;
+
+		const sorted = [...filteredData];
+		sorted.sort((a, b) => {
+			const aTime = parseEventDate(sortColumn === "StartDate" ? a.StartDate : a.EndDate)?.getTime() ?? 0;
+			const bTime = parseEventDate(sortColumn === "StartDate" ? b.StartDate : b.EndDate)?.getTime() ?? 0;
+			const cmp = aTime - bTime;
+			return sortDir === "asc" ? cmp : -cmp;
+		});
+		return sorted;
+	}, [filteredData, sortColumn, sortDir]);
 
 	// Calculate summary statistics
 	const totalDays = filteredData.reduce((sum, item) => sum + (item.TotalDays || 0), 0);
@@ -634,17 +751,48 @@ export default function TrainingPage() {
 						</div>
 					</div>
 
-					{/* Row 2: Event Date, Training Facilitator, Output, Buttons */}
-					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-						{/* Event Date Filter */}
+					{/* Row 2: Start Date, End Date, Training Facilitator, Output, Buttons */}
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+						{/* Start Date Filter */}
 						<div className="min-w-0">
 							<label className="block text-xs font-medium text-gray-700 mb-1">
-								Event Date
+								Start Date
 							</label>
 							<input
 								type="date"
-								value={eventDate}
-								onChange={(e) => setEventDate(e.target.value)}
+								value={filterStartDate}
+								max={filterEndDate || undefined}
+								onChange={(e) => {
+									const value = e.target.value;
+									setFilterStartDate(value);
+									if (isDateRangeInvalid(value, filterEndDate)) {
+										setDateRangeError("End Date cannot be earlier than Start Date.");
+									} else {
+										setDateRangeError(null);
+									}
+								}}
+								className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
+							/>
+						</div>
+
+						{/* End Date Filter */}
+						<div className="min-w-0">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								End Date
+							</label>
+							<input
+								type="date"
+								value={filterEndDate}
+								min={filterStartDate || undefined}
+								onChange={(e) => {
+									const value = e.target.value;
+									setFilterEndDate(value);
+									if (isDateRangeInvalid(filterStartDate, value)) {
+										setDateRangeError("End Date cannot be earlier than Start Date.");
+									} else {
+										setDateRangeError(null);
+									}
+								}}
 								className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-transparent"
 							/>
 						</div>
@@ -704,6 +852,13 @@ export default function TrainingPage() {
 							</button>
 						</div>
 					</div>
+
+					{dateRangeError && (
+						<div className="mt-2 flex items-center text-sm text-red-600">
+							<AlertCircle className="h-4 w-4 mr-1.5 flex-shrink-0" />
+							{dateRangeError}
+						</div>
+					)}
 				</div>
 			</div>
 		)}
@@ -785,7 +940,7 @@ export default function TrainingPage() {
 					<BarChart3 className="mx-auto h-12 w-12 text-gray-400 mb-4" />
 					<h3 className="text-lg font-medium text-gray-900 mb-2">No training events found</h3>
 					<p className="text-gray-600">
-						{selectedDistrict || selectedOutput || selectedEventType || selectedLocationTehsil || selectedTrainingFacilitator || trainingName || eventDate
+						{selectedDistrict || selectedOutput || selectedEventType || selectedLocationTehsil || selectedTrainingFacilitator || trainingName || filterStartDate || filterEndDate
 							? "Try adjusting your search criteria" 
 							: "No training data available"
 						}
@@ -801,8 +956,42 @@ export default function TrainingPage() {
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">District</th>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Location Tehsil</th>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Venue</th>
-									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Start Date</th>
-									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">End Date</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+										<button
+											type="button"
+											onClick={() => handleDateSort("StartDate")}
+											className="inline-flex items-center gap-1 hover:text-[#0b4d2b] transition-colors"
+											title="Sort by Start Date"
+										>
+											Start Date
+											{sortColumn === "StartDate" ? (
+												sortDir === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+											) : (
+												<span className="inline-flex flex-col leading-none opacity-40">
+													<ChevronUp className="h-2.5 w-2.5" />
+													<ChevronDown className="h-2.5 w-2.5 -mt-0.5" />
+												</span>
+											)}
+										</button>
+									</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+										<button
+											type="button"
+											onClick={() => handleDateSort("EndDate")}
+											className="inline-flex items-center gap-1 hover:text-[#0b4d2b] transition-colors"
+											title="Sort by End Date"
+										>
+											End Date
+											{sortColumn === "EndDate" ? (
+												sortDir === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+											) : (
+												<span className="inline-flex flex-col leading-none opacity-40">
+													<ChevronUp className="h-2.5 w-2.5" />
+													<ChevronDown className="h-2.5 w-2.5 -mt-0.5" />
+												</span>
+											)}
+										</button>
+									</th>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Total Days</th>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">TMA Male</th>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">TMA Female</th>
@@ -829,7 +1018,7 @@ export default function TrainingPage() {
 								</tr>
 							</thead>
 							<tbody className="bg-white divide-y divide-gray-200">
-								{filteredData.map((item, index) => (
+								{displayData.map((item, index) => (
 									<tr key={item.SN || index} className="hover:bg-gray-50">
 										<td className="px-4 py-3 whitespace-nowrap">
 											<div className="text-sm font-semibold text-gray-900 max-w-xs truncate" title={item.TrainingTitle}>

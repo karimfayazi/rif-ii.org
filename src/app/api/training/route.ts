@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
 		const eventType = searchParams.get('eventType');
 		const locationTehsil = searchParams.get('locationTehsil');
 		const trainingFacilitator = searchParams.get('trainingFacilitator');
+		const startDate = searchParams.get('startDate');
+		const endDate = searchParams.get('endDate');
 
 		const pool = await getDb();
 		let query = `
@@ -98,6 +100,15 @@ export async function GET(request: NextRequest) {
 		if (trainingFacilitator) {
 			query += ` AND [TrainingFacilitatorName] = @trainingFacilitator`;
 			request_obj.input('trainingFacilitator', trainingFacilitator);
+		}
+		// Event date range filter (inclusive) against TrainingEvents.StartDate
+		if (startDate) {
+			query += ` AND CAST([StartDate] AS DATE) >= CAST(@startDate AS DATE)`;
+			request_obj.input('startDate', startDate);
+		}
+		if (endDate) {
+			query += ` AND CAST([StartDate] AS DATE) <= CAST(@endDate AS DATE)`;
+			request_obj.input('endDate', endDate);
 		}
 
 		query += ` ORDER BY [StartDate] DESC, [TrainingTitle]`;

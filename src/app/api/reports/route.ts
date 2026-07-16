@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
 		const mainCategory = searchParams.get('mainCategory');
 		const subCategory = searchParams.get('subCategory');
 		const searchTerm = searchParams.get('search');
+		const dateFrom = searchParams.get('dateFrom');
+		const dateTo = searchParams.get('dateTo');
 
 		const pool = await getDb();
 		let query = `
@@ -36,6 +38,15 @@ export async function GET(request: NextRequest) {
 		if (searchTerm) {
 			query += ` AND ([ReportTitle] LIKE @searchTerm OR [Description] LIKE @searchTerm)`;
 			request_obj.input('searchTerm', `%${searchTerm}%`);
+		}
+		// Inclusive EventDate range filter
+		if (dateFrom) {
+			query += ` AND CAST([EventDate] AS DATE) >= CAST(@dateFrom AS DATE)`;
+			request_obj.input('dateFrom', dateFrom);
+		}
+		if (dateTo) {
+			query += ` AND CAST([EventDate] AS DATE) <= CAST(@dateTo AS DATE)`;
+			request_obj.input('dateTo', dateTo);
 		}
 
 		query += ` ORDER BY [EventDate] DESC, [ReportTitle]`;

@@ -286,50 +286,48 @@ export default function LoginPage() {
 			</header>
 			
 			{/* Main Content - Takes remaining space */}
-			<div className="flex-1 flex items-center justify-center p-8">
-				<div className="w-full max-w-5xl flex rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden">
-					{/* Left Side - Image */}
-					<div className="hidden md:flex md:w-1/2 relative bg-white">
-						<div className="relative w-full h-full p-8 flex items-center justify-center">
-							<Image
-								src="/main.jpg"
-								alt="RIF-II MIS"
-								width={500}
-								height={600}
-								className="rounded-lg object-cover shadow-xl"
-								priority
-							/>
-						</div>
+			<div className="flex-1 flex items-center justify-center px-4 py-8 sm:px-6">
+				<div className="w-full max-w-5xl overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg md:grid md:grid-cols-[3fr_2fr] md:min-h-[470px]">
+					{/* Left Side - Visual Panel (desktop+) — 60% width; height +5% from 448px */}
+					<div className="relative hidden h-[470px] bg-white md:block">
+						<Image
+							src="/logo/login_image.JPG"
+							alt="RIF-II MIS"
+							fill
+							priority
+							sizes="(max-width: 768px) 0px, 60vw"
+							className="object-contain object-center p-4"
+						/>
 					</div>
-					
+
 					{/* Right Side - Login Form */}
-					<div className="w-full md:w-1/2 p-8 flex flex-col justify-center">
-					<h1 className="mb-6 text-2xl font-bold text-center text-gray-800">Sign in to RIF-II MIS</h1>
-					<form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
-						<div>
-							<label className="mb-2 block text-sm font-medium text-gray-700">Email</label>
-							<input
-								type="text"
-								className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm focus:border-[#0b4d2b] focus:ring-2 focus:ring-[#0b4d2b] focus:ring-opacity-20 focus:outline-none transition"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-								placeholder="user@example.com"
-								autoComplete="off"
-								required
-							/>
-						</div>
-						<div>
-							<label className="mb-2 block text-sm font-medium text-gray-700">Password</label>
-							<input
-								type="password"
-								className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm focus:border-[#0b4d2b] focus:ring-2 focus:ring-[#0b4d2b] focus:ring-opacity-20 focus:outline-none transition"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								placeholder="********"
-								autoComplete="new-password"
-								required
-							/>
-						</div>
+					<div className="flex flex-col justify-center p-8 sm:p-10">
+						<h1 className="mb-6 text-2xl font-bold text-center text-gray-800">Sign in to RIF-II MIS</h1>
+						<form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+							<div>
+								<label className="mb-2 block text-sm font-medium text-gray-700">Email</label>
+								<input
+									type="text"
+									className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm focus:border-[#0b4d2b] focus:ring-2 focus:ring-[#0b4d2b] focus:ring-opacity-20 focus:outline-none transition"
+									value={email}
+									onChange={(e) => setEmail(e.target.value)}
+									placeholder="user@example.com"
+									autoComplete="off"
+									required
+								/>
+							</div>
+							<div>
+								<label className="mb-2 block text-sm font-medium text-gray-700">Password</label>
+								<input
+									type="password"
+									className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm focus:border-[#0b4d2b] focus:ring-2 focus:ring-[#0b4d2b] focus:ring-opacity-20 focus:outline-none transition"
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
+									placeholder="********"
+									autoComplete="new-password"
+									required
+								/>
+							</div>
 							{error && (
 								<p className="text-sm text-red-600 text-center bg-red-50 py-2 rounded-md">{error}</p>
 							)}
@@ -508,7 +506,7 @@ export default function LoginPage() {
 			<footer className="bg-[#0b4d2b] flex-shrink-0 mt-auto">
 				<div className="mx-auto w-full max-w-none px-6 py-4 text-center text-white text-sm">
 					<div className="flex justify-between items-center">
-						<span>&copy; 2025 RIF-II, All rights reserved.</span>
+						<span>&copy; 2026 RIF-II, All rights reserved.</span>
 						<div className="flex gap-4">
 							<Link
 								href="/"
