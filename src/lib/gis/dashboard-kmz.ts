@@ -1,8 +1,11 @@
-import { promises as fs } from "fs";
 import path from "path";
-import { DASHBOARD_KMZ_DISPLAY_NAMES } from "@/config/gis/dashboard-kmz-map-config";
+import {
+	DASHBOARD_KMZ_DISPLAY_NAMES,
+	DASHBOARD_KMZ_LAYER_ORDER,
+} from "@/config/gis/dashboard-kmz-map-config";
+import { listPublicDirectory } from "@/lib/gis/readPublicAsset";
 
-const DASHBOARD_KMZ_ROOT = path.join(process.cwd(), "public", "maps", "dashboards");
+const DASHBOARD_PUBLIC_DIR = "maps/dashboards";
 const ALLOWED_EXTENSIONS = new Set([".kmz", ".kml"]);
 const SAFE_FILE_NAME = /^[A-Za-z0-9._ -]+\.(kmz|kml)$/i;
 
@@ -120,46 +123,36 @@ function buildId(fileName: string) {
 }
 
 export async function getDashboardKmzEntries(): Promise<DashboardKmzEntry[]> {
-	let entries;
-	try {
-		entries = await fs.readdir(DASHBOARD_KMZ_ROOT, { withFileTypes: true });
-	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-			return [];
-		}
-		throw error;
-	}
+	const fileNames = (
+		await listPublicDirectory(DASHBOARD_PUBLIC_DIR, [...DASHBOARD_KMZ_LAYER_ORDER])
+	).filter((name) => isAllowedFile(name));
 
-	const files = entries.filter((entry) => entry.isFile() && isAllowedFile(entry.name));
+	const mapped = fileNames.map((fileName, index) => {
+		const category = detectCategory(fileName);
+		const sortPriority = getSortPriority(fileName, category);
 
-	const mapped = await Promise.all(
-		files.map(async (entry, index) => {
-			const filePath = path.join(DASHBOARD_KMZ_ROOT, entry.name);
-			const stats = await fs.stat(filePath);
-			const category = detectCategory(entry.name);
-			const sortPriority = getSortPriority(entry.name, category);
+		return {
+			id: buildId(fileName),
+			fileName,
+			displayName: buildDisplayName(fileName),
+			category,
+			publicUrl: buildPublicUrl(fileName),
+			byteSize: 0,
+			sortPriority,
+			color: COLOR_PALETTE[index % COLOR_PALETTE.length],
+			defaultVisible: sortPriority === 0,
+		} satisfies DashboardKmzEntry;
+	});
 
-			return {
-				id: buildId(entry.name),
-				fileName: entry.name,
-				displayName: buildDisplayName(entry.name),
-				category,
-				publicUrl: buildPublicUrl(entry.name),
-				byteSize: stats.size,
-				sortPriority,
-				color: COLOR_PALETTE[index % COLOR_PALETTE.length],
-				defaultVisible: sortPriority === 0,
-			} satisfies DashboardKmzEntry;
-		}),
-	);
-
-	return mapped.sort((a, b) => {
-		if (a.sortPriority !== b.sortPriority) {
-			return a.sortPriority - b.sortPriority;
-		}
-		return a.displayName.localeCompare(b.displayName);
-	}).map((entry, index) => ({
-		...entry,
-		color: COLOR_PALETTE[index % COLOR_PALETTE.length],
-	}));
+	return mapped
+		.sort((a, b) => {
+			if (a.sortPriority !== b.sortPriority) {
+				return a.sortPriority - b.sortPriority;
+			}
+			return a.displayName.localeCompare(b.displayName);
+		})
+		.map((entry, index) => ({
+			...entry,
+			color: COLOR_PALETTE[index % COLOR_PALETTE.length],
+		}));
 }

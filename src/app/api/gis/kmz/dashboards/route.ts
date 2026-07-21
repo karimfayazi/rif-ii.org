@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import { parseKmzBuffer, type KMZLayer } from "@/lib/gis/kmz-parser";
 import { getDashboardKmzEntries } from "@/lib/gis/dashboard-kmz";
+import { readPublicAsset } from "@/lib/gis/readPublicAsset";
 
 export const maxDuration = 300;
-
-const DASHBOARD_KMZ_ROOT = path.join(process.cwd(), "public", "maps", "dashboards");
 
 function calculateFeatureCount(layers: KMZLayer[]) {
 	return layers.reduce((total, layer) => total + layer.geojson.features.length, 0);
@@ -20,8 +17,7 @@ export async function GET() {
 		const fileResults = await Promise.all(
 			entries.map(async (entry) => {
 				try {
-					const filePath = path.join(DASHBOARD_KMZ_ROOT, entry.fileName);
-					const buffer = await fs.readFile(filePath);
+					const buffer = await readPublicAsset(`maps/dashboards/${entry.fileName}`);
 					const parsed = await parseKmzBuffer(buffer, entry.fileName);
 
 					return {

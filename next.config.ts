@@ -9,12 +9,30 @@ const nextConfig: NextConfig = {
 	// "localhost", so opening the site via 127.0.0.1 blocks /_next/webpack-hmr otherwise.
 	// https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
 	allowedDevOrigins: ["127.0.0.1"],
-	// Exclude large/static folders from serverless function file tracing.
+	// Keep KMZ/map assets available to GIS API serverless functions on Vercel.
+	// Do NOT exclude ./public/maps — those files are required by /api/gis/kmz/*.
+	outputFileTracingIncludes: {
+		"/api/gis/kmz/*": [
+			"./public/maps/dashboards/**/*",
+			"./public/maps/kmz/**/*",
+			"./public/gis/**/*",
+		],
+		"/api/gis/kmz/dashboards": ["./public/maps/dashboards/**/*"],
+		"/api/gis/kmz/domel": ["./public/maps/kmz/Domel_kmz_gis_maps/**/*"],
+		"/api/gis/kmz/kakki": ["./public/maps/kmz/Kakki_kmz_gis_maps/**/*"],
+		"/api/gis/kmz/paharpur": ["./public/maps/kmz/Paharpur_kmz_gis_maps/**/*"],
+		"/api/gis/kmz/paroa": ["./public/maps/kmz/Paroa_kmz_gis_maps/**/*"],
+		"/api/gis/kmz/paniala": [
+			"./public/gis/**/*",
+			"./public/maps/kmz/Paniala_kmz_gis_maps/**/*",
+		],
+	},
+	// Exclude only large non-runtime folders from serverless traces.
 	outputFileTracingExcludes: {
 		"*": [
 			"./public/uploads/**/*",
-			"./public/maps/**/*",
 			"./public/Content/**/*",
+			"./public/maps/Shapefiles/**/*",
 			"./gis-data/**/*",
 			"./.git/**/*",
 			"./scripts/**/*",

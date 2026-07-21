@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import { parseKmzBuffer, type KMZLayer } from "@/lib/gis/kmz-parser";
+import { readPublicAsset } from "@/lib/gis/readPublicAsset";
 
 export const maxDuration = 300;
 
 /** Single production KMZ under `public/gis` (served at `/gis/Paniala_GIS_Map.kmz`). Parsed server-side for Leaflet. */
-const PANIALA_KMZ_FILE = path.join(process.cwd(), "public", "gis", "Paniala_GIS_Map.kmz");
 const PANIALA_KMZ_FILE_NAME = "Paniala_GIS_Map.kmz";
+const PANIALA_PUBLIC_PATH = `gis/${PANIALA_KMZ_FILE_NAME}`;
 
 const PANIALA_VISIBLE_LAYERS: Array<{
 	layerName: string;
@@ -52,7 +51,7 @@ function calculateFeatureCount(layers: KMZLayer[]) {
 
 export async function GET() {
 	try {
-		const buffer = await fs.readFile(PANIALA_KMZ_FILE);
+		const buffer = await readPublicAsset(PANIALA_PUBLIC_PATH);
 		const parsed = await parseKmzBuffer(buffer, PANIALA_KMZ_FILE_NAME);
 		const layersByName = new Map(parsed.layers.map((layer) => [layer.name, layer]));
 		const warnings: Array<{ fileName: string; displayName: string; message: string }> = [];
