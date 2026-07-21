@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
 import { getUserIdFromRequest } from "@/lib/auth";
 import { put } from "@vercel/blob";
 
@@ -140,19 +137,27 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Check if we're on Vercel (read-only filesystem)
-		const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
-		const useBlobStorage = isVercel && process.env.BLOB_READ_WRITE_TOKEN;
+		const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL_ENV;
+		const useBlobStorage = isVercel && !!process.env.BLOB_READ_WRITE_TOKEN;
+
+		if (isVercel && !useBlobStorage) {
+			return NextResponse.json({
+				success: false,
+				message: "Upload is not configured for this environment. BLOB_READ_WRITE_TOKEN is required on Vercel.",
+			}, { status: 500 });
+		}
 		
-		// Create upload directory structure (only for non-Vercel or when not using blob)
+		// Create upload directory structure (only for non-Vercel / local disk)
 		let uploadDir: string | null = null;
 		if (!useBlobStorage) {
-			uploadDir = join(process.cwd(), 'public', 'uploads', 'reports', mainCategory, subCategory);
-			
-			// Ensure directory exists
 			try {
-				if (!existsSync(uploadDir)) {
-					await mkdir(uploadDir, { recursive: true });
-				}
+				const { ensureLocalUploadDir } = await import("@/lib/localUploadFs");
+				uploadDir = await ensureLocalUploadDir(
+					"uploads",
+					"reports",
+					mainCategory,
+					subCategory
+				);
 			} catch (dirError) {
 				console.error("Error creating upload directory:", dirError);
 				return NextResponse.json({
@@ -190,13 +195,13 @@ export async function POST(request: NextRequest) {
 					relativePath = blob.url;
 					console.log(`File uploaded to Vercel Blob: ${blob.url}`);
 				} else {
-					// Use filesystem
+					// Use filesystem (local / self-hosted only)
 					if (!uploadDir) {
 						throw new Error("Upload directory not initialized");
 					}
-					filePath = join(uploadDir, fileName);
+					const { writeLocalUploadFile } = await import("@/lib/localUploadFs");
+					filePath = await writeLocalUploadFile(uploadDir, fileName, buffer);
 					relativePath = `uploads/reports/${mainCategory}/${subCategory}/${fileName}`;
-					await writeFile(filePath, buffer);
 					console.log(`File saved to filesystem: ${filePath}`);
 				}
 			} catch (writeError) {
@@ -262,13 +267,3 @@ export async function POST(request: NextRequest) {
 		);
 	}
 }
-
-// Configure Next.js API Route
-export const config = {
-	api: {
-		bodyParser: false,
-	},
-};
-
-// Set runtime to edge for better performance (optional)
-// export const runtime = 'edge'; // Uncomment if you want edge runtime
