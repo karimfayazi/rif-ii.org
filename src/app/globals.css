@@ -52,3 +52,83 @@ table, th, td {
 .leaflet-tile-container img {
   max-width: none !important;
 }
+
+/* Scoped: thicker dual horizontal scrollbars for security grid tables only */
+.sec-grid-hscroll__bar {
+  overflow-y: hidden;
+  max-width: 100%;
+  scrollbar-width: auto;
+  scrollbar-color: #0b4d2b #e5e7eb;
+}
+
+.sec-grid-hscroll__bar--active {
+  overflow-x: scroll;
+}
+
+.sec-grid-hscroll__bar--idle {
+  overflow-x: auto;
+}
+
+.sec-grid-hscroll__bar--inactive {
+  display: none;
+}
+
+.sec-grid-hscroll__bar--top {
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.sec-grid-hscroll__spacer {
+  height: 1px;
+  pointer-events: none;
+}
+
+.sec-grid-hscroll__bar::-webkit-scrollbar {
+  height: 14px;
+}
+
+.sec-grid-hscroll__bar::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 8px;
+}
+
+.sec-grid-hscroll__bar::-webkit-scrollbar-thumb {
+  background: #0b4d2b;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  min-width: 48px;
+}
+
+.sec-grid-hscroll__bar::-webkit-scrollbar-thumb:hover {
+  background: #0a3d24;
+}
+
+.sec-grid-hscroll__bar::-webkit-scrollbar-thumb:active {
+  background: #08301c;
+}
+
+/* Hide native scrollbar on the table body when a fixed bottom bar is used */
+.sec-grid-hscroll__bar--hide-native {
+  scrollbar-width: none;
+}
+
+.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar {
+  display: none;
+  height: 0;
+}
+
+/* Reserves space so page-end content is not covered by the fixed bar */
+.sec-grid-hscroll__sticky-spacer {
+  height: 18px;
+}
+
+/* Viewport-pinned horizontal scrollbar (opt-in via stickyBottomScrollbar prop) */
+.sec-grid-hscroll__bar--fixed-bottom {
+  position: fixed;
+  bottom: 0;
+  z-index: 40;
+  border-top: 1px solid #d1d5db;
+  background: #f9fafb;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+  padding: 2px 0 4px;
+}

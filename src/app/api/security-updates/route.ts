@@ -9,6 +9,8 @@ export async function GET(request: NextRequest) {
 		const locationDistrict = searchParams.get('locationDistrict');
 		const locationProvince = searchParams.get('locationProvince');
 		const searchTerm = searchParams.get('search');
+		const incidentDateFrom = searchParams.get('incidentDateFrom');
+		const incidentDateTo = searchParams.get('incidentDateTo');
 
 		const pool = await getDb();
 		
@@ -75,8 +77,16 @@ export async function GET(request: NextRequest) {
 			query += ` AND ([incident_title] LIKE @searchTerm OR [incident_summary] LIKE @searchTerm)`;
 			request_obj.input('searchTerm', `%${searchTerm}%`);
 		}
+		if (incidentDateFrom) {
+			query += ` AND CAST([incident_date_from] AS DATE) >= CAST(@incidentDateFrom AS DATE)`;
+			request_obj.input('incidentDateFrom', incidentDateFrom);
+		}
+		if (incidentDateTo) {
+			query += ` AND CAST([incident_date_from] AS DATE) <= CAST(@incidentDateTo AS DATE)`;
+			request_obj.input('incidentDateTo', incidentDateTo);
+		}
 
-		query += ` ORDER BY [date_reported] DESC, [id] DESC`;
+		query += ` ORDER BY [incident_date_from] DESC, [id] DESC`;
 
 		const result = await request_obj.query(query);
 

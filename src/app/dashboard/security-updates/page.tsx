@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
 import { parseCategoryValues } from "@/lib/security-incidents";
+import TableHorizontalScroll from "@/components/security/TableHorizontalScroll";
 
 type SecurityIncident = {
 	id: number;
@@ -34,6 +35,8 @@ export default function SecurityUpdatesPage() {
 	const [selectedCategory, setSelectedCategory] = useState("");
 	const [selectedDistrict, setSelectedDistrict] = useState("");
 	const [selectedProvince, setSelectedProvince] = useState("");
+	const [incidentDateFrom, setIncidentDateFrom] = useState("");
+	const [incidentDateTo, setIncidentDateTo] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
 	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; incident: SecurityIncident | null }>({ show: false, incident: null });
@@ -43,14 +46,30 @@ export default function SecurityUpdatesPage() {
 		fetchSecurityIncidents();
 	}, []);
 
-	const fetchSecurityIncidents = async () => {
+	const fetchSecurityIncidents = async (overrides?: {
+		searchTerm?: string;
+		selectedCategory?: string;
+		selectedDistrict?: string;
+		selectedProvince?: string;
+		incidentDateFrom?: string;
+		incidentDateTo?: string;
+	}) => {
 		try {
 			setLoading(true);
+			const nextSearchTerm = overrides?.searchTerm ?? searchTerm;
+			const nextCategory = overrides?.selectedCategory ?? selectedCategory;
+			const nextDistrict = overrides?.selectedDistrict ?? selectedDistrict;
+			const nextProvince = overrides?.selectedProvince ?? selectedProvince;
+			const nextIncidentDateFrom = overrides?.incidentDateFrom ?? incidentDateFrom;
+			const nextIncidentDateTo = overrides?.incidentDateTo ?? incidentDateTo;
+
 			const params = new URLSearchParams();
-			if (selectedCategory) params.append('category', selectedCategory);
-			if (selectedDistrict) params.append('locationDistrict', selectedDistrict);
-			if (selectedProvince) params.append('locationProvince', selectedProvince);
-			if (searchTerm) params.append('search', searchTerm);
+			if (nextCategory) params.append('category', nextCategory);
+			if (nextDistrict) params.append('locationDistrict', nextDistrict);
+			if (nextProvince) params.append('locationProvince', nextProvince);
+			if (nextSearchTerm) params.append('search', nextSearchTerm);
+			if (nextIncidentDateFrom) params.append('incidentDateFrom', nextIncidentDateFrom);
+			if (nextIncidentDateTo) params.append('incidentDateTo', nextIncidentDateTo);
 
 			const response = await fetch(`/api/security-updates?${params.toString()}`);
 			const data = await response.json();
@@ -78,8 +97,21 @@ export default function SecurityUpdatesPage() {
 		setSelectedCategory("");
 		setSelectedDistrict("");
 		setSelectedProvince("");
-		fetchSecurityIncidents();
+		setIncidentDateFrom("");
+		setIncidentDateTo("");
+		fetchSecurityIncidents({
+			searchTerm: "",
+			selectedCategory: "",
+			selectedDistrict: "",
+			selectedProvince: "",
+			incidentDateFrom: "",
+			incidentDateTo: "",
+		});
 	};
+
+	const hasActiveFilters = Boolean(
+		searchTerm || selectedCategory || selectedDistrict || selectedProvince || incidentDateFrom || incidentDateTo
+	);
 
 	const handleDelete = async () => {
 		if (!deleteConfirm.incident || !deleteConfirm.incident.id) return;
@@ -178,7 +210,7 @@ export default function SecurityUpdatesPage() {
 				<div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
 					<p className="text-red-600">{error}</p>
 					<button
-						onClick={fetchSecurityIncidents}
+						onClick={() => fetchSecurityIncidents()}
 						className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
 					>
 						Try Again
@@ -189,7 +221,7 @@ export default function SecurityUpdatesPage() {
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6 w-full min-w-0 max-w-full">
 			{/* Success Message */}
 			{success && (
 				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top">
@@ -253,7 +285,7 @@ export default function SecurityUpdatesPage() {
 						</button>
 					)}
 					<button
-						onClick={fetchSecurityIncidents}
+						onClick={() => fetchSecurityIncidents()}
 						className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
 					>
 						<RefreshCw className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -267,77 +299,115 @@ export default function SecurityUpdatesPage() {
 			</div>
 
 			{/* Search and Filters */}
-			<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg p-6">
-				<div className="flex items-center justify-between mb-4">
-					<div>
-						<h3 className="text-lg font-semibold text-gray-900">Search & Filter Incidents</h3>
-						<p className="text-sm text-gray-600">Find specific security incidents by title, category, or location</p>
+			<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg px-4 py-3">
+				<div className="flex flex-col gap-3 xl:flex-row xl:items-end">
+					{/* Compact title */}
+					<div className="shrink-0 xl:pb-0.5 xl:min-w-[12rem] xl:max-w-[14rem]">
+						<h3 className="text-sm font-semibold text-gray-900 leading-tight">
+							Search & Filter Incidents
+						</h3>
+						<p className="text-xs text-gray-600 leading-snug mt-0.5">
+							Find specific security incidents by title, category, or location
+						</p>
 					</div>
-					<button
-						onClick={handleReset}
-						className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200"
-					>
-						<RefreshCw className="h-3 w-3 mr-1" />
-						Reset
-					</button>
-				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-					{/* Search Input */}
-					<div className="md:col-span-2">
-						<label className="block text-sm font-medium text-gray-700 mb-2">Search Incidents</label>
-						<div className="relative">
+					{/* Controls: single row on desktop, wrap/stack on smaller screens */}
+					<div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:flex-wrap xl:flex-nowrap items-stretch sm:items-end gap-2 sm:gap-2.5">
+						{/* Search Input */}
+						<div className="flex-[1.4] min-w-[11rem]">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								Search Incidents
+							</label>
+							<div className="relative">
+								<input
+									type="text"
+									placeholder="Search by title or summary..."
+									value={searchTerm}
+									onChange={(e) => setSearchTerm(e.target.value)}
+									className="w-full px-3 py-2 text-sm text-gray-900 placeholder-gray-500 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#0b4d2b]/20 focus:border-[#0b4d2b] focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
+									onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+								/>
+							</div>
+						</div>
+
+						{/* Category Filter */}
+						<div className="flex-1 min-w-[8.5rem]">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								Category
+							</label>
+							<select
+								value={selectedCategory}
+								onChange={(e) => setSelectedCategory(e.target.value)}
+								className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							>
+								<option value="">All Categories</option>
+								{categories.map((cat) => (
+									<option key={cat} value={cat}>{cat}</option>
+								))}
+							</select>
+						</div>
+
+						{/* District Filter */}
+						<div className="flex-1 min-w-[8.5rem]">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								District
+							</label>
+							<select
+								value={selectedDistrict}
+								onChange={(e) => setSelectedDistrict(e.target.value)}
+								className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							>
+								<option value="">All Districts</option>
+								{districts.map((dist) => (
+									<option key={dist} value={dist}>{dist}</option>
+								))}
+							</select>
+						</div>
+
+						{/* Incident Dates From */}
+						<div className="flex-1 min-w-[8.5rem]">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								Incident Dates From
+							</label>
 							<input
-								type="text"
-								placeholder="Search by title or summary..."
-								value={searchTerm}
-								onChange={(e) => setSearchTerm(e.target.value)}
-								className="w-full px-4 py-3 text-gray-900 placeholder-gray-500 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#0b4d2b]/20 focus:border-[#0b4d2b] focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
-								onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+								type="date"
+								value={incidentDateFrom}
+								onChange={(e) => setIncidentDateFrom(e.target.value)}
+								className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
 							/>
 						</div>
-					</div>
 
-					{/* Category Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-						<select
-							value={selectedCategory}
-							onChange={(e) => setSelectedCategory(e.target.value)}
-							className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-						>
-							<option value="">All Categories</option>
-							{categories.map((cat) => (
-								<option key={cat} value={cat}>{cat}</option>
-							))}
-						</select>
-					</div>
+						{/* Incident Dates To */}
+						<div className="flex-1 min-w-[8.5rem]">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								Incident Dates To
+							</label>
+							<input
+								type="date"
+								value={incidentDateTo}
+								onChange={(e) => setIncidentDateTo(e.target.value)}
+								min={incidentDateFrom || undefined}
+								className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							/>
+						</div>
 
-					{/* District Filter */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">District</label>
-						<select
-							value={selectedDistrict}
-							onChange={(e) => setSelectedDistrict(e.target.value)}
-							className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-						>
-							<option value="">All Districts</option>
-							{districts.map((dist) => (
-								<option key={dist} value={dist}>{dist}</option>
-							))}
-						</select>
+						<div className="flex flex-wrap items-center gap-2 shrink-0">
+							<button
+								onClick={handleReset}
+								className="inline-flex items-center px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200"
+							>
+								<RefreshCw className="h-3 w-3 mr-1" />
+								Reset
+							</button>
+							<button
+								onClick={handleSearch}
+								className="inline-flex items-center px-4 py-2 text-sm bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
+							>
+								<Filter className="h-4 w-4 mr-2" />
+								Apply Filters
+							</button>
+						</div>
 					</div>
-				</div>
-
-				{/* Search Button */}
-				<div className="flex justify-end">
-					<button
-						onClick={handleSearch}
-						className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
-					>
-						<Filter className="h-4 w-4 mr-2" />
-						Apply Filters
-					</button>
 				</div>
 			</div>
 
@@ -347,7 +417,7 @@ export default function SecurityUpdatesPage() {
 					<Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
 					<h3 className="text-lg font-medium text-gray-900 mb-2">No security incidents found</h3>
 					<p className="text-gray-600 mb-4">
-						{searchTerm || selectedCategory || selectedDistrict || selectedProvince
+						{hasActiveFilters
 							? "Try adjusting your search criteria"
 							: "Security incidents will appear here once they are added"
 						}
@@ -373,16 +443,15 @@ export default function SecurityUpdatesPage() {
 					)}
 				</div>
 			) : (
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-					<div className="overflow-x-auto">
-						<table className="w-full">
+				<div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden min-w-0 max-w-full">
+					<TableHorizontalScroll stickyBottomScrollbar tableId="security-updates-grid">
+						<table id="security-updates-grid" className="min-w-full w-full">
 							<thead className="bg-gray-50 border-b border-gray-200">
 								<tr>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ID</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Incident Title</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Category</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Location</th>
-									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reference #</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Incident Dates</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reported By</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date Reported</th>
@@ -414,9 +483,6 @@ export default function SecurityUpdatesPage() {
 										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
 											<div>{incident.location_district}</div>
 											<div className="text-xs text-gray-500">{incident.location_province}</div>
-										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-											{incident.ReferenceNumber || 'N/A'}
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
 											{formatIncidentDateRange(incident)}
@@ -453,7 +519,7 @@ export default function SecurityUpdatesPage() {
 								))}
 							</tbody>
 						</table>
-					</div>
+					</TableHorizontalScroll>
 				</div>
 			)}
 
@@ -461,7 +527,7 @@ export default function SecurityUpdatesPage() {
 			{incidents.length > 0 && (
 				<div className="text-center text-sm text-gray-500">
 					Showing {incidents.length} incident{incidents.length !== 1 ? 's' : ''}
-					{(searchTerm || selectedCategory || selectedDistrict || selectedProvince) && ' matching your criteria'}
+					{hasActiveFilters && ' matching your criteria'}
 				</div>
 			)}
 

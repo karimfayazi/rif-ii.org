@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
+import TableHorizontalScroll from "@/components/security/TableHorizontalScroll";
 
 type IncidentSummary = {
 	id: number;
@@ -244,7 +245,7 @@ export default function SecurityIncidentsDataPage() {
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6 w-full min-w-0 max-w-full">
 			{/* Success Message */}
 			{success && (
 				<div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top">
@@ -363,112 +364,114 @@ export default function SecurityIncidentsDataPage() {
 			</div>
 
 			{/* Search and Filters */}
-			<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg p-6">
-				<div className="flex items-center justify-between mb-4">
-					<div>
-						<h3 className="text-lg font-semibold text-gray-900">
+			<div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg px-4 py-3">
+				<div className="flex flex-col gap-3 xl:flex-row xl:items-end">
+					{/* Compact title */}
+					<div className="shrink-0 xl:pb-0.5 xl:min-w-[11.5rem] xl:max-w-[13rem]">
+						<h3 className="text-sm font-semibold text-gray-900 leading-tight">
 							Search & Filter
 						</h3>
-						<p className="text-sm text-gray-600">
-							Filter incidents by month, district, quarter or username
+						<p className="text-xs text-gray-600 leading-snug mt-0.5">
+							Filter incidents by month, district, or QPR
 						</p>
 					</div>
-					<button
-						onClick={handleReset}
-						className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200"
-					>
-						<RefreshCw className="h-3 w-3 mr-1" />
-						Reset
-					</button>
-				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-					{/* Month_Year */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Month / Year
-						</label>
-						<select
-							value={selectedMonth}
-							onChange={(e) => setSelectedMonth(e.target.value)}
-							className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-						>
-							<option value="">All Months</option>
-							{filterOptions.months.map((m) => (
-								<option key={m} value={m}>
-									{m}
-								</option>
-							))}
-						</select>
+					{/* Controls: single row on desktop, wrap/stack on smaller screens */}
+					<div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap items-stretch sm:items-end gap-2 sm:gap-3">
+						{/* Month_Year */}
+						<div className="flex-1 min-w-[9.5rem]">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								Month / Year
+							</label>
+							<select
+								value={selectedMonth}
+								onChange={(e) => setSelectedMonth(e.target.value)}
+								className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							>
+								<option value="">All Months</option>
+								{filterOptions.months.map((m) => (
+									<option key={m} value={m}>
+										{m}
+									</option>
+								))}
+							</select>
+						</div>
+
+						{/* District */}
+						<div className="flex-1 min-w-[9.5rem]">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								District
+							</label>
+							<select
+								value={selectedDistrict}
+								onChange={(e) => setSelectedDistrict(e.target.value)}
+								className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							>
+								<option value="">All Districts</option>
+								{filterOptions.districts.map((d) => (
+									<option key={d} value={d}>
+										{d}
+									</option>
+								))}
+							</select>
+						</div>
+
+						{/* QPR_QTR_No — placed before QTR */}
+						<div className="flex-1 min-w-[9.5rem]">
+							<label className="block text-xs font-medium text-gray-700 mb-1">
+								QPR
+							</label>
+							<select
+								value={selectedQprQtr}
+								onChange={(e) => setSelectedQprQtr(e.target.value)}
+								className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+							>
+								<option value="">ALL QPR</option>
+								{filterOptions.qprQtrNos.map((q) => (
+									<option key={q} value={q}>
+										{q}
+									</option>
+								))}
+							</select>
+						</div>
+
+						{/* QTR_No — hidden from UI; keep markup/state/API wiring for easy restore */}
+						<div className="hidden" aria-hidden="true">
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Quarter
+							</label>
+							<select
+								value={selectedQtr}
+								onChange={(e) => setSelectedQtr(e.target.value)}
+								className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+								tabIndex={-1}
+							>
+								<option value="">All Quarters</option>
+								{filterOptions.quarters.map((q) => (
+									<option key={q} value={String(q)}>
+										QTR {q}
+									</option>
+								))}
+							</select>
+						</div>
+
+						<div className="flex flex-wrap items-center gap-2 sm:pb-0 shrink-0">
+							<button
+								onClick={handleReset}
+								className="inline-flex items-center px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200"
+							>
+								<RefreshCw className="h-3 w-3 mr-1" />
+								Reset
+							</button>
+							<button
+								onClick={handleSearch}
+								className="inline-flex items-center px-4 py-2 text-sm bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
+							>
+								<Filter className="h-4 w-4 mr-2" />
+								Apply Filters
+							</button>
+						</div>
 					</div>
-
-					{/* District */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							District
-						</label>
-						<select
-							value={selectedDistrict}
-							onChange={(e) => setSelectedDistrict(e.target.value)}
-							className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-						>
-							<option value="">All Districts</option>
-							{filterOptions.districts.map((d) => (
-								<option key={d} value={d}>
-									{d}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{/* QPR_QTR_No — placed before QTR */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							QPR
-						</label>
-						<select
-							value={selectedQprQtr}
-							onChange={(e) => setSelectedQprQtr(e.target.value)}
-							className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-						>
-							<option value="">ALL QPR</option>
-							{filterOptions.qprQtrNos.map((q) => (
-								<option key={q} value={q}>
-									{q}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{/* QTR_No */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Quarter
-						</label>
-						<select
-							value={selectedQtr}
-							onChange={(e) => setSelectedQtr(e.target.value)}
-							className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-						>
-							<option value="">All Quarters</option>
-							{filterOptions.quarters.map((q) => (
-								<option key={q} value={String(q)}>
-									QTR {q}
-								</option>
-							))}
-						</select>
-					</div>
-
-				</div>
-
-				<div className="flex justify-end">
-					<button
-						onClick={handleSearch}
-						className="inline-flex items-center px-6 py-3 bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors shadow-sm"
-					>
-						<Filter className="h-4 w-4 mr-2" />
-						Apply Filters
-					</button>
 				</div>
 			</div>
 
@@ -505,9 +508,9 @@ export default function SecurityIncidentsDataPage() {
 					)}
 				</div>
 			) : (
-				<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden ring-1 ring-black/5">
-					<div className="overflow-x-auto">
-						<table className="min-w-full divide-y divide-gray-200">
+				<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden ring-1 ring-black/5 min-w-0 max-w-full">
+					<TableHorizontalScroll stickyBottomScrollbar tableId="security-incidents-data-grid">
+						<table id="security-incidents-data-grid" className="min-w-full divide-y divide-gray-200">
 							<thead className="bg-gradient-to-r from-gray-100 via-gray-50 to-white border-b-2 border-[#0b4d2b]/25">
 								<tr>
 									<th
@@ -729,7 +732,7 @@ export default function SecurityIncidentsDataPage() {
 								))}
 							</tbody>
 						</table>
-					</div>
+					</TableHorizontalScroll>
 				</div>
 			)}
 

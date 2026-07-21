@@ -2,14 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import DIKPanialaGISMapSection from '@/components/DIKPanialaGISMap';
+import DashboardKmzMapSection from '@/components/DashboardKmzMapSection';
 
 export default function TestingGisPage() {
   const router = useRouter();
 
   return (
     <div className="space-y-6">
-      {/* Header with Back Button */}
       <div className="flex items-center space-x-4">
         <button
           onClick={() => router.back()}
@@ -19,13 +18,12 @@ export default function TestingGisPage() {
           Back
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Testing GIS - DIK Paniala Maps</h1>
-          <p className="text-gray-600 mt-1">Testing the extracted DIK District - Tehsil Wise - Paniala Maps component</p>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard KMZ GIS Map</h1>
+          <p className="text-gray-600 mt-1">Interactive KMZ layers from /public/maps/dashboards</p>
         </div>
       </div>
 
-      {/* DIK Paniala GIS Map Section */}
-      <DIKPanialaGISMapSection />
+      <DashboardKmzMapSection />
     </div>
   );
 }

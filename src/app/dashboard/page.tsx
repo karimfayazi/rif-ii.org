@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Calendar, Folder, Image as ImageIcon, ExternalLink, TrendingUp, MapPin, Building2, Newspaper, Clock, Layers, Info, Loader2, ChevronDown, ChevronUp, Shield, AlertTriangle, User, X, Droplet, Trash2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import DIKPanialaGISMapSection from '@/components/DIKPanialaGISMap';
+import DashboardKmzMapSection from '@/components/DashboardKmzMapSection';
 import NewsModal, { type NewsItem } from '@/components/news/NewsModal';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import {
@@ -3278,7 +3278,7 @@ export default function DashboardPage() {
 
 		{/* GIS Maps Section with Button and Progress Section */}
 		<div className="space-y-4">
-			<DIKPanialaGISMapSection />
+			<DashboardKmzMapSection />
 
 		{/* Google Earth Pro Viewer Button */}
 		<div className="flex justify-start">
@@ -3296,8 +3296,6 @@ export default function DashboardPage() {
 		<div className="flex flex-wrap items-center gap-2 sm:gap-3">
 			<Link
 				href="/domel-gis-map"
-				target="_blank"
-				rel="noopener noreferrer"
 				className="inline-flex items-center px-3 py-1.5 text-sm bg-[#0b4d2b] text-white font-medium rounded-md hover:bg-[#0a3d24] transition-colors shadow-sm"
 			>
 				<MapPin className="h-4 w-4 mr-1.5 shrink-0" />
@@ -3306,8 +3304,6 @@ export default function DashboardPage() {
 			</Link>
 			<Link
 				href="/kakki-gis-map"
-				target="_blank"
-				rel="noopener noreferrer"
 				className="inline-flex items-center px-3 py-1.5 text-sm bg-[#0b4d2b] text-white font-medium rounded-md hover:bg-[#0a3d24] transition-colors shadow-sm"
 			>
 				<MapPin className="h-4 w-4 mr-1.5 shrink-0" />
@@ -3316,8 +3312,6 @@ export default function DashboardPage() {
 			</Link>
 			<Link
 				href="/paharpur-gis-map"
-				target="_blank"
-				rel="noopener noreferrer"
 				className="inline-flex items-center px-3 py-1.5 text-sm bg-[#0b4d2b] text-white font-medium rounded-md hover:bg-[#0a3d24] transition-colors shadow-sm"
 			>
 				<MapPin className="h-4 w-4 mr-1.5 shrink-0" />
@@ -3326,8 +3320,6 @@ export default function DashboardPage() {
 			</Link>
 			<Link
 				href="/paroa-gis-map"
-				target="_blank"
-				rel="noopener noreferrer"
 				className="inline-flex items-center px-3 py-1.5 text-sm bg-[#0b4d2b] text-white font-medium rounded-md hover:bg-[#0a3d24] transition-colors shadow-sm"
 			>
 				<MapPin className="h-4 w-4 mr-1.5 shrink-0" />
@@ -3336,8 +3328,6 @@ export default function DashboardPage() {
 			</Link>
 			<Link
 				href="/paniala-gis-map"
-				target="_blank"
-				rel="noopener noreferrer"
 				className="inline-flex items-center px-3 py-1.5 text-sm bg-[#0b4d2b] text-white font-medium rounded-md hover:bg-[#0a3d24] transition-colors shadow-sm"
 			>
 				<MapPin className="h-4 w-4 mr-1.5 shrink-0" />
@@ -3756,8 +3746,6 @@ export default function DashboardPage() {
 				<div className="p-6 border-b border-red-200 bg-gradient-to-r from-red-600 to-red-700">
 					<Link
 						href="/dashboard/security-incidents-data"
-						target="_blank"
-						rel="noopener noreferrer"
 						className="flex items-center justify-between gap-4 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-red-600 group"
 					>
 						<div className="flex items-center space-x-3 min-w-0 flex-1">

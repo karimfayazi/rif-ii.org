@@ -87,7 +87,15 @@ const GROUPS: NavGroup[] = [
 				{ label: "GIS-Maps", href: "/dashboard/maps/gis-maps" },
 			],
 		},
-		{ label: "Security Update", href: "/dashboard/security-updates", icon: Shield },
+		{
+			label: "Security Update",
+			href: "/dashboard/security-updates",
+			icon: Shield,
+			subItems: [
+				{ label: "Security Incidents", href: "/dashboard/security-updates" },
+				{ label: "Security Incidents Data", href: "/dashboard/security-incidents-data" },
+			],
+		},
 		{ label: "Remote Monitoring", href: "/dashboard/remote-monitoring", icon: Monitor },
 		{ label: "News Section", href: "/dashboard/news", icon: Newspaper },
 		{ label: "More ...", href: "/dashboard/more", icon: MoreHorizontal },

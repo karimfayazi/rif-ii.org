@@ -75,6 +75,14 @@ type LayerStyleSettingsPanelConfig = {
 	defaultStylesByFile?: Record<string, Partial<LayerStyleSettings>>;
 };
 
+type LayerPickerConfig = {
+	label?: string;
+	title?: string;
+	description?: string;
+	showAllOption?: boolean;
+	allOptionLabel?: string;
+};
+
 type PersistedLayerStyleSettings = {
 	layerStyles?: Record<string, LayerStyleSettings>;
 	visibleLayers?: string[];
@@ -189,6 +197,8 @@ interface ParoaGisMapContentProps {
 	exportFileBasePrefix?: string;
 	/** Optional live per-layer style controls, used by standalone site pages such as Paniala. */
 	layerStyleSettingsPanel?: LayerStyleSettingsPanelConfig;
+	/** Optional picker text/behavior overrides for reused dashboard instances. */
+	layerPickerConfig?: LayerPickerConfig;
 }
 
 const FALLBACK_COLORS = [
@@ -266,6 +276,7 @@ export default function ParoaGisMapContent({
 	legendsModalBrandLabel = "Paroa GIS Map",
 	exportFileBasePrefix = "Paroa_GIS_Map",
 	layerStyleSettingsPanel,
+	layerPickerConfig,
 }: ParoaGisMapContentProps) {
 	const [files, setFiles] = useState<KMZFile[]>([]);
 	const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
@@ -292,6 +303,7 @@ export default function ParoaGisMapContent({
 	const layerSettingsHydratedRef = useRef(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const exportDropdownRef = useRef<HTMLDivElement>(null);
+	const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
 	const layerSettingsStorageKey = layerStyleSettingsPanel?.storageKey;
 
 	const resolveLegendDisplayName = (fileName: string, layerName: string) =>
@@ -451,6 +463,15 @@ export default function ParoaGisMapContent({
 		() => sortKmzFilesByOrder(files, kmzLayerFileOrder),
 		[files, kmzLayerFileOrder],
 	);
+
+	const allFilesSelected = orderedFiles.length > 0 && selectedFiles.size === orderedFiles.length;
+	const partiallySelected = selectedFiles.size > 0 && !allFilesSelected;
+
+	useEffect(() => {
+		if (selectAllCheckboxRef.current) {
+			selectAllCheckboxRef.current.indeterminate = partiallySelected;
+		}
+	}, [partiallySelected, dropdownOpen]);
 
 	useEffect(() => {
 		if (!dropdownOpen) return;
@@ -777,6 +798,14 @@ export default function ParoaGisMapContent({
 
 	const clearAll = () => {
 		setSelectedFiles(new Set());
+	};
+
+	const toggleAllSelection = () => {
+		if (allFilesSelected) {
+			clearAll();
+			return;
+		}
+		selectAll();
 	};
 
 	const updateLayerStyle = (file: KMZFile, layer: KMZLayer, fileIndex: number, updates: Partial<LayerStyleSettings>) => {
@@ -1137,7 +1166,7 @@ export default function ParoaGisMapContent({
 				) : null}
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-					<p className="text-gray-600 mt-1">{description}</p>
+					{description ? <p className="text-gray-600 mt-1">{description}</p> : null}
 				</div>
 			</div>
 
@@ -1188,25 +1217,34 @@ export default function ParoaGisMapContent({
 							</div>
 
 							<div className="relative" ref={dropdownRef}>
-								<button
-									type="button"
-									onClick={() => setDropdownOpen((previous) => !previous)}
-									className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
-								>
-									<Layers className="h-4 w-4 mr-2" />
-									KMZ Layers
-									<span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
-										{selectedFiles.size}
-									</span>
-									<ChevronDown className="h-4 w-4 ml-2" />
-								</button>
+								<div className="space-y-1">
+									{layerPickerConfig?.label ? (
+										<p className="text-xs font-medium text-gray-600">{layerPickerConfig.label}</p>
+									) : null}
+									<button
+										type="button"
+										onClick={() => setDropdownOpen((previous) => !previous)}
+										className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+									>
+										<Layers className="h-4 w-4 mr-2" />
+										KMZ Layers
+										<span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
+											{selectedFiles.size}
+										</span>
+										<ChevronDown className="h-4 w-4 ml-2" />
+									</button>
+								</div>
 
 								{dropdownOpen && (
 									<div className="absolute right-0 top-full mt-2 z-[1000] w-80 rounded-xl border border-gray-200 bg-white shadow-xl">
 										<div className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
 											<div>
-												<p className="text-sm font-semibold text-gray-900">Select KMZ Files</p>
-												<p className="text-xs text-gray-500">Choose one or more layers to display</p>
+												<p className="text-sm font-semibold text-gray-900">
+													{layerPickerConfig?.title ?? "Select KMZ Files"}
+												</p>
+												<p className="text-xs text-gray-500">
+													{layerPickerConfig?.description ?? "Choose one or more layers to display"}
+												</p>
 											</div>
 										</div>
 										<div className="px-4 py-3 flex items-center gap-2 border-b border-gray-100">
@@ -1226,6 +1264,25 @@ export default function ParoaGisMapContent({
 											</button>
 										</div>
 										<div className="max-h-80 overflow-y-auto p-2">
+											{layerPickerConfig?.showAllOption ? (
+												<label className="flex items-start gap-3 rounded-lg px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 mb-2">
+													<input
+														ref={selectAllCheckboxRef}
+														type="checkbox"
+														checked={allFilesSelected}
+														onChange={toggleAllSelection}
+														className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+													/>
+													<div className="min-w-0 flex-1">
+														<p className="text-sm font-medium text-gray-900">
+															{layerPickerConfig.allOptionLabel ?? "All"}
+														</p>
+														<p className="text-xs text-gray-500">
+															Select or clear every available GIS layer
+														</p>
+													</div>
+												</label>
+											) : null}
 											{orderedFiles.map((file) => {
 												const checked = selectedFiles.has(file.fileName);
 												return (
