@@ -27,6 +27,13 @@ type District = {
 	tehsils: Tehsil[];
 };
 
+/**
+ * District → Tehsil map catalog for /dashboard/maps.
+ * Administrative grouping must match app District→Tehsil relationships
+ * (training forms + /api/tracking-sheet/tehsils): Bannu = Domel/Kakki/Wazir;
+ * DIK = Daraban/Darazinda/Kulachi/Paharpur/Paniala/Paroa.
+ * Map file paths are resolved separately in the view page by filename.
+ */
 const districts: District[] = [
 	{
 		id: 'bannu',
@@ -52,27 +59,8 @@ const districts: District[] = [
 				]
 			},
 			{
-				id: 'kulachi',
-				name: 'Kulachi',
-				district: 'Bannu',
-				maps: [
-					{ id: 'kulachi-boundary', name: 'NC Boundary', type: 'boundary', icon: MapPin, color: 'bg-blue-500', file: 'Kulachi_NC_Boundary.json' },
-					{ id: 'kulachi-water', name: 'Water Infrastructure', type: 'water', icon: Droplet, color: 'bg-cyan-500', file: 'Kulachi_NC_Water.json' },
-				]
-			},
-			{
-				id: 'paniala',
-				name: 'Paniala',
-				district: 'Bannu',
-				maps: [
-					{ id: 'paniala-boundary', name: 'NC Boundary', type: 'boundary', icon: MapPin, color: 'bg-blue-500', file: 'Paniala_NC_Boundary.json' },
-					{ id: 'paniala-water', name: 'Water Infrastructure', type: 'water', icon: Droplet, color: 'bg-cyan-500', file: 'Paniala_NC_Water_WGS84.json' },
-					{ id: 'paniala-sw', name: 'Solid Waste', type: 'sw', icon: Trash2, color: 'bg-red-500', file: 'Paniala_NC_SW_WGS84.json' },
-				]
-			},
-			{
 				id: 'wazir',
-				name: 'SubDiviWazir',
+				name: 'Sub-division Wazir',
 				district: 'Bannu',
 				maps: [
 					{ id: 'wazir-boundary', name: 'VC Boundary', type: 'boundary', icon: MapPin, color: 'bg-blue-500', file: 'SubDiviWazir_VC_Boundary_WGS84.json' },
@@ -105,6 +93,15 @@ const districts: District[] = [
 				]
 			},
 			{
+				id: 'kulachi',
+				name: 'Kulachi',
+				district: 'DIK',
+				maps: [
+					{ id: 'kulachi-boundary', name: 'NC Boundary', type: 'boundary', icon: MapPin, color: 'bg-blue-500', file: 'Kulachi_NC_Boundary.json' },
+					{ id: 'kulachi-water', name: 'Water Infrastructure', type: 'water', icon: Droplet, color: 'bg-cyan-500', file: 'Kulachi_NC_Water.json' },
+				]
+			},
+			{
 				id: 'paharpur',
 				name: 'Paharpur',
 				district: 'DIK',
@@ -112,6 +109,16 @@ const districts: District[] = [
 					{ id: 'paharpur-boundary', name: 'NC Boundary', type: 'boundary', icon: MapPin, color: 'bg-blue-500', file: 'Paharpur_NC_Boundary_WGS84.json' },
 					{ id: 'paharpur-water', name: 'Water Infrastructure', type: 'water', icon: Droplet, color: 'bg-cyan-500', file: 'Paharpur_NC_Water_WGS84.json' },
 					{ id: 'paharpur-sw', name: 'Solid Waste', type: 'sw', icon: Trash2, color: 'bg-red-500', file: 'Paharpur_NC_Sw_WGS84.json' },
+				]
+			},
+			{
+				id: 'paniala',
+				name: 'Paniala',
+				district: 'DIK',
+				maps: [
+					{ id: 'paniala-boundary', name: 'NC Boundary', type: 'boundary', icon: MapPin, color: 'bg-blue-500', file: 'Paniala_NC_Boundary.json' },
+					{ id: 'paniala-water', name: 'Water Infrastructure', type: 'water', icon: Droplet, color: 'bg-cyan-500', file: 'Paniala_NC_Water_WGS84.json' },
+					{ id: 'paniala-sw', name: 'Solid Waste', type: 'sw', icon: Trash2, color: 'bg-red-500', file: 'Paniala_NC_SW_WGS84.json' },
 				]
 			},
 			{
@@ -210,7 +217,9 @@ export default function MapsMasterPage() {
 													<Building2 className="h-5 w-5 text-blue-600" />
 												</div>
 												<div className="text-left">
-													<h3 className="text-lg font-medium text-gray-900">{tehsil.name} Tehsil</h3>
+													<h3 className="text-lg font-medium text-gray-900">
+														{tehsil.id === 'wazir' ? `Tehsil ${tehsil.name}` : `${tehsil.name} Tehsil`}
+													</h3>
 													<p className="text-sm text-gray-600 mt-0.5">{tehsil.maps.length} Maps Available</p>
 												</div>
 											</div>

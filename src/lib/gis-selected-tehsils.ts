@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { formatGisMapTitle } from "@/lib/gis/formatGisMapTitle";
 
 const GIS_MAPS_FOLDER = path.join(process.cwd(), "public", "maps", "SelectedTehsils");
 const ALLOWED_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
@@ -61,10 +62,11 @@ function buildDetailUrl(fileName: string) {
 function buildTitle(fileName: string) {
 	const mappedTitle = MAP_METADATA[fileName]?.title;
 	if (mappedTitle) {
-		return mappedTitle;
+		return formatGisMapTitle(mappedTitle);
 	}
 
-	return path.basename(fileName, path.extname(fileName));
+	// Display title only — physical file names and URLs remain unchanged.
+	return formatGisMapTitle(fileName);
 }
 
 function detectCategory(fileName: string) {

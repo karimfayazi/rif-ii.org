@@ -16,6 +16,17 @@ type ReportData = {
 	SubCategory: string;
 };
 
+type MainCategoryOption = {
+	MainCategoryID: number;
+	Category: string;
+};
+
+type SubCategoryOption = {
+	SubCategoryID: number;
+	MainCategoryID: number;
+	SubCategory: string;
+};
+
 export default function ReportsPage() {
 	// Get actual user ID from cookie
 	const { user, getUserId } = useAuth();
@@ -38,12 +49,70 @@ export default function ReportsPage() {
 	const [dateRangeError, setDateRangeError] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
-	const [mainCategories, setMainCategories] = useState<string[]>([]);
-	const [subCategories, setSubCategories] = useState<string[]>([]);
+	const [mainCategories, setMainCategories] = useState<MainCategoryOption[]>([]);
+	const [subCategories, setSubCategories] = useState<SubCategoryOption[]>([]);
 	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; report: ReportData | null }>({ show: false, report: null });
 	const [deleting, setDeleting] = useState(false);
 
 	const isDateRangeInvalid = (from: string, to: string) => Boolean(from && to && to < from);
+
+	const fetchMainCategories = async () => {
+		try {
+			const response = await fetch("/api/reports/categories");
+			const data = await response.json();
+
+			if (data.success) {
+				const validCategories = (data.categories || []).filter(
+					(cat: { MainCategoryID: number | null; Category: string | null }) =>
+						cat.MainCategoryID != null && cat.Category
+				) as MainCategoryOption[];
+				setMainCategories(validCategories);
+			}
+		} catch (err) {
+			console.error("Error fetching report main categories:", err);
+		}
+	};
+
+	const fetchSubCategories = async (mainCategoryID: number) => {
+		try {
+			const response = await fetch(
+				`/api/reports/subcategories?mainCategoryID=${encodeURIComponent(String(mainCategoryID))}`
+			);
+			const data = await response.json();
+
+			if (data.success) {
+				const validSubCategories = (data.subCategories || []).filter(
+					(sub: {
+						SubCategoryID: number | null;
+						MainCategoryID: number | null;
+						SubCategory: string | null;
+					}) =>
+						sub.SubCategoryID != null &&
+						sub.MainCategoryID != null &&
+						sub.SubCategory
+				) as SubCategoryOption[];
+				setSubCategories(validSubCategories);
+			} else {
+				setSubCategories([]);
+			}
+		} catch (err) {
+			console.error("Error fetching report sub categories:", err);
+			setSubCategories([]);
+		}
+	};
+
+	const handleMainCategoryChange = (value: string) => {
+		setSelectedMainCategory(value);
+		setSelectedSubCategory("");
+		setSubCategories([]);
+
+		if (!value) return;
+
+		const selected = mainCategories.find((cat) => cat.Category === value);
+		if (selected?.MainCategoryID != null) {
+			fetchSubCategories(selected.MainCategoryID);
+		}
+	};
 
 	// Lightweight MIN/MAX EventDate for default Date From / Date To
 	useEffect(() => {
@@ -79,6 +148,10 @@ export default function ReportsPage() {
 		return () => {
 			cancelled = true;
 		};
+	}, []);
+
+	useEffect(() => {
+		fetchMainCategories();
 	}, []);
 
 	useEffect(() => {
@@ -134,13 +207,6 @@ export default function ReportsPage() {
 				});
 				
 				setReports(fetchedReports);
-				
-				// Extract unique categories for filters
-				const uniqueMainCategories = [...new Set(data.reports.map((report: ReportData) => report.MainCategory).filter(Boolean))] as string[];
-				const uniqueSubCategories = [...new Set(data.reports.map((report: ReportData) => report.SubCategory).filter(Boolean))] as string[];
-				
-				setMainCategories(uniqueMainCategories);
-				setSubCategories(uniqueSubCategories);
 			} else {
 				setError(data.message || "Failed to fetch reports");
 				setSuccess(null);
@@ -213,6 +279,7 @@ export default function ReportsPage() {
 		setSearchTerm("");
 		setSelectedMainCategory("");
 		setSelectedSubCategory("");
+		setSubCategories([]);
 		setDateFrom(defaultDateFrom);
 		setDateTo(defaultDateTo);
 		setAppliedDateFrom(defaultDateFrom);
@@ -308,6 +375,51 @@ export default function ReportsPage() {
 		} catch {
 			return dateString;
 		}
+	};
+
+	const escapeCsvValue = (value: unknown): string => {
+		if (value == null || value === "") return "";
+		const str = String(value);
+		return `"${str.replace(/"/g, '""')}"`;
+	};
+
+	const handleExport = () => {
+		if (reports.length === 0) {
+			alert("No reports to export");
+			return;
+		}
+
+		// Same columns/order as GridView (exclude View/Edit/Delete actions)
+		const headers = ["Report Title", "Description", "Category", "Sub Category", "Date"];
+		const csvRows = [
+			headers.map(escapeCsvValue).join(","),
+			...reports.map((report) =>
+				[
+					report.ReportTitle || "",
+					report.Description || "",
+					report.MainCategory || "",
+					report.SubCategory || "",
+					report.EventDate ? formatDate(report.EventDate) : "",
+				]
+					.map(escapeCsvValue)
+					.join(",")
+			),
+		];
+
+		// UTF-8 BOM so Excel opens special characters correctly
+		const csvContent = `\uFEFF${csvRows.join("\r\n")}`;
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		const today = new Date().toISOString().slice(0, 10);
+
+		link.href = url;
+		link.download = `Reports_Export_${today}.csv`;
+		link.style.visibility = "hidden";
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
 	};
 
 	const getFileExtension = (filePath: string) => {
@@ -429,7 +541,11 @@ export default function ReportsPage() {
 					<RefreshCw className="h-4 w-4 mr-2 flex-shrink-0" />
 					Refresh
 				</button>
-				<button className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors whitespace-nowrap">
+				<button
+					type="button"
+					onClick={handleExport}
+					className="inline-flex items-center justify-center px-4 py-2 h-10 text-sm font-medium bg-[#0b4d2b] text-white rounded-lg hover:bg-[#0a3d24] transition-colors whitespace-nowrap"
+				>
 					<Download className="h-4 w-4 mr-2 flex-shrink-0" />
 					Export
 				</button>
@@ -480,13 +596,13 @@ export default function ReportsPage() {
 					<label className="block text-xs font-medium text-gray-700 mb-1">Main Category</label>
 					<select
 						value={selectedMainCategory}
-						onChange={(e) => setSelectedMainCategory(e.target.value)}
+						onChange={(e) => handleMainCategoryChange(e.target.value)}
 						className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
 					>
 						<option value="">All Categories</option>
 						{mainCategories.map((category) => (
-							<option key={category} value={category}>
-								{category}
+							<option key={category.MainCategoryID} value={category.Category}>
+								{category.Category}
 							</option>
 						))}
 					</select>
@@ -498,12 +614,15 @@ export default function ReportsPage() {
 					<select
 						value={selectedSubCategory}
 						onChange={(e) => setSelectedSubCategory(e.target.value)}
-						className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
+						disabled={!selectedMainCategory}
+						className="w-full h-9 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
 					>
-						<option value="">All Sub Categories</option>
+						<option value="">
+							{!selectedMainCategory ? "Select Main Category first" : "All Sub Categories"}
+						</option>
 						{subCategories.map((category) => (
-							<option key={category} value={category}>
-								{category}
+							<option key={category.SubCategoryID} value={category.SubCategory}>
+								{category.SubCategory}
 							</option>
 						))}
 					</select>

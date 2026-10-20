@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
+import TableHorizontalScroll from "@/components/security/TableHorizontalScroll";
 import * as XLSX from "xlsx";
 
 type TrainingEvent = {
@@ -947,10 +948,10 @@ export default function TrainingPage() {
 					</p>
 				</div>
 			) : (
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-					<div className="overflow-x-auto">
-						<table className="min-w-full divide-y divide-gray-200">
-							<thead className="bg-gray-50">
+				<div className="training-grid-wrap bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden min-w-0 max-w-full">
+					<TableHorizontalScroll stickyBottomScrollbar tableId="training-grid">
+						<table id="training-grid" className="min-w-full divide-y divide-gray-200">
+							<thead className="sticky top-0 z-20 bg-gray-50">
 								<tr>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Training Details</th>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">District</th>
@@ -1224,7 +1225,7 @@ export default function TrainingPage() {
 								))}
 							</tbody>
 						</table>
-					</div>
+					</TableHorizontalScroll>
 					{/* Results Count */}
 					<div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
 						<p className="text-sm text-gray-600">

@@ -61,3 +61,6 @@ public/maps/kmz/**/*.kmz
 
 # Generated GIS data (converted from shapefiles)
 /gis-data/
+
+.vercel
+.env*

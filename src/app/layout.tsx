@@ -13,8 +13,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased min-h-screen" style={{ fontFamily: 'Calibri, "Segoe UI", Arial, Helvetica, sans-serif' }}>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className="antialiased min-h-screen"
+        style={{ fontFamily: 'Calibri, "Segoe UI", Arial, Helvetica, sans-serif' }}
+        suppressHydrationWarning
+      >
         <main className="w-full max-w-none">{children}</main>
         <Footer />
       </body>

@@ -7,6 +7,58 @@ function normalizePassword(value: unknown): string {
 	return String(value ?? "").trim();
 }
 
+const CONNECTION_ERROR_MESSAGE =
+	"We are unable to connect to the system right now. Please try again in a few minutes. If the problem continues, please contact your IT support team.";
+
+function isDatabaseConnectionError(error: unknown): boolean {
+	const err = error as {
+		code?: string;
+		number?: number;
+		originalError?: { code?: string; message?: string };
+		message?: string;
+	};
+
+	const connectionCodes = new Set([
+		"ETIMEOUT",
+		"ECONNREFUSED",
+		"ESOCKET",
+		"ENOTFOUND",
+		"ECONNRESET",
+		"EHOSTUNREACH",
+		"EPIPE",
+		"ELOGIN",
+	]);
+
+	if (err?.code && connectionCodes.has(err.code)) {
+		return true;
+	}
+
+	if (err?.originalError?.code && connectionCodes.has(err.originalError.code)) {
+		return true;
+	}
+
+	const message = [
+		error instanceof Error ? error.message : "",
+		err?.message ?? "",
+		err?.originalError?.message ?? "",
+	]
+		.join(" ")
+		.toLowerCase();
+
+	return (
+		message.includes("failed to connect") ||
+		message.includes("could not connect") ||
+		message.includes("connection refused") ||
+		message.includes("connect timeout") ||
+		message.includes("connection timeout") ||
+		message.includes("socket hang up") ||
+		message.includes("getaddrinfo") ||
+		message.includes("login timeout") ||
+		message.includes("timeout expired") ||
+		/:\s*1433\b/.test(message)
+	);
+}
+
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
@@ -87,10 +139,22 @@ export async function POST(request: NextRequest) {
 		return response;
 	} catch (error) {
 		console.error("Login error:", error);
+
+		if (isDatabaseConnectionError(error)) {
+			return NextResponse.json(
+				{
+					success: false,
+					code: "CONNECTION_ERROR",
+					message: CONNECTION_ERROR_MESSAGE,
+				},
+				{ status: 503 }
+			);
+		}
+
 		return NextResponse.json(
 			{
 				success: false,
-				message: "Login error: " + (error instanceof Error ? error.message : "Unknown error"),
+				message: "Unable to sign in right now. Please try again.",
 			},
 			{ status: 500 }
 		);

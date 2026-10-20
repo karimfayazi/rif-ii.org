@@ -18,7 +18,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
 import { uploadToBlob } from "@/lib/uploads";
-import { parseCategoryValues, serializeCategoryValues } from "@/lib/security-incidents";
+import { isValidHttpUrl, parseCategoryValues, serializeCategoryValues } from "@/lib/security-incidents";
 
 type SecurityIncidentFormData = {
 	id?: number;
@@ -53,7 +53,9 @@ const CATEGORY_OPTIONS = [
 	"Target Killings",
 	"Abductions",
 	"Fire Raid",
-	"Extortions"
+	"Extortions",
+	"UAV/RCV",
+	"Others"
 ];
 
 const PROVINCE_OPTIONS = [
@@ -265,8 +267,8 @@ export default function AddSecurityIncidentPage() {
 			setError("Recommended Actions is required");
 			return false;
 		}
-		if (formData.incident_youtube_link?.trim() && !/^https?:\/\//.test(formData.incident_youtube_link.trim())) {
-			setError("YouTube link must start with http:// or https://");
+		if (formData.incident_youtube_link?.trim() && !isValidHttpUrl(formData.incident_youtube_link)) {
+			setError("Link must be a valid website URL starting with http:// or https://");
 			return false;
 		}
 		return true;
@@ -673,21 +675,26 @@ export default function AddSecurityIncidentPage() {
 					))}
 				</div>
 
-				{/* YouTube Link */}
+				{/* Link (stored in incident_youtube_link for backward compatibility) */}
 				<div className="mt-6">
 					<label className="block text-sm font-medium text-gray-700 mb-2">
-						YouTube Link
+						Link
 					</label>
 					<input
-						type="text"
+						type="url"
 						value={formData.incident_youtube_link || ""}
 						onChange={(e) => handleInputChange('incident_youtube_link', e.target.value)}
 						className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b4d2b] focus:border-[#0b4d2b] outline-none"
-						placeholder="https://www.youtube.com/watch?v=..."
+						placeholder="Enter website or resource link (https://...)"
 					/>
-					{formData.incident_youtube_link?.trim() && /^https?:\/\//.test(formData.incident_youtube_link.trim()) && (
-						<a href={formData.incident_youtube_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center mt-2 text-sm text-blue-600 hover:underline">
-							Open YouTube Link
+					{isValidHttpUrl(formData.incident_youtube_link) && (
+						<a
+							href={formData.incident_youtube_link!.trim()}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="inline-flex items-center mt-2 text-sm text-blue-600 hover:underline"
+						>
+							Open Link
 						</a>
 					)}
 				</div>

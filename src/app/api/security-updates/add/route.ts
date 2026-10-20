@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { serializeCategoryValues } from "@/lib/security-incidents";
+import { isValidHttpUrl, serializeCategoryValues } from "@/lib/security-incidents";
 import { getUserIdFromRequest } from "@/lib/auth";
 import { checkPermission } from "@/lib/access-permissions";
 
@@ -40,11 +40,19 @@ export async function POST(request: NextRequest) {
 		} = body;
 
 		const normalizedCategory = serializeCategoryValues(category);
+		const normalizedLink = typeof incident_youtube_link === "string" ? incident_youtube_link.trim() : "";
 
 		// Validate required fields
 		if (!incident_title || !normalizedCategory || !location_district || !location_province || !incident_date_from || !incident_summary || !operational_impact || !recommended_actions) {
 			return NextResponse.json(
 				{ success: false, message: "All required fields must be filled" },
+				{ status: 400 }
+			);
+		}
+
+		if (normalizedLink && !isValidHttpUrl(normalizedLink)) {
+			return NextResponse.json(
+				{ success: false, message: "Link must be a valid website URL starting with http:// or https://" },
 				{ status: 400 }
 			);
 		}
@@ -75,7 +83,7 @@ export async function POST(request: NextRequest) {
 		request_obj.input('incident_image_1', incident_image_1 || null);
 		request_obj.input('incident_image_2', incident_image_2 || null);
 		request_obj.input('incident_image_3', incident_image_3 || null);
-		request_obj.input('incident_youtube_link', incident_youtube_link || null);
+		request_obj.input('incident_youtube_link', normalizedLink || null);
 		request_obj.input('incident_date_to', incident_date_to || null);
 
 		const result = await request_obj.query(query);

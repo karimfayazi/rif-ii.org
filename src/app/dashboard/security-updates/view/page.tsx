@@ -17,7 +17,7 @@ import {
 	User,
 } from "lucide-react";
 import Link from "next/link";
-import { parseCategoryValues } from "@/lib/security-incidents";
+import { isValidHttpUrl, parseCategoryValues } from "@/lib/security-incidents";
 
 type SecurityIncident = {
 	id: number;
@@ -296,6 +296,24 @@ export default function SecurityIncidentViewPage() {
 											className="w-full h-40 object-cover rounded-lg border border-gray-200 group-hover:shadow-md transition-shadow"
 										/>
 									</a>
+									<div className="mt-2 flex flex-wrap gap-3 text-sm">
+										<a
+											href={imageUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="inline-flex items-center text-blue-600 hover:underline"
+										>
+											Preview
+											<ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+										</a>
+										<a
+											href={imageUrl}
+											download
+											className="inline-flex items-center text-[#0b4d2b] hover:underline"
+										>
+											Download
+										</a>
+									</div>
 								</div>
 							))}
 						</div>
@@ -306,18 +324,18 @@ export default function SecurityIncidentViewPage() {
 					)}
 
 					<div className="mt-6">
-						<label className="block text-sm font-medium text-gray-700 mb-2">YouTube Link</label>
-						<div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-900">
+						<label className="block text-sm font-medium text-gray-700 mb-2">Link</label>
+						<div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 break-all">
 							{incident.incident_youtube_link?.trim() ? incident.incident_youtube_link : "N/A"}
 						</div>
-						{incident.incident_youtube_link?.trim() && /^https?:\/\//.test(incident.incident_youtube_link.trim()) && (
+						{isValidHttpUrl(incident.incident_youtube_link) && (
 							<a
-								href={incident.incident_youtube_link}
+								href={incident.incident_youtube_link!.trim()}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="inline-flex items-center mt-2 text-sm text-blue-600 hover:underline"
 							>
-								Open YouTube Link
+								Open Link
 								<ExternalLink className="h-3.5 w-3.5 ml-1.5" />
 							</a>
 						)}
@@ -327,6 +345,7 @@ export default function SecurityIncidentViewPage() {
 				<div>
 					<h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h2>
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<ReadOnlyField label="Record ID" value={String(incident.id)} />
 						<ReadOnlyField label="Reference #" value={incident.ReferenceNumber} />
 						<ReadOnlyField label="Reported By" value={incident.reported_by} />
 						<ReadOnlyField label="Incident Date Range" value={formatIncidentDateRange(incident)} />

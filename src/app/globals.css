@@ -132,3 +132,219 @@ table, th, td {
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
   padding: 2px 0 4px;
 }
+
+/*
+ * Security Incidents Data: sticky table header inside the existing h-scroll container.
+ * Vertical scrolling is enabled on the bottom bar so position:sticky can work
+ * (overflow-x alone would otherwise prevent sticky from sticking).
+ */
+.security-incidents-data-grid-wrap .sec-grid-hscroll__bar--bottom {
+  max-height: min(70vh, calc(100vh - 14rem));
+  overflow-y: auto;
+}
+
+/* Keep a visible vertical scrollbar when hide-native suppresses the horizontal one */
+.security-incidents-data-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native {
+  scrollbar-width: thin;
+}
+
+.security-incidents-data-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar {
+  display: block;
+  width: 12px;
+  height: 0;
+}
+
+.security-incidents-data-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar:vertical {
+  width: 12px;
+}
+
+.security-incidents-data-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar-thumb {
+  background: #0b4d2b;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+.security-incidents-data-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 8px;
+}
+
+/* th sticky is more reliable than thead alone with border-collapse */
+.security-incidents-data-grid-wrap #security-incidents-data-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: #f3f4f6;
+  background-image: linear-gradient(to right, #f3f4f6, #f9fafb, #ffffff);
+}
+
+/*
+ * Security Updates: sticky table header inside the existing h-scroll container.
+ * Vertical scrolling is enabled on the bottom bar so position:sticky can work
+ * (overflow-x alone would otherwise prevent sticky from sticking).
+ */
+.security-updates-grid-wrap .sec-grid-hscroll__bar--bottom {
+  max-height: min(70vh, calc(100vh - 14rem));
+  overflow-y: auto;
+}
+
+/* Keep a visible vertical scrollbar when hide-native suppresses the horizontal one */
+.security-updates-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native {
+  scrollbar-width: thin;
+}
+
+.security-updates-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar {
+  display: block;
+  width: 12px;
+  height: 0;
+}
+
+.security-updates-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar:vertical {
+  width: 12px;
+}
+
+.security-updates-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar-thumb {
+  background: #0b4d2b;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+.security-updates-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 8px;
+}
+
+/* th sticky is more reliable than thead alone with border-collapse */
+.security-updates-grid-wrap #security-updates-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: #f9fafb;
+}
+
+/*
+ * Training: sticky table header inside the existing h-scroll container.
+ * Vertical scrolling is enabled on the bottom bar so position:sticky can work
+ * (overflow-x alone would otherwise prevent sticky from sticking).
+ */
+.training-grid-wrap .sec-grid-hscroll__bar--bottom {
+  max-height: min(70vh, calc(100vh - 14rem));
+  overflow-y: auto;
+}
+
+/* Keep a visible vertical scrollbar when hide-native suppresses the horizontal one */
+.training-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native {
+  scrollbar-width: thin;
+}
+
+.training-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar {
+  display: block;
+  width: 12px;
+  height: 0;
+}
+
+.training-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar:vertical {
+  width: 12px;
+}
+
+.training-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar-thumb {
+  background: #0b4d2b;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+.training-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 8px;
+}
+
+/* th sticky is more reliable than thead alone with border-collapse */
+.training-grid-wrap #training-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: #f9fafb;
+}
+
+/* Preserve existing tinted total columns when sticky override applies */
+.training-grid-wrap #training-grid thead th.bg-blue-50 {
+  background-color: #eff6ff;
+}
+
+.training-grid-wrap #training-grid thead th.bg-pink-50 {
+  background-color: #fdf2f8;
+}
+
+.training-grid-wrap #training-grid thead th.bg-purple-50 {
+  background-color: #faf5ff;
+}
+
+/* Corner cell: sticky top + sticky right Actions column */
+.training-grid-wrap #training-grid thead th.right-0 {
+  z-index: 30;
+  background-color: #f9fafb;
+}
+
+/*
+ * Training Participants: sticky table header inside the existing h-scroll container.
+ * Vertical scrolling is enabled on the bottom bar so position:sticky can work
+ * (overflow-x alone would otherwise prevent sticky from sticking).
+ */
+.training-participants-grid-wrap .sec-grid-hscroll__bar--bottom {
+  max-height: min(70vh, calc(100vh - 14rem));
+  overflow-y: auto;
+}
+
+/* Keep a visible vertical scrollbar when hide-native suppresses the horizontal one */
+.training-participants-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native {
+  scrollbar-width: thin;
+}
+
+.training-participants-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar {
+  display: block;
+  width: 12px;
+  height: 0;
+}
+
+.training-participants-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar:vertical {
+  width: 12px;
+}
+
+.training-participants-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar-thumb {
+  background: #0b4d2b;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+.training-participants-grid-wrap
+  .sec-grid-hscroll__bar--bottom.sec-grid-hscroll__bar--hide-native::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 8px;
+}
+
+/* th sticky is more reliable than thead alone with border-collapse */
+.training-participants-grid-wrap #training-participants-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: #ffffff;
+}

@@ -5,7 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import {
 	AlertCircle,
+	AlertTriangle,
 	CheckCircle2,
+	ExternalLink,
 	KeyRound,
 	Loader2,
 	Lock,
@@ -14,11 +16,16 @@ import {
 	X
 } from "lucide-react";
 
+const CONNECTION_ERROR_TITLE = "Unable to Connect";
+const CONNECTION_ERROR_MESSAGE =
+	"We are unable to connect to the system right now. Please try again in a few minutes. If the problem continues, please contact your IT support team.";
+
 export default function LoginPage() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [isConnectionError, setIsConnectionError] = useState(false);
 	const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 	const [changePasswordData, setChangePasswordData] = useState({
 		email: "",
@@ -219,6 +226,7 @@ export default function LoginPage() {
 	async function handleSubmit(event: React.FormEvent) {
 		event.preventDefault();
 		setError(null);
+		setIsConnectionError(false);
 		if (!email || !password) {
 			setError("Email and password are required");
 			return;
@@ -236,6 +244,13 @@ export default function LoginPage() {
 			const data = await res.json().catch(() => ({}));
 
 			if (!res.ok) {
+				if (data?.code === "CONNECTION_ERROR" || res.status === 503) {
+					setIsConnectionError(true);
+					setError(data?.message || CONNECTION_ERROR_MESSAGE);
+					return;
+				}
+
+				setIsConnectionError(false);
 				setError(data?.message || "Login failed");
 				return;
 			}
@@ -255,18 +270,26 @@ export default function LoginPage() {
 			
 		} catch (e: unknown) {
 			console.error("Login error:", e); // Debug log
-			const errorMessage = e instanceof Error ? e.message : "Login failed";
-			setError(errorMessage);
+			setIsConnectionError(true);
+			setError(CONNECTION_ERROR_MESSAGE);
 		} finally {
 			setLoading(false);
 		}
 	}
 
+	function handleTryAgain() {
+		if (loading) {
+			return;
+		}
+
+		void handleSubmit({ preventDefault() {} } as React.FormEvent);
+	}
+
 	return (
-		<div className="min-h-screen bg-gray-50 flex flex-col">
+		<div className="h-dvh max-h-dvh overflow-hidden bg-gray-50 flex flex-col">
 			{/* Compact Header */}
-			<header className="bg-[#0b4d2b] flex-shrink-0 py-3">
-				<div className="mx-auto w-full max-w-none px-4 flex items-center justify-between">
+			<header className="bg-[#0b4d2b] flex-shrink-0 py-2">
+				<div className="mx-auto w-full max-w-none px-4 flex items-center justify-between gap-3">
 					<div className="flex items-center gap-4">
 						<Link
 							href="/"
@@ -278,37 +301,37 @@ export default function LoginPage() {
 							Home
 						</Link>
 					</div>
-					<div className="text-white text-sm font-semibold text-center flex-1">
+					<div className="text-white text-xs sm:text-sm font-semibold text-center flex-1 leading-snug">
 						Regional Infrastructure Fund – II in Khyber Pakhtunkhwa for &ldquo;RESILIENT RESOURCE MANAGEMENT IN CITIES (RRMIC)&rdquo;
 					</div>
 					<div className="w-16"></div> {/* Spacer for balance */}
 				</div>
 			</header>
 			
-			{/* Main Content - Takes remaining space */}
-			<div className="flex-1 flex items-center justify-center px-4 py-8 sm:px-6">
-				<div className="w-full max-w-5xl overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg md:grid md:grid-cols-[3fr_2fr] md:min-h-[470px]">
-					{/* Left Side - Visual Panel (desktop+) — 60% width; height +5% from 448px */}
-					<div className="relative hidden h-[470px] bg-white md:block">
+			{/* Main Content - Fills remaining viewport */}
+			<div className="flex-1 min-h-0 flex items-center justify-center px-4 py-3 sm:px-6 sm:py-4">
+				<div className="w-full max-w-5xl h-full max-h-[560px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg md:grid md:grid-cols-[3fr_2fr]">
+					{/* Left Side - Visual Panel (desktop+) */}
+					<div className="relative hidden h-full min-h-0 bg-white md:block">
 						<Image
 							src="/logo/login_image.JPG"
 							alt="RIF-II MIS"
 							fill
 							priority
 							sizes="(max-width: 768px) 0px, 60vw"
-							className="object-contain object-center p-4"
+							className="object-contain object-center p-3"
 						/>
 					</div>
 
 					{/* Right Side - Login Form */}
-					<div className="flex flex-col justify-center p-8 sm:p-10">
-						<h1 className="mb-6 text-2xl font-bold text-center text-gray-800">Sign in to RIF-II MIS</h1>
-						<form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+					<div className="flex h-full min-h-0 flex-col justify-center overflow-y-auto p-5 sm:p-7">
+						<h1 className="mb-4 text-xl font-bold text-center text-gray-800 sm:text-2xl">Sign in to RIF-II MIS</h1>
+						<form onSubmit={handleSubmit} className="space-y-3" autoComplete="off">
 							<div>
-								<label className="mb-2 block text-sm font-medium text-gray-700">Email</label>
+								<label className="mb-1.5 block text-sm font-medium text-gray-700">Email</label>
 								<input
 									type="text"
-									className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm focus:border-[#0b4d2b] focus:ring-2 focus:ring-[#0b4d2b] focus:ring-opacity-20 focus:outline-none transition"
+									className="w-full rounded-md border border-gray-300 px-4 py-2.5 text-sm focus:border-[#0b4d2b] focus:ring-2 focus:ring-[#0b4d2b] focus:ring-opacity-20 focus:outline-none transition"
 									value={email}
 									onChange={(e) => setEmail(e.target.value)}
 									placeholder="user@example.com"
@@ -317,10 +340,10 @@ export default function LoginPage() {
 								/>
 							</div>
 							<div>
-								<label className="mb-2 block text-sm font-medium text-gray-700">Password</label>
+								<label className="mb-1.5 block text-sm font-medium text-gray-700">Password</label>
 								<input
 									type="password"
-									className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm focus:border-[#0b4d2b] focus:ring-2 focus:ring-[#0b4d2b] focus:ring-opacity-20 focus:outline-none transition"
+									className="w-full rounded-md border border-gray-300 px-4 py-2.5 text-sm focus:border-[#0b4d2b] focus:ring-2 focus:ring-[#0b4d2b] focus:ring-opacity-20 focus:outline-none transition"
 									value={password}
 									onChange={(e) => setPassword(e.target.value)}
 									placeholder="********"
@@ -328,20 +351,55 @@ export default function LoginPage() {
 									required
 								/>
 							</div>
-							{error && (
+							{error && isConnectionError && (
+								<div
+									role="alert"
+									className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left shadow-sm"
+								>
+									<div className="flex items-start gap-3">
+										<div className="mt-0.5 rounded-full bg-amber-100 p-1.5 text-amber-700">
+											<AlertTriangle className="h-4 w-4" aria-hidden="true" />
+										</div>
+										<div className="min-w-0 flex-1">
+											<p className="text-sm font-semibold text-amber-900">
+												{CONNECTION_ERROR_TITLE}
+											</p>
+											<p className="mt-1 text-sm leading-relaxed text-amber-800">
+												{error}
+											</p>
+											<button
+												type="button"
+												onClick={handleTryAgain}
+												disabled={loading}
+												className="mt-3 inline-flex items-center justify-center rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+											>
+												{loading ? (
+													<>
+														<Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+														Trying again...
+													</>
+												) : (
+													"Try Again"
+												)}
+											</button>
+										</div>
+									</div>
+								</div>
+							)}
+							{error && !isConnectionError && (
 								<p className="text-sm text-red-600 text-center bg-red-50 py-2 rounded-md">{error}</p>
 							)}
 							<button
 								type="submit"
 								disabled={loading}
-								className="w-full rounded-md bg-[#0b4d2b] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0a3d22] disabled:opacity-60 transition-colors shadow-md"
+								className="w-full rounded-md bg-[#0b4d2b] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0a3d22] disabled:opacity-60 transition-colors shadow-md"
 							>
 								{loading ? "Signing in..." : "Sign in"}
 							</button>
 							<button
 								type="button"
 								onClick={openChangePasswordModal}
-								className="w-full rounded-md border border-[#0b4d2b] bg-white px-4 py-3 text-sm font-semibold text-[#0b4d2b] hover:bg-green-50 transition-colors"
+								className="w-full rounded-md border border-[#0b4d2b] bg-white px-4 py-2.5 text-sm font-semibold text-[#0b4d2b] hover:bg-green-50 transition-colors"
 							>
 								Change Password
 							</button>
@@ -503,24 +561,19 @@ export default function LoginPage() {
 			)}
 
 			{/* Footer - Fixed at bottom */}
-			<footer className="bg-[#0b4d2b] flex-shrink-0 mt-auto">
-				<div className="mx-auto w-full max-w-none px-6 py-4 text-center text-white text-sm">
-					<div className="flex justify-between items-center">
+			<footer className="bg-[#0b4d2b] flex-shrink-0">
+				<div className="mx-auto w-full max-w-none px-6 py-2.5 text-center text-white text-sm">
+					<div className="flex justify-between items-center gap-4">
 						<span>&copy; 2026 RIF-II, All rights reserved.</span>
-						<div className="flex gap-4">
-							<Link
-								href="/"
-								className="text-white hover:text-gray-300 transition-colors"
-							>
-								Home
-							</Link>
-							<Link
-								href="/paroa-gis-map"
-								className="text-white hover:text-gray-300 transition-colors"
-							>
-								paroa-gis-map
-							</Link>
-						</div>
+						<a
+							href="https://rrm.rif-ii.org/pages-sign-in.php"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-[#0b4d2b] shadow-sm transition-colors hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#0b4d2b]"
+						>
+							Open RRM Portal
+							<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+						</a>
 					</div>
 				</div>
 			</footer>

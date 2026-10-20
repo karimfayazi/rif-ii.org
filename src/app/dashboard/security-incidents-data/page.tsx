@@ -508,10 +508,10 @@ export default function SecurityIncidentsDataPage() {
 					)}
 				</div>
 			) : (
-				<div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden ring-1 ring-black/5 min-w-0 max-w-full">
+				<div className="security-incidents-data-grid-wrap bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden ring-1 ring-black/5 min-w-0 max-w-full">
 					<TableHorizontalScroll stickyBottomScrollbar tableId="security-incidents-data-grid">
 						<table id="security-incidents-data-grid" className="min-w-full divide-y divide-gray-200">
-							<thead className="bg-gradient-to-r from-gray-100 via-gray-50 to-white border-b-2 border-[#0b4d2b]/25">
+							<thead className="sticky top-0 z-20 bg-gradient-to-r from-gray-100 via-gray-50 to-white border-b-2 border-[#0b4d2b]/25 shadow-sm">
 								<tr>
 									<th
 										scope="col"

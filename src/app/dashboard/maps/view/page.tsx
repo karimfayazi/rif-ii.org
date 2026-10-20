@@ -382,22 +382,27 @@ function MapViewContent() {
 
 	const getFilePath = (): string => {
 		if (!district || !file) return '';
-		
-		// Determine the correct path based on district and file location
-		if (district === 'Bannu') {
-			// Check if file is in Bannu subfolder
-			if (file.includes('Kakki')) {
-				return `/maps/Bannu/Kakki/${file}`;
-			}
-			// Most Bannu files are in the Bannu folder
+
+		// Resolve by physical file location (unchanged on disk).
+		// Administrative district (Bannu/DIK) is for UI grouping only and may differ
+		// from the folder a GeoJSON currently lives in (e.g. Paniala under /maps/Bannu).
+		if (file.includes('Kakki')) {
+			return `/maps/Bannu/Kakki/${file}`;
+		}
+		if (file.includes('Paharpur')) {
+			return `/maps/DIK/Paharpur/${file}`;
+		}
+		if (
+			file.includes('Domel') ||
+			file.includes('SubDiviWazir') ||
+			file.includes('Paniala') ||
+			file.includes('Bannu_Tehsil')
+		) {
 			return `/maps/Bannu/${file}`;
-		} else if (district === 'DIK') {
-			// Check if file is in DIK subfolder
-			if (file.includes('Paharpur')) {
-				return `/maps/DIK/Paharpur/${file}`;
-			}
-			// DIK files might be in root or DIK folder - try root first
-			return `/maps/${file}`;
+		}
+		// Kulachi, Daraban, Darazinda, Paroa, and other NC layers at /maps root
+		if (district === 'Bannu') {
+			return `/maps/Bannu/${file}`;
 		}
 		return `/maps/${file}`;
 	};

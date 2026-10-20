@@ -725,7 +725,7 @@ export default function AddTrainingPage() {
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div className="col-span-2 font-semibold text-gray-700">TMA</div>
 								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">TMA Male</label>
+									<label className="block text-sm font-medium text-gray-700 mb-1">MA Male</label>
 									<input
 										type="number"
 										name="tmaMale"
@@ -736,7 +736,7 @@ export default function AddTrainingPage() {
 									/>
 								</div>
 								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">TMA Female</label>
+									<label className="block text-sm font-medium text-gray-700 mb-1">MA Female</label>
 									<input
 										type="number"
 										name="tmaFemale"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, AlertTriangle, Search, Filter, RefreshCw, Calendar, User, Download, Plus, Edit, Trash2, AlertCircle, Loader2, CheckCircle } from "lucide-react";
+import { Shield, AlertTriangle, Search, Filter, RefreshCw, Calendar, User, Download, Plus, Edit, Trash2, AlertCircle, Loader2, CheckCircle, ChevronUp, ChevronDown, Eye } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
@@ -25,6 +25,9 @@ type SecurityIncident = {
 	ReferenceNumber?: string;
 };
 
+type SortColumn = "incident_date_from" | "date_reported";
+type SortDir = "asc" | "desc";
+
 export default function SecurityUpdatesPage() {
 	const { user, getUserId } = useAuth();
 	const userId = user?.id || user?.username || getUserId() || null;
@@ -37,6 +40,8 @@ export default function SecurityUpdatesPage() {
 	const [selectedProvince, setSelectedProvince] = useState("");
 	const [incidentDateFrom, setIncidentDateFrom] = useState("");
 	const [incidentDateTo, setIncidentDateTo] = useState("");
+	const [sortBy, setSortBy] = useState<SortColumn>("incident_date_from");
+	const [sortDir, setSortDir] = useState<SortDir>("desc");
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
 	const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; incident: SecurityIncident | null }>({ show: false, incident: null });
@@ -53,6 +58,8 @@ export default function SecurityUpdatesPage() {
 		selectedProvince?: string;
 		incidentDateFrom?: string;
 		incidentDateTo?: string;
+		sortBy?: SortColumn;
+		sortDir?: SortDir;
 	}) => {
 		try {
 			setLoading(true);
@@ -62,6 +69,8 @@ export default function SecurityUpdatesPage() {
 			const nextProvince = overrides?.selectedProvince ?? selectedProvince;
 			const nextIncidentDateFrom = overrides?.incidentDateFrom ?? incidentDateFrom;
 			const nextIncidentDateTo = overrides?.incidentDateTo ?? incidentDateTo;
+			const nextSortBy = overrides?.sortBy ?? sortBy;
+			const nextSortDir = overrides?.sortDir ?? sortDir;
 
 			const params = new URLSearchParams();
 			if (nextCategory) params.append('category', nextCategory);
@@ -70,6 +79,8 @@ export default function SecurityUpdatesPage() {
 			if (nextSearchTerm) params.append('search', nextSearchTerm);
 			if (nextIncidentDateFrom) params.append('incidentDateFrom', nextIncidentDateFrom);
 			if (nextIncidentDateTo) params.append('incidentDateTo', nextIncidentDateTo);
+			params.append('sortBy', nextSortBy);
+			params.append('sortDir', nextSortDir);
 
 			const response = await fetch(`/api/security-updates?${params.toString()}`);
 			const data = await response.json();
@@ -86,6 +97,27 @@ export default function SecurityUpdatesPage() {
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	const handleSort = (column: SortColumn) => {
+		const nextDir: SortDir = sortBy === column ? (sortDir === "asc" ? "desc" : "asc") : "asc";
+		setSortBy(column);
+		setSortDir(nextDir);
+		fetchSecurityIncidents({ sortBy: column, sortDir: nextDir });
+	};
+
+	const renderSortIndicator = (column: SortColumn) => {
+		if (sortBy === column) {
+			return sortDir === "asc"
+				? <ChevronUp className="h-3.5 w-3.5" />
+				: <ChevronDown className="h-3.5 w-3.5" />;
+		}
+		return (
+			<span className="inline-flex flex-col leading-none opacity-40">
+				<ChevronUp className="h-2.5 w-2.5" />
+				<ChevronDown className="h-2.5 w-2.5 -mt-0.5" />
+			</span>
+		);
 	};
 
 	const handleSearch = () => {
@@ -443,27 +475,43 @@ export default function SecurityUpdatesPage() {
 					)}
 				</div>
 			) : (
-				<div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden min-w-0 max-w-full">
+				<div className="security-updates-grid-wrap bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden min-w-0 max-w-full">
 					<TableHorizontalScroll stickyBottomScrollbar tableId="security-updates-grid">
 						<table id="security-updates-grid" className="min-w-full w-full">
-							<thead className="bg-gray-50 border-b border-gray-200">
+							<thead className="sticky top-0 z-20 bg-gray-50 border-b border-gray-200">
 								<tr>
-									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ID</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Incident Title</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Category</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Location</th>
-									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Incident Dates</th>
+									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+										<button
+											type="button"
+											onClick={() => handleSort("incident_date_from")}
+											className="inline-flex items-center gap-1 hover:text-[#0b4d2b] transition-colors"
+											title="Sort by Incident Date"
+										>
+											Incident Dates
+											{renderSortIndicator("incident_date_from")}
+										</button>
+									</th>
 									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reported By</th>
-									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date Reported</th>
+									<th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+										<button
+											type="button"
+											onClick={() => handleSort("date_reported")}
+											className="inline-flex items-center gap-1 hover:text-[#0b4d2b] transition-colors"
+											title="Sort by Date Reported"
+										>
+											Date Reported
+											{renderSortIndicator("date_reported")}
+										</button>
+									</th>
 									<th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
 								</tr>
 							</thead>
 							<tbody className="bg-white divide-y divide-gray-200">
 								{incidents.map((incident) => (
 									<tr key={incident.id} className="hover:bg-gray-50 transition-colors">
-										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-											{incident.id}
-										</td>
 										<td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
 											<div className="font-medium">{incident.incident_title}</div>
 											<div className="text-xs text-gray-500 mt-1 line-clamp-2">{incident.incident_summary}</div>
@@ -495,6 +543,14 @@ export default function SecurityUpdatesPage() {
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
 											<div className="flex items-center justify-center gap-2">
+												<Link
+													href={`/dashboard/security-updates/view?id=${incident.id}`}
+													className="inline-flex items-center gap-1 px-3 py-1.5 text-xs text-[#0b4d2b] hover:text-[#08381f] hover:bg-green-50 rounded-md transition-colors"
+													title="View details"
+												>
+													<Eye className="h-4 w-4" />
+													View
+												</Link>
 												{accessSecurityUpdates && (
 													<>
 														<Link
