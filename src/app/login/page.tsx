@@ -49,6 +49,7 @@ export default function LoginPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [isConnectionError, setIsConnectionError] = useState(false);
+	const [loginRequestId, setLoginRequestId] = useState<string | null>(null);
 	const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 	const [changePasswordData, setChangePasswordData] = useState({
 		email: "",
@@ -266,6 +267,7 @@ export default function LoginPage() {
 		event.preventDefault();
 		setError(null);
 		setIsConnectionError(false);
+		setLoginRequestId(null);
 		if (!email || !password) {
 			setError("Email and password are required");
 			return;
@@ -283,6 +285,7 @@ export default function LoginPage() {
 			const data = await res.json().catch(() => ({}));
 
 			if (!res.ok) {
+				setLoginRequestId(typeof data?.requestId === "string" ? data.requestId : null);
 				if (data?.code === "CONNECTION_ERROR" || res.status === 503) {
 					setIsConnectionError(true);
 					setError(data?.message || CONNECTION_ERROR_MESSAGE);
@@ -406,6 +409,11 @@ export default function LoginPage() {
 											<p className="mt-1 text-sm leading-relaxed text-amber-800">
 												{error}
 											</p>
+											{loginRequestId && (
+												<p className="mt-1 text-xs text-amber-700">
+													Reference ID: {loginRequestId}
+												</p>
+											)}
 											<button
 												type="button"
 												onClick={handleTryAgain}
@@ -426,7 +434,12 @@ export default function LoginPage() {
 								</div>
 							)}
 							{error && !isConnectionError && (
-								<p className="text-sm text-red-600 text-center bg-red-50 py-2 rounded-md">{error}</p>
+								<p className="text-sm text-red-600 text-center bg-red-50 py-2 rounded-md">
+									{error}
+									{loginRequestId && (
+										<span className="block text-xs text-red-500">Reference ID: {loginRequestId}</span>
+									)}
+								</p>
 							)}
 							<button
 								type="submit"

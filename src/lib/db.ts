@@ -34,10 +34,38 @@ function parseNumberEnv(name: string, defaultValue: number): number {
 	return parsed;
 }
 
+/**
+ * Optional pinned server certificate (PEM, or base64-encoded PEM) so TLS validation stays ON
+ * when SQL Server uses a self-signed certificate. Never log or return this value.
+ */
+function parseCaEnv(): string | undefined {
+	const raw = process.env.DB_SSL_CA?.trim();
+	if (!raw) {
+		return undefined;
+	}
+
+	const pem = raw.includes("BEGIN CERTIFICATE")
+		? raw.replace(/\\n/g, "\n")
+		: Buffer.from(raw, "base64").toString("utf8");
+
+	if (!pem.includes("BEGIN CERTIFICATE")) {
+		throw new Error("Invalid database environment variable: DB_SSL_CA must be a PEM certificate");
+	}
+
+	return pem;
+}
+
+// Serverless (Vercel): keep pools small per instance and fail fast so errors are logged
+// with a Reference ID instead of the function being killed by the platform timeout.
+const IS_SERVERLESS = Boolean(process.env.VERCEL);
+
 function buildConfig(): string | sql.config {
 	if (process.env.MSSQL_CONNECTION) {
 		return process.env.MSSQL_CONNECTION;
 	}
+
+	const sslCa = parseCaEnv();
+	const serverName = process.env.DB_SERVER_NAME;
 
 	const instanceName = process.env.DB_INSTANCE;
 	const port = process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined;
@@ -52,16 +80,18 @@ function buildConfig(): string | sql.config {
 		database: getRequiredEnv("DB_DATABASE"),
 		user: getRequiredEnv("DB_USER"),
 		password: getRequiredEnv("DB_PASSWORD"),
-		connectionTimeout: parseNumberEnv("DB_CONNECT_TIMEOUT", 60000),
+		connectionTimeout: parseNumberEnv("DB_CONNECT_TIMEOUT", IS_SERVERLESS ? 15000 : 60000),
 		requestTimeout: parseNumberEnv("DB_REQUEST_TIMEOUT", 60000),
 		options: {
 			encrypt: parseBooleanEnv("DB_ENCRYPT", true),
 			trustServerCertificate: parseBooleanEnv("DB_TRUST_SERVER_CERTIFICATE", false),
 			enableArithAbort: true,
 			...(instanceName ? { instanceName } : {}),
+			...(sslCa ? { cryptoCredentialsDetails: { ca: sslCa } } : {}),
+			...(serverName ? { serverName } : {}),
 		},
 		pool: {
-			max: parseNumberEnv("DB_POOL_MAX", 20),
+			max: parseNumberEnv("DB_POOL_MAX", IS_SERVERLESS ? 5 : 20),
 			min: parseNumberEnv("DB_POOL_MIN", 0),
 			idleTimeoutMillis: parseNumberEnv("DB_POOL_IDLE_TIMEOUT", 30000),
 		},
