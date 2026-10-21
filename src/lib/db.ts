@@ -98,6 +98,41 @@ function buildConfig(): string | sql.config {
 	};
 }
 
+function logDbConnectFailure(error: unknown): void {
+	const err = error as { name?: string; code?: string; message?: string };
+	console.error(
+		JSON.stringify({
+			level: "error",
+			event: "db_connect_failed",
+			timestamp: new Date().toISOString(),
+			runtime: {
+				node: process.version,
+				vercel: IS_SERVERLESS,
+				region: process.env.VERCEL_REGION || undefined,
+			},
+			dbEnvPresence: {
+				MSSQL_CONNECTION: Boolean(process.env.MSSQL_CONNECTION?.trim()),
+				DB_SERVER: Boolean(process.env.DB_SERVER?.trim()),
+				DB_PORT: Boolean(process.env.DB_PORT?.trim()),
+				DB_DATABASE: Boolean(process.env.DB_DATABASE?.trim()),
+				DB_USER: Boolean(process.env.DB_USER?.trim()),
+				DB_PASSWORD: Boolean(process.env.DB_PASSWORD?.trim()),
+				DB_ENCRYPT: Boolean(process.env.DB_ENCRYPT?.trim()),
+				DB_TRUST_SERVER_CERTIFICATE: Boolean(process.env.DB_TRUST_SERVER_CERTIFICATE?.trim()),
+				DB_SSL_CA: Boolean(process.env.DB_SSL_CA?.trim()),
+			},
+			error: {
+				type: err?.name || (error instanceof Error ? error.constructor.name : typeof error),
+				code: err?.code,
+				message:
+					error instanceof Error
+						? error.message.replace(/\b(password|pwd|user\s*id|uid)\s*[=:]\s*[^;,\s]+/gi, "$1=[REDACTED]")
+						: String(error ?? "Unknown error"),
+			},
+		})
+	);
+}
+
 export async function getDb(): Promise<ConnectionPool> {
 	if (pool?.connected) {
 		return pool;
@@ -133,6 +168,7 @@ export async function getDb(): Promise<ConnectionPool> {
 			return nextPool;
 		} catch (error) {
 			pool = null;
+			logDbConnectFailure(error);
 			throw error;
 		} finally {
 			connecting = null;

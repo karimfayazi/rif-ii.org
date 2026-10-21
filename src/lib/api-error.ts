@@ -153,7 +153,7 @@ function describeError(error: unknown): ErrorDetails {
 
 const CATEGORY_HINTS: Record<Exclude<ApiErrorCategory, "UNKNOWN">, string> = {
 	CONFIG_MISSING:
-		"Database environment variables are not loaded. Set DB_SERVER, DB_DATABASE, DB_USER and DB_PASSWORD (or MSSQL_CONNECTION) in .env.local / .env.development.local, then restart the dev server.",
+		"Database environment variables are not loaded. Set DB_SERVER, DB_DATABASE, DB_USER and DB_PASSWORD (or MSSQL_CONNECTION) in .env.development.local locally, or in Vercel Project Settings → Environment Variables for Production/Preview, then restart the dev server or redeploy.",
 	TLS_CERTIFICATE:
 		"SQL Server's TLS certificate is not trusted. Install a CA-trusted certificate on SQL Server (connect using its hostname) or explicitly approve DB_TRUST_SERVER_CERTIFICATE=true for this environment.",
 	DB_LOGIN_FAILED:
@@ -225,6 +225,24 @@ export type ApiErrorOptions = {
 	fallbackMessage: string;
 };
 
+/** Presence-only DB env flags for ops logs — never includes values. */
+export function getDbEnvPresence(): Record<string, boolean> {
+	return {
+		MSSQL_CONNECTION: Boolean(process.env.MSSQL_CONNECTION?.trim()),
+		DB_SERVER: Boolean(process.env.DB_SERVER?.trim()),
+		DB_PORT: Boolean(process.env.DB_PORT?.trim()),
+		DB_INSTANCE: Boolean(process.env.DB_INSTANCE?.trim()),
+		DB_DATABASE: Boolean(process.env.DB_DATABASE?.trim()),
+		DB_USER: Boolean(process.env.DB_USER?.trim()),
+		DB_PASSWORD: Boolean(process.env.DB_PASSWORD?.trim()),
+		DB_ENCRYPT: Boolean(process.env.DB_ENCRYPT?.trim()),
+		DB_TRUST_SERVER_CERTIFICATE: Boolean(process.env.DB_TRUST_SERVER_CERTIFICATE?.trim()),
+		DB_SSL_CA: Boolean(process.env.DB_SSL_CA?.trim()),
+		DB_CONNECT_TIMEOUT: Boolean(process.env.DB_CONNECT_TIMEOUT?.trim()),
+		VERCEL: Boolean(process.env.VERCEL),
+	};
+}
+
 export function createApiErrorResponse(request: Request, error: unknown, options: ApiErrorOptions) {
 	const requestId = resolveRequestId(request);
 	const details = describeError(error);
@@ -251,6 +269,12 @@ export function createApiErrorResponse(request: Request, error: unknown, options
 		path: pathname,
 		httpStatus: status,
 		category,
+		runtime: {
+			node: process.version,
+			vercel: Boolean(process.env.VERCEL),
+			region: process.env.VERCEL_REGION || undefined,
+		},
+		dbEnvPresence: getDbEnvPresence(),
 		error: details,
 	};
 	console.error(JSON.stringify(logEntry, null, isDevelopment() ? 2 : undefined));
