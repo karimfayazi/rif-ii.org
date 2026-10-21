@@ -46,6 +46,7 @@ function isDatabaseConnectionError(error: unknown): boolean {
 		.toLowerCase();
 
 	return (
+		message.includes("database environment variable") ||
 		message.includes("failed to connect") ||
 		message.includes("could not connect") ||
 		message.includes("connection refused") ||

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "mssql";
 import { getDb } from "@/lib/db";
+import { createApiErrorResponse } from "@/lib/api-error";
 
 const SPECIAL_CHARACTER_REGEX = /[^A-Za-z0-9]/g;
 
@@ -49,14 +50,10 @@ export async function GET(request: NextRequest) {
 			}
 		});
 	} catch (error) {
-		console.error("Change password lookup error:", error);
-		return NextResponse.json(
-			{
-				success: false,
-				message: error instanceof Error ? error.message : "Failed to fetch user details"
-			},
-			{ status: 500 }
-		);
+		return createApiErrorResponse(request, error, {
+			operation: "change-password:lookup",
+			fallbackMessage: "Failed to fetch user details",
+		});
 	}
 }
 
@@ -131,13 +128,9 @@ export async function POST(request: NextRequest) {
 			full_name: user.full_name || ""
 		});
 	} catch (error) {
-		console.error("Change password error:", error);
-		return NextResponse.json(
-			{
-				success: false,
-				message: error instanceof Error ? error.message : "Failed to update password"
-			},
-			{ status: 500 }
-		);
+		return createApiErrorResponse(request, error, {
+			operation: "change-password:update",
+			fallbackMessage: "Failed to update password",
+		});
 	}
 }

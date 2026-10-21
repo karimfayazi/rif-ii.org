@@ -20,6 +20,29 @@ const CONNECTION_ERROR_TITLE = "Unable to Connect";
 const CONNECTION_ERROR_MESSAGE =
 	"We are unable to connect to the system right now. Please try again in a few minutes. If the problem continues, please contact your IT support team.";
 
+const IS_DEV_MODE = process.env.NODE_ENV === "development";
+
+type ChangePasswordDiagnostics = {
+	requestId?: string;
+	httpStatus?: number;
+	debug?: Record<string, unknown>;
+};
+
+function toDiagnostics(response: Response, data: unknown): ChangePasswordDiagnostics | null {
+	const body = (data ?? {}) as { requestId?: unknown; debug?: unknown };
+	const requestId = typeof body.requestId === "string" ? body.requestId : undefined;
+	const debug =
+		IS_DEV_MODE && body.debug && typeof body.debug === "object"
+			? (body.debug as Record<string, unknown>)
+			: undefined;
+
+	if (!requestId && !debug) {
+		return null;
+	}
+
+	return { requestId, httpStatus: response.status, debug };
+}
+
 export default function LoginPage() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -38,6 +61,8 @@ export default function LoginPage() {
 	const [changePasswordLoading, setChangePasswordLoading] = useState(false);
 	const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
 	const [changePasswordSuccess, setChangePasswordSuccess] = useState<string | null>(null);
+	const [changePasswordDiagnostics, setChangePasswordDiagnostics] =
+		useState<ChangePasswordDiagnostics | null>(null);
 
 	useEffect(() => {
 		if (!showChangePasswordModal) {
@@ -55,6 +80,7 @@ export default function LoginPage() {
 				setLookupLoading(true);
 				setChangePasswordError(null);
 				setChangePasswordSuccess(null);
+				setChangePasswordDiagnostics(null);
 
 				const response = await fetch(
 					`/api/change-password?email=${encodeURIComponent(trimmedEmail)}`
@@ -65,6 +91,7 @@ export default function LoginPage() {
 					setChangePasswordData((prev) => ({ ...prev, fullName: "" }));
 					if (data?.message) {
 						setChangePasswordError(data.message);
+						setChangePasswordDiagnostics(toDiagnostics(response, data));
 					}
 					return;
 				}
@@ -76,7 +103,11 @@ export default function LoginPage() {
 			} catch (lookupError) {
 				console.error("Change password lookup error:", lookupError);
 				setChangePasswordData((prev) => ({ ...prev, fullName: "" }));
-				setChangePasswordError("Unable to fetch user details right now");
+				setChangePasswordError(
+					IS_DEV_MODE && lookupError instanceof Error
+						? `Unable to fetch user details right now (${lookupError.name}: ${lookupError.message})`
+						: "Unable to fetch user details right now"
+				);
 			} finally {
 				setLookupLoading(false);
 			}
@@ -99,6 +130,7 @@ export default function LoginPage() {
 		setChangePasswordLoading(false);
 		setChangePasswordError(null);
 		setChangePasswordSuccess(null);
+		setChangePasswordDiagnostics(null);
 	};
 
 	const openChangePasswordModal = () => {
@@ -135,6 +167,7 @@ export default function LoginPage() {
 		});
 		setChangePasswordError(null);
 		setChangePasswordSuccess(null);
+		setChangePasswordDiagnostics(null);
 	};
 
 	const validateChangePasswordForm = () => {
@@ -182,6 +215,7 @@ export default function LoginPage() {
 		event.preventDefault();
 		setChangePasswordError(null);
 		setChangePasswordSuccess(null);
+		setChangePasswordDiagnostics(null);
 
 		if (!validateChangePasswordForm()) {
 			return;
@@ -205,6 +239,7 @@ export default function LoginPage() {
 
 			if (!response.ok) {
 				setChangePasswordError(data?.message || "Failed to update password");
+				setChangePasswordDiagnostics(toDiagnostics(response, data));
 				return;
 			}
 
@@ -217,7 +252,11 @@ export default function LoginPage() {
 			}));
 		} catch (changeError) {
 			console.error("Change password submission error:", changeError);
-			setChangePasswordError("Unable to update password right now");
+			setChangePasswordError(
+				IS_DEV_MODE && changeError instanceof Error
+					? `Unable to update password right now (${changeError.name}: ${changeError.message})`
+					: "Unable to update password right now"
+			);
 		} finally {
 			setChangePasswordLoading(false);
 		}
@@ -521,7 +560,26 @@ export default function LoginPage() {
 							{changePasswordError && (
 								<div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
 									<AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-									<span>{changePasswordError}</span>
+									<div className="min-w-0 flex-1 space-y-1">
+										<span>{changePasswordError}</span>
+										{changePasswordDiagnostics?.requestId && (
+											<p className="text-xs text-red-600/80">
+												Reference ID: {changePasswordDiagnostics.requestId}
+											</p>
+										)}
+										{IS_DEV_MODE && changePasswordDiagnostics?.debug && (
+											<pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-red-200 bg-white/70 p-2 text-xs text-red-800">
+												{JSON.stringify(
+													{
+														apiStatus: changePasswordDiagnostics.httpStatus,
+														...changePasswordDiagnostics.debug,
+													},
+													null,
+													2
+												)}
+											</pre>
+										)}
+									</div>
 								</div>
 							)}
 
