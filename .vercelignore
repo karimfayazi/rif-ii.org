@@ -11,14 +11,9 @@ out
 build
 tsconfig.tsbuildinfo
 public/maps/Shapefiles
-public/maps/kmz
-!public/maps/kmz/Paroa_kmz_gis_maps
-!public/maps/kmz/Paroa_kmz_gis_maps/**
-!public/maps/kmz/Domel_kmz_gis_maps
-!public/maps/kmz/Domel_kmz_gis_maps/**
-!public/maps/kmz/Kakki_kmz_gis_maps
-!public/maps/kmz/Kakki_kmz_gis_maps/**
-!public/maps/kmz/Paharpur_kmz_gis_maps
-!public/maps/kmz/Paharpur_kmz_gis_maps/**
-!public/maps/kmz/Paniala_kmz_gis_maps
-!public/maps/kmz/Paniala_kmz_gis_maps/**
+# Large local-only KMZ packs (not tracked in git). Do NOT ignore public/maps/kmz
+# wholesale — gitignore-style rules cannot re-include children of an ignored
+# parent directory, which previously stripped Kakki/Paroa/Domel/Paharpur/Paniala
+# from Vercel and broke /api/gis/kmz/* with ADM-ZIP / static 404s.
+public/maps/kmz/DIK
+public/maps/kmz/Bannu
